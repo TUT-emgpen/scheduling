@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>甄選排程系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+          "lucide-react": "https://esm.sh/lucide-react@0.552.0?external=react"
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react">
+      import React, { useState, useEffect } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { Users, Clock, Settings, FileText, ChevronUp, ChevronDown, Plus, Trash2, MapPin, Play, Calendar, Map, CheckCircle2, ChevronRight, UserCheck, MousePointer2, AlertTriangle, ClipboardList, RefreshCw, UploadCloud, Printer, Edit2, Save, CloudUpload, Download, X } from 'lucide-react';
+
+const ALL_CITIES = [
+  '基隆市', '台北市', '新北市', '桃園市', '新竹市', '新竹縣', '宜蘭縣',
+  '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市', '嘉義縣', 
+  '台南市', '高雄市', '屏東縣', '花蓮縣', '台東縣', '澎湖縣', '金門縣', '連江縣'
+];
+
+const TAIWAN_MAP_LAYOUT = [
+  { name: '連江縣', row: 2, col: 1 }, { name: '金門縣', row: 4, col: 1 }, { name: '澎湖縣', row: 8, col: 1 },
+  { name: '基隆市', row: 1, col: 3 }, { name: '台北市', row: 2, col: 3 }, { name: '新北市', row: 2, col: 2 },
+  { name: '桃園市', row: 3, col: 2 }, { name: '新竹縣', row: 3, col: 3 }, { name: '宜蘭縣', row: 3, col: 4 },
+  { name: '新竹市', row: 4, col: 2 }, { name: '苗栗縣', row: 4, col: 3 }, { name: '台中市', row: 5, col: 2 },
+  { name: '南投縣', row: 5, col: 3 }, { name: '花蓮縣', row: 5, col: 4 }, { name: '彰化縣', row: 6, col: 2 },
+  { name: '雲林縣', row: 7, col: 2 }, { name: '嘉義市', row: 8, col: 2 }, { name: '嘉義縣', row: 8, col: 3 },
+  { name: '台南市', row: 9, col: 2 }, { name: '高雄市', row: 9, col: 3 }, { name: '台東縣', row: 9, col: 4 },
+  { name: '屏東縣', row: 10, col: 3 },
+];
+
+const COLOR_PALETTE = [
+  { bg: 'bg-indigo-500', text: 'text-indigo-700', light: 'bg-indigo-100', border: 'border-indigo-500' },
+  { bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-100', border: 'border-emerald-500' },
+  { bg: 'bg-amber-500', text: 'text-amber-700', light: 'bg-amber-100', border: 'border-amber-500' },
+  { bg: 'bg-rose-500', text: 'text-rose-700', light: 'bg-rose-100', border: 'border-rose-500' },
+  { bg: 'bg-cyan-500', text: 'text-cyan-700', light: 'bg-cyan-100', border: 'border-cyan-500' },
+  { bg: 'bg-purple-500', text: 'text-purple-700', light: 'bg-purple-100', border: 'border-purple-500' },
+];
+
+const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbwUAlCt0556Q7I8zkvP95OdHNYP9Ar-I9Y6xiHTiHzVF3Cs3_ABFefHeJwCJWIAetA/exec';
+
+const generateMockData = () => {
+  const data = [];
+  for (let i = 1; i <= 200; i++) {
+    const randomCity = ALL_CITIES[Math.floor(Math.random() * ALL_CITIES.length)];
+    data.push(`113${String(i).padStart(4, '0')},學生${i},${randomCity}`);
+  }
+  return data.join('\n');
+};
+
+const generateMockSlotData = () => {
+  const data = [];
+  for (let i = 1; i <= 200; i++) {
+    if (Math.random() > 0.3) {
+       const slot = Math.floor(Math.random() * 4) + 1;
+       data.push(`113${String(i).padStart(4, '0')},${slot}`);
+    }
+  }
+  return data.join('\n');
+};
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('import');
+  const [importMode, setImportMode] = useState('students'); 
+  const [rawData, setRawData] = useState('');
+  const [slotRawData, setSlotRawData] = useState('');
+  
+  const [students, setStudents] = useState([]);
+  const [schedule, setSchedule] = useState({ combined: [], grouped: [] });
+  const [viewMode, setViewMode] = useState('cards');
+  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+  
+  // 雲端存檔相關 State
+  const [showCloudModal, setShowCloudModal] = useState(false);
+  const [cloudUrl, setCloudUrl] = useState(DEFAULT_CLOUD_URL);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingCloud, setIsLoadingCloud] = useState(false);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
+  const [autoBackupMinutes, setAutoBackupMinutes] = useState(5);
+  const [lastCloudSyncAt, setLastCloudSyncAt] = useState('');
+
+  const [settings, setSettings] = useState({
+    startTime: '08:00', endTime: '18:00',
+    lunchStart: '12:00', lunchEnd: '13:00',
+    practiceMinutes: 40, interviewMinutes: 15, transitMinutes: 10,
+    groupSize: 10, groupTolerance: 2, interviewBatchSize: 5, 
+    practiceRooms: 2, interviewRooms: 2, assistantsCount: 6
+  });
+
+  const [registrationSlots, setRegistrationSlots] = useState([
+    { id: 1, start: '08:00', end: '08:30', name: '時段 1 (早)' },
+    { id: 2, start: '10:00', end: '10:30', name: '時段 2 (中)' },
+    { id: 3, start: '13:00', end: '13:30', name: '時段 3 (午)' },
+    { id: 4, start: '15:00', end: '15:30', name: '時段 4 (晚)' }
+  ]);
+
+  const [regions, setRegions] = useState([
+    { id: 1, name: '南部', counties: ['苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市', '嘉義縣', '台南市', '高雄市', '屏東縣', '台東縣', '花蓮縣', '澎湖縣', '金門縣', '連江縣'], colorIdx: 1 },
+    { id: 2, name: '北部', counties: ['基隆市', '台北市', '新北市', '桃園市', '新竹市', '新竹縣', '宜蘭縣'], colorIdx: 0 }
+  ]);
+
+  const [activeRegionId, setActiveRegionId] = useState(1);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // 系統初始化：從 LocalStorage 載入上次的資料
+  useEffect(() => { 
+    if (!window.XLSX) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    const savedData = localStorage.getItem('scheduleSystemData');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.students) setStudents(parsed.students);
+        if (parsed.schedule) setSchedule(parsed.schedule);
+        if (parsed.settings) setSettings(parsed.settings);
+        if (parsed.registrationSlots) setRegistrationSlots(parsed.registrationSlots);
+        if (parsed.regions) setRegions(parsed.regions);
+        if (parsed.cloudUrl) setCloudUrl(parsed.cloudUrl);
+        if (typeof parsed.autoBackupEnabled === 'boolean') setAutoBackupEnabled(parsed.autoBackupEnabled);
+        if (Number(parsed.autoBackupMinutes) > 0) setAutoBackupMinutes(Number(parsed.autoBackupMinutes));
+        if (parsed.lastCloudSyncAt) setLastCloudSyncAt(parsed.lastCloudSyncAt);
+      } catch (e) {
+        console.error("載入存檔失敗", e);
+      }
+    } else {
+      // 只有第一次進來且沒有存檔時，才載入假資料
+      setRawData("准考證號,姓名,縣市\n" + generateMockData()); 
+      setSlotRawData("准考證號,選擇時段(1~4)\n" + generateMockSlotData());
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // 當資料有變動時，自動存入 LocalStorage (防呆機制)
+  useEffect(() => {
+    if (isInitialized) {
+      const dataToSave = {
+        students, schedule, settings, registrationSlots, regions, cloudUrl,
+        autoBackupEnabled, autoBackupMinutes, lastCloudSyncAt
+      };
+      localStorage.setItem('scheduleSystemData', JSON.stringify(dataToSave));
+    }
+  }, [students, schedule, settings, registrationSlots, regions, cloudUrl, autoBackupEnabled, autoBackupMinutes, lastCloudSyncAt, isInitialized]);
+
+  const normalizeCityName = (name) => name.replace(/臺/g, '台');
+
+  const handleFileUpload = (e, targetMode) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      if (window.XLSX) {
+        try {
+          const wb = window.XLSX.read(data, { type: 'array' });
+          const wsname = wb.SheetNames[0];
+          const csvStr = window.XLSX.utils.sheet_to_csv(wb.Sheets[wsname]);
+          if (targetMode === 'students') {
+             setRawData(csvStr);
+             alert(`已成功讀取「${file.name}」！請點擊下方「解析名單」。`);
+          } else {
+             setSlotRawData(csvStr);
+             alert(`已成功讀取「${file.name}」！請點擊下方「比對並更新」。`);
+          }
+        } catch (err) {
+          alert('檔案解析失敗，請確認檔案格式。');
+        }
+      } else { alert('Excel 引擎正在載入，請稍後再試。'); }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = null; 
+  };
+
+  const handleParseData = () => {
+    const lines = rawData.trim().split('\n');
+    if (lines.length < 2) return;
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    let idIdx = headers.indexOf('報名序號');
+    let nameIdx = headers.indexOf('姓名');
+    let addrIdx = headers.indexOf('地址');
+    let cityIdx = headers.indexOf('縣市');
+
+    if (idIdx === -1) idIdx = 0;
+    if (nameIdx === -1) nameIdx = 1;
+    if (cityIdx !== -1) addrIdx = cityIdx;
+    else if (addrIdx === -1) addrIdx = 2;
+
+    const parsedStudents = [];
+    let startIndex = isNaN(parseInt(lines[0].split(',')[0])) ? 1 : 0;
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const parts = lines[i].split(','); 
+      if (parts.length < 3) continue;
+      const id = parts[idIdx]?.trim();
+      const name = parts[nameIdx]?.trim();
+      const address = parts[addrIdx]?.trim() || '';
+
+      let rawCity = '未知';
+      const cityMatch = address.match(/^(.{2,3}[縣市])/);
+      if (cityMatch) rawCity = cityMatch[1];
+      else rawCity = address.substring(0, 3);
+      
+      const city = normalizeCityName(rawCity);
+      let regionAssigned = '未分配 (其他)';
+      let regionOrder = 999;
+      
+      for (let rIdx = 0; rIdx < regions.length; rIdx++) {
+        if (regions[rIdx].counties.includes(city)) {
+          regionAssigned = regions[rIdx].name;
+          regionOrder = rIdx; break;
+        }
+      }
+      if (id && name) {
+        parsedStudents.push({ 
+          id, name, city, region: regionAssigned, regionOrder,
+          isCrossDept: false, blockedStart: '10:00', blockedEnd: '12:00',
+          preferredSlot: null, assignedSlot: null 
+        });
+      }
+    }
+    
+    parsedStudents.sort((a, b) => {
+      if (a.regionOrder !== b.regionOrder) return a.regionOrder - b.regionOrder;
+      return a.id.localeCompare(b.id);
+    });
+
+    setStudents(parsedStudents);
+    alert(`成功解析 ${parsedStudents.length} 筆學生資料！`);
+  };
+
+  const handleParseSlots = () => {
+    if (students.length === 0) {
+      alert("請先匯入「學生名單」後，再匯入意願調查結果！"); return;
+    }
+    const lines = slotRawData.trim().split('\n');
+    let startIndex = isNaN(parseInt(lines[0].split(',')[0])) ? 1 : 0;
+    let matchCount = 0;
+    const updatedStudents = [...students];
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const parts = lines[i].split(','); 
+      if (parts.length < 2) continue;
+      const id = parts[0]?.trim();
+      const slotNum = parseInt(parts[1]?.trim());
+
+      if (id && !isNaN(slotNum) && slotNum >= 1 && slotNum <= 4) {
+        const studentIndex = updatedStudents.findIndex(s => s.id === id);
+        if (studentIndex !== -1) {
+          updatedStudents[studentIndex].preferredSlot = slotNum;
+          matchCount++;
+        }
+      }
+    }
+    setStudents(updatedStudents);
+    alert(`成功比對並更新 ${matchCount} 筆報到意願！`);
+    setActiveTab('students');
+  };
+
+  const handleUpdateStudent = (id, field, value) => {
+    setStudents(students.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  const parseTime = (timeStr) => { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
+  const formatTime = (minutes) => { const h = Math.floor(minutes / 60); const m = minutes % 60; return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; };
+
+  const handleScheduleChange = (idx, field, value) => {
+    const newCombined = [...schedule.combined];
+    newCombined[idx] = { ...newCombined[idx], [field]: value };
+    if (field === 'startTime') newCombined[idx].startTimeMins = parseTime(value);
+    setSchedule({ ...schedule, combined: newCombined });
+  };
+
+  const handleSaveScheduleEdit = () => {
+    const sortedCombined = [...schedule.combined].sort((a, b) => a.startTimeMins - b.startTimeMins);
+    const groupsMap = {};
+    sortedCombined.forEach(item => {
+      if (!groupsMap[item.groupId]) groupsMap[item.groupId] = { id: item.groupId, region: item.region, assistant: item.assistant, allStudents: [], events: [] };
+      groupsMap[item.groupId].events.push(item);
+      if (item.students && !item.isTransit && !item.isRegistration) {
+        item.students.forEach(s => {
+          if (!groupsMap[item.groupId].allStudents.find(ex => ex.id === s.id)) groupsMap[item.groupId].allStudents.push(s);
+        });
+      }
+    });
+
+    const groupedFlow = Object.values(groupsMap).map(g => {
+       g.events.sort((a, b) => a.startTimeMins - b.startTimeMins);
+       if (g.allStudents.length === 0) {
+          const regEvent = g.events.find(e => e.isRegistration);
+          if (regEvent && regEvent.students) g.allStudents = regEvent.students;
+       }
+       return g;
+    });
+
+    setSchedule({ combined: sortedCombined, grouped: groupedFlow });
+    setIsEditingSchedule(false);
+  };
+
+  const handleGenerateSchedule = () => {
+    if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
+
+    let currentStudents = [...students];
+    let slotCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    currentStudents.forEach(s => { if (s.preferredSlot) slotCounts[s.preferredSlot]++; });
+
+    currentStudents = currentStudents.map(s => {
+      if (s.preferredSlot) { return { ...s, assignedSlot: s.preferredSlot }; } 
+      else {
+        let possibleSlots = [1, 2, 3, 4];
+        if (s.region === '南部' || s.region === '未分配 (其他)') possibleSlots = [2, 3, 4];
+        let minSlot = possibleSlots[0];
+        for (let i = 1; i < possibleSlots.length; i++) {
+          if (slotCounts[possibleSlots[i]] < slotCounts[minSlot]) minSlot = possibleSlots[i];
+        }
+        slotCounts[minSlot]++;
+        return { ...s, assignedSlot: minSlot };
+      }
+    });
+    setStudents(currentStudents); 
+
+    const createGroups = (studentsArray, slotId, regionPrefix) => {
+      const groups = [];
+      let groupId = 1;
+
+      for (let i = 0; i < studentsArray.length; ) {
+        let chunkSize = settings.groupSize;
+        let remaining = studentsArray.length - i;
+        // 合併寬限邏輯
+        if (remaining - chunkSize > 0 && remaining - chunkSize <= settings.groupTolerance) {
+          chunkSize = remaining;
+        } else if (remaining < chunkSize) {
+          chunkSize = remaining;
+        }
+
+        const currentGroup = studentsArray.slice(i, i + chunkSize);
+        const subGroups = [];
+        for (let j = 0; j < currentGroup.length; j += settings.interviewBatchSize) {
+          subGroups.push(currentGroup.slice(j, j + settings.interviewBatchSize));
+        }
+
+        groups.push({ id: `T${slotId}-${regionPrefix}-${groupId}`, slotId: slotId, students: currentGroup, subGroups: subGroups, region: currentGroup[0].region });
+        i += chunkSize; groupId++;
+      }
+      return groups;
+    };
+
+    let allGroups = [];
+    [1, 2, 3, 4].forEach(slotId => {
+       const slotStudents = currentStudents.filter(s => s.assignedSlot === slotId);
+       regions.forEach(config => {
+         const regStudents = slotStudents.filter(s => s.region === config.name);
+         allGroups = allGroups.concat(createGroups(regStudents, slotId, config.name.charAt(0)));
+       });
+       const otherStudents = slotStudents.filter(s => s.region === '未分配 (其他)');
+       if (otherStudents.length > 0) allGroups = allGroups.concat(createGroups(otherStudents, slotId, '其'));
+    });
+
+    const newSchedule = [];
+    const lunchStart = parseTime(settings.lunchStart);
+    const lunchEnd = parseTime(settings.lunchEnd);
+    
+    const practiceRoomAvailable = Array(Number(settings.practiceRooms)).fill(parseTime(settings.startTime));
+    const interviewRoomAvailable = Array(Number(settings.interviewRooms)).fill(parseTime(settings.startTime));
+    const assistantAvailable = Array(Number(settings.assistantsCount)).fill(parseTime(settings.startTime));
+
+    allGroups.forEach(group => {
+      const slotConfig = registrationSlots.find(s => s.id === group.slotId);
+      const slotStartTime = parseTime(slotConfig.start);
+      const slotEndTime = parseTime(slotConfig.end);
+
+      newSchedule.push({
+        groupId: group.id, region: group.region, type: '📝 報到與身分查驗',
+        room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
+        startTime: formatTime(slotStartTime), endTime: formatTime(slotEndTime),
+        startTimeMins: slotStartTime, students: group.students, isRegistration: true
+      });
+
+      let t = Math.max(slotEndTime, parseTime(settings.startTime));
+      const P_TIME = settings.practiceMinutes;
+      const I_TIME = group.subGroups.length * settings.interviewMinutes;
+      const TR_TIME = settings.transitMinutes;
+      const TOTAL_TIME = P_TIME + TR_TIME + I_TIME; 
+
+      let bestSlot = null;
+
+      while (t <= parseTime(settings.endTime) + 480) { 
+        if (t < lunchStart && t + TOTAL_TIME > lunchStart) { t = lunchEnd; continue; }
+        if (t >= lunchStart && t < lunchEnd) { t = lunchEnd; continue; }
+
+        const hasCrossDeptConflict = group.students.some(s => {
+          if (!s.isCrossDept) return false;
+          const blockedStart = parseTime(s.blockedStart);
+          const blockedEnd = parseTime(s.blockedEnd);
+          return Math.max(t, blockedStart) < Math.min(t + TOTAL_TIME, blockedEnd);
+        });
+
+        if (hasCrossDeptConflict) { t += 5; continue; }
+
+        let p1_room = practiceRoomAvailable.findIndex(freeTime => freeTime <= t);
+        let i1_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= t + P_TIME + TR_TIME);
+        let ast1 = assistantAvailable.findIndex(freeTime => freeTime <= t);
+
+        if (p1_room !== -1 && i1_room !== -1 && ast1 !== -1) {
+          bestSlot = { start: t, pattern: 'P-I', pRoom: p1_room, iRoom: i1_room, ast: ast1 }; break;
+        }
+
+        let i2_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= t);
+        let p2_room = practiceRoomAvailable.findIndex(freeTime => freeTime <= t + I_TIME + TR_TIME);
+        let ast2 = assistantAvailable.findIndex(freeTime => freeTime <= t);
+
+        if (i2_room !== -1 && p2_room !== -1 && ast2 !== -1) {
+          bestSlot = { start: t, pattern: 'I-P', pRoom: p2_room, iRoom: i2_room, ast: ast2 }; break;
+        }
+        t += 5; 
+      }
+
+      if (!bestSlot) { alert(`警告：梯次 ${group.id} 無法排入行程！可能是衝堂時間過長或場地不足。`); return; }
+
+      const assistantName = `工讀生 ${String.fromCharCode(65 + bestSlot.ast)}`; 
+      let currentEventTime = bestSlot.start;
+
+      if (currentEventTime > slotEndTime) {
+         newSchedule.push({
+          groupId: group.id, region: group.region, type: '休息 / 準備移動',
+          room: '考生休息室', assistant: assistantName,
+          startTime: formatTime(slotEndTime), endTime: formatTime(currentEventTime),
+          startTimeMins: slotEndTime, students: [], isTransit: true
+        });
+      }
+
+      if (bestSlot.pattern === 'P-I') {
+        newSchedule.push({
+          groupId: group.id, region: group.region, type: '實作測驗',
+          room: `實作教室 ${bestSlot.pRoom + 1}`, assistant: assistantName,
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + P_TIME),
+          startTimeMins: currentEventTime, students: group.students
+        });
+        currentEventTime += P_TIME;
+
+        newSchedule.push({
+          groupId: group.id, region: group.region, type: '換場移動',
+          room: '依考場動線引導', assistant: assistantName,
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + TR_TIME),
+          startTimeMins: currentEventTime, students: group.students, isTransit: true
+        });
+        currentEventTime += TR_TIME;
+
+        group.subGroups.forEach((subGroup, idx) => {
+          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
+          newSchedule.push({
+            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
+            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+            startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + settings.interviewMinutes),
+            startTimeMins: currentEventTime, students: subGroup
+          });
+          currentEventTime += settings.interviewMinutes;
+        });
+        practiceRoomAvailable[bestSlot.pRoom] = bestSlot.start + P_TIME;
+        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + TOTAL_TIME;
+        assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
+
+      } else {
+        group.subGroups.forEach((subGroup, idx) => {
+          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
+          newSchedule.push({
+            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
+            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+            startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + settings.interviewMinutes),
+            startTimeMins: currentEventTime, students: subGroup
+          });
+          currentEventTime += settings.interviewMinutes;
+        });
+
+        newSchedule.push({
+          groupId: group.id, region: group.region, type: '換場移動',
+          room: '依考場動線引導', assistant: assistantName,
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + TR_TIME),
+          startTimeMins: currentEventTime, students: group.students, isTransit: true
+        });
+        currentEventTime += TR_TIME;
+
+        newSchedule.push({
+          groupId: group.id, region: group.region, type: '實作測驗',
+          room: `實作教室 ${bestSlot.pRoom + 1}`, assistant: assistantName,
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + P_TIME),
+          startTimeMins: currentEventTime, students: group.students
+        });
+        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + I_TIME;
+        practiceRoomAvailable[bestSlot.pRoom] = bestSlot.start + TOTAL_TIME;
+        assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
+      }
+    });
+
+    const combinedSchedule = [...newSchedule].sort((a, b) => a.startTimeMins - b.startTimeMins);
+    const groupsMap = {};
+    newSchedule.forEach(item => {
+      if (!groupsMap[item.groupId]) { groupsMap[item.groupId] = { id: item.groupId, region: item.region, assistant: item.assistant, allStudents: [], events: [] }; }
+      groupsMap[item.groupId].events.push(item);
+      if (item.students && !item.isTransit && !item.isRegistration) {
+        item.students.forEach(s => {
+          if (!groupsMap[item.groupId].allStudents.find(ex => ex.id === s.id)) groupsMap[item.groupId].allStudents.push(s);
+        });
+      }
+    });
+
+    const groupedFlow = Object.values(groupsMap).map(g => {
+       g.events.sort((a, b) => a.startTimeMins - b.startTimeMins);
+       if (g.allStudents.length === 0) {
+          const regEvent = g.events.find(e => e.isRegistration);
+          if (regEvent && regEvent.students) g.allStudents = regEvent.students;
+       }
+       return g;
+    });
+
+    setSchedule({ combined: combinedSchedule, grouped: groupedFlow });
+    setActiveTab('schedule');
+    setViewMode('table');
+  };
+
+  const isValidCloudUrl = (url) => url.includes("script.google.com/macros/s/");
+
+  const buildCloudPayload = () => {
+    const exportData = schedule.combined.map(item => ({
+      "時間": `${item.startTime}-${item.endTime}`,
+      "梯次": item.groupId,
+      "項目": `${item.type} ${item.batchInfo || ''}`,
+      "場地": item.room,
+      "人員": item.assistant,
+      "名單": item.students ? item.students.map(s => `${s.name}(${s.isCrossDept ? '跨' : ''})`).join(', ') : ''
+    }));
+
+    return {
+      app: '4p-scheduler',
+      version: 2,
+      savedAt: new Date().toISOString(),
+      localTime: new Date().toLocaleString('zh-TW', { hour12: false }),
+      data: {
+        students, schedule, settings, registrationSlots, regions
+      },
+      scheduleRows: exportData
+    };
+  };
+
+  // Google 雲端儲存 (透過 Google Apps Script Web App)
+  const submitToGoogleCloud = async ({ silent = false, closeModal = true, trigger = 'manual' } = {}) => {
+    if (!isValidCloudUrl(cloudUrl)) {
+      if (!silent) alert("請輸入有效的 Google Apps Script 網址 (通常以 https://script.google.com/... 開頭)");
+      return false;
+    }
+
+    if (trigger === 'auto') setIsAutoSyncing(true);
+    else setIsSaving(true);
+
+    try {
+      const payload = buildCloudPayload();
+      const response = await fetch(cloudUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'upsertSnapshot',
+          payload
+        })
+      });
+
+      const raw = await response.text();
+      let json = null;
+      try {
+        json = JSON.parse(raw);
+      } catch (_) {
+        throw new Error('Web App 回傳非 JSON。請確認 Apps Script 有 doPost，且已重新部署。');
+      }
+
+      if (!response.ok || !json.ok) {
+        throw new Error(json.error || `HTTP ${response.status}`);
+      }
+
+      const syncedAt = new Date().toLocaleString('zh-TW', { hour12: false });
+      setLastCloudSyncAt(syncedAt);
+      if (!silent) {
+        alert("✅ 已同步完整資料到 Google 試算表！");
+      }
+      if (closeModal) setShowCloudModal(false);
+      return true;
+    } catch (error) {
+      if (!silent) {
+        alert(`❌ 備份失敗：${error.message}\n請確認 Apps Script 已部署為 Web App，且允許「任何人」存取。`);
+      } else {
+        console.warn('自動備份失敗：', error);
+      }
+      return false;
+    } finally {
+      if (trigger === 'auto') setIsAutoSyncing(false);
+      else setIsSaving(false);
+    }
+  };
+
+  const loadFromGoogleCloud = async () => {
+    if (!isValidCloudUrl(cloudUrl)) {
+      alert("請先貼上有效的 Google Apps Script 網址。");
+      return;
+    }
+
+    setIsLoadingCloud(true);
+    try {
+      const url = `${cloudUrl}${cloudUrl.includes('?') ? '&' : '?'}action=getLatestSnapshot`;
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const json = await res.json();
+      if (!json || !json.ok || !json.data) {
+        throw new Error('找不到可用的雲端資料');
+      }
+
+      const cloudData = json.data;
+      if (cloudData.students) setStudents(cloudData.students);
+      if (cloudData.schedule) setSchedule(cloudData.schedule);
+      if (cloudData.settings) setSettings(cloudData.settings);
+      if (cloudData.registrationSlots) setRegistrationSlots(cloudData.registrationSlots);
+      if (cloudData.regions) setRegions(cloudData.regions);
+
+      const syncedAt = new Date().toLocaleString('zh-TW', { hour12: false });
+      setLastCloudSyncAt(syncedAt);
+      alert("✅ 已從 Google 雲端載入最新資料。");
+    } catch (error) {
+      alert(`❌ 載入失敗：${error.message}\n請確認您的 Apps Script 有實作 action=getLatestSnapshot。`);
+    } finally {
+      setIsLoadingCloud(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isInitialized || !autoBackupEnabled) return;
+    if (!isValidCloudUrl(cloudUrl)) return;
+    const minutes = Math.max(1, Number(autoBackupMinutes) || 5);
+    const timer = setInterval(() => {
+      submitToGoogleCloud({ silent: true, closeModal: false, trigger: 'auto' });
+    }, minutes * 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [isInitialized, autoBackupEnabled, autoBackupMinutes, cloudUrl, students, schedule, settings, registrationSlots, regions]);
+
+  const handlePrintPDF = () => { window.print(); };
+
+  const getTaskDescription = (type, studentsList) => {
+    if (type.includes('報到')) {
+      return (
+        <div className="space-y-1">
+          <p>1. 協助考生與家長完成報到流程(確認姓名、系別、報到時間)</p>
+          <p>2. 查詢並回覆有關補助獎金發放及接駁車候車情形</p>
+          <p>3. 指引考生前往「休息區」等候並維持秩序</p>
+        </div>
+      );
+    } else if (type.includes('換場') || type.includes('休息')) {
+      return (
+        <div className="space-y-1">
+          <p>1. 協助維持安靜與秩序，引導學生集合準備</p>
+          <p>2. 確保動線流暢，帶領考生至下一關卡</p>
+          <p>3. 若考生焦慮，給予適當安撫與鼓勵</p>
+        </div>
+      );
+    } else {
+      return (
+        <div className="space-y-2">
+          <p className="font-bold text-gray-800">【本梯次點名名單】</p>
+          <div className="flex flex-wrap gap-x-2 gap-y-1">
+            {studentsList?.map(s => (<span key={s.id} className="whitespace-nowrap">{s.name} {s.isCrossDept ? '(跨)' : ''}</span>))}
+          </div>
+          <p className="pt-2 mt-2 border-t border-gray-300 text-gray-600">※ 確保考試順利進行，並清點人數無誤。</p>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <>
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 12mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
+        }
+      `}</style>
+
+      {/* 雲端存檔 Modal */}
+      {showCloudModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full relative">
+            <button onClick={() => setShowCloudModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><X size={24} /></button>
+            <div className="flex items-center text-indigo-600 mb-4">
+              <CloudUpload size={32} className="mr-3" />
+              <h2 className="text-2xl font-bold">Google 雲端同步</h2>
+            </div>
+            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+              建議使用 <strong>Google 試算表 + Apps Script</strong> 當雲端資料庫。Google 表單偏向收件，不適合雙向編輯。貼上 Web App 網址後，即可手動同步、雲端載入與定時備份。
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Google API 網址：</label>
+              <input 
+                type="text" 
+                placeholder="https://script.google.com/macros/s/..."
+                value={cloudUrl}
+                onChange={(e) => setCloudUrl(e.target.value)}
+                className="w-full border-2 border-indigo-100 rounded-xl p-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-mono text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <button 
+                onClick={loadFromGoogleCloud}
+                disabled={isLoadingCloud || isSaving}
+                className={`py-3 rounded-xl font-bold text-indigo-700 border transition-all flex justify-center items-center ${isLoadingCloud || isSaving ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-indigo-200 hover:bg-indigo-50'}`}
+              >
+                {isLoadingCloud ? <RefreshCw className="animate-spin mr-2" size={18} /> : <Download className="mr-2" size={18} />}
+                {isLoadingCloud ? '雲端讀取中...' : '從 Google 載入'}
+              </button>
+              <button 
+                onClick={() => submitToGoogleCloud({ silent: false, closeModal: true, trigger: 'manual' })}
+                disabled={isSaving || isLoadingCloud}
+                className={`py-3 rounded-xl font-bold text-white shadow-lg transition-all flex justify-center items-center ${isSaving || isLoadingCloud ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-0.5'}`}
+              >
+                {isSaving ? <RefreshCw className="animate-spin mr-2" size={20} /> : <CloudUpload className="mr-2" size={20} />}
+                {isSaving ? '上傳同步中...' : '推送到 Google'}
+              </button>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={autoBackupEnabled}
+                    onChange={(e) => setAutoBackupEnabled(e.target.checked)}
+                  />
+                  啟用定時自動備份
+                </label>
+                <select
+                  value={autoBackupMinutes}
+                  onChange={(e) => setAutoBackupMinutes(Number(e.target.value))}
+                  className="border border-slate-300 rounded-lg px-2 py-1 text-sm bg-white"
+                  disabled={!autoBackupEnabled}
+                >
+                  <option value={1}>每 1 分鐘</option>
+                  <option value={3}>每 3 分鐘</option>
+                  <option value={5}>每 5 分鐘</option>
+                  <option value={10}>每 10 分鐘</option>
+                  <option value={15}>每 15 分鐘</option>
+                </select>
+              </div>
+              <p className="text-xs text-slate-500">
+                狀態：{isAutoSyncing ? '自動備份中...' : '待機'}；最近同步：{lastCloudSyncAt || '尚未同步'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8 font-sans selection:bg-indigo-100 selection:text-indigo-900 print:hidden">
+        <div className="max-w-6xl mx-auto">
+          <header className="mb-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-center md:text-left">
+              <h1 className="text-3xl md:text-4xl font-extrabold flex items-center justify-center md:justify-start">
+                <div className="bg-indigo-600 text-white p-2.5 rounded-xl mr-4 shadow-lg shadow-indigo-200"><Calendar size={32} strokeWidth={2.5} /></div>
+                <span className="bg-gradient-to-r from-blue-900 via-indigo-800 to-indigo-600 bg-clip-text text-transparent">四技甄選自動排程系統</span>
+              </h1>
+              <p className="text-slate-500 mt-3 md:ml-[4.5rem] font-medium text-sm md:text-base">資料已受瀏覽器自動保護 (Auto-saved)。支援 PDF 列印與雲端試算表同步。</p>
+            </div>
+          </header>
+
+          <div className="flex flex-nowrap md:flex-wrap space-x-1.5 mb-8 bg-white/60 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto hide-scrollbar">
+            {[
+              { id: 'import', icon: FileText, label: '1. 資料匯入' },
+              { id: 'students', icon: Users, label: `2. 分區與報到名單 (${students.length})` },
+              { id: 'settings', icon: Settings, label: '3. 參數與時段設定' },
+              { id: 'schedule', icon: CheckCircle2, label: '4. 排程結果' }
+            ].map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center px-5 py-2.5 rounded-xl font-bold whitespace-nowrap transition-all duration-200 ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-indigo-600'}`}>
+                <tab.icon size={18} className="mr-2" />{tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-8">
+            
+            {activeTab === 'import' && (
+              <div className="animate-fade-in max-w-4xl mx-auto">
+                <div className="flex gap-4 mb-6 justify-center">
+                   <button onClick={() => setImportMode('students')} className={`px-6 py-2 rounded-full font-bold transition-all ${importMode === 'students' ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>步驟 1: 匯入學生名單</button>
+                   <button onClick={() => setImportMode('slots')} className={`px-6 py-2 rounded-full font-bold transition-all ${importMode === 'slots' ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>步驟 2: 匯入報到意願</button>
+                </div>
+                <div className="flex flex-col items-center justify-center p-8 mb-6 bg-indigo-50/40 border-2 border-dashed border-indigo-200 rounded-2xl hover:bg-indigo-50 transition-colors">
+                  <UploadCloud size={48} className="text-indigo-400 mb-3" />
+                  <h3 className="text-lg font-bold text-slate-700 mb-1">直接上傳檔案 (.xlsx / .csv)</h3>
+                  <p className="text-sm text-slate-500 mb-4">系統將自動讀取 Excel 檔案，免去手動複製貼上的麻煩。</p>
+                  <label className="bg-white border border-slate-300 text-slate-700 hover:text-indigo-600 hover:border-indigo-400 px-6 py-2.5 rounded-xl font-bold shadow-sm cursor-pointer transition-all inline-flex items-center">
+                    選擇並上傳檔案
+                    <input type="file" accept=".xlsx, .xls, .csv" className="hidden" onChange={(e) => handleFileUpload(e, importMode)} />
+                  </label>
+                </div>
+                {importMode === 'students' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2"><p className="text-slate-500 font-bold text-sm">或手動貼上資料：</p></div>
+                    <textarea className="w-full h-48 p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono text-sm mb-6 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-inner" value={rawData} onChange={(e) => setRawData(e.target.value)} placeholder="在此貼上學生資料..." />
+                    <div className="text-center">
+                      <button onClick={handleParseData} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-10 py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center mx-auto text-lg">
+                        解析名單並自動分區 <ChevronRight className="ml-2" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2"><p className="text-slate-500 font-bold text-sm">或手動貼上資料 (格式：准考證號, 1)：</p></div>
+                    <textarea className="w-full h-48 p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono text-sm mb-6 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-inner" value={slotRawData} onChange={(e) => setSlotRawData(e.target.value)} placeholder="在此貼上意願調查結果..." />
+                    <div className="text-center">
+                      <button onClick={handleParseSlots} className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-10 py-4 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center mx-auto text-lg">
+                        <ClipboardList className="mr-2" /> 比對並更新意願
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'students' && (
+              <div className="animate-fade-in">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center">已解析名單與意願確認</h2>
+                    <p className="text-slate-500 text-sm mt-1">未選擇報到時段的學生，將在產生排程時<strong className="text-indigo-600">由系統智慧自動補位</strong>。</p>
+                  </div>
+                  <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-200">
+                    總計 {students.length} 人
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
+                        <th className="p-4 font-bold">准考證號</th><th className="p-4 font-bold">姓名</th><th className="p-4 font-bold">地區</th>
+                        <th className="p-4 font-bold bg-indigo-50 text-indigo-800 border-l border-indigo-100 w-40">報到時段意願</th>
+                        <th className="p-4 font-bold bg-orange-50 text-orange-800 border-l border-orange-100">⚠️ 跨系 / 衝堂時段設定</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {students.map((student, idx) => {
+                         const isUnassigned = student.region === '未分配 (其他)';
+                         return (
+                          <tr key={idx} className={`${isUnassigned ? 'bg-red-50/50' : 'hover:bg-indigo-50/50'} transition-colors ${student.isCrossDept ? 'bg-orange-50/30' : ''}`}>
+                            <td className="p-4 font-mono text-slate-600">{student.id}</td>
+                            <td className="p-4 font-bold text-slate-800">{student.name}</td>
+                            <td className="p-4"><span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${isUnassigned ? 'bg-red-100 text-red-700 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{student.region}</span></td>
+                            <td className="p-3 border-l border-slate-100 bg-slate-50/50">
+                              <select value={student.assignedSlot || student.preferredSlot || ''} onChange={(e) => handleUpdateStudent(student.id, 'preferredSlot', e.target.value ? parseInt(e.target.value) : null)} className={`w-full p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 ${student.assignedSlot && !student.preferredSlot ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : (student.preferredSlot ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-300 text-slate-500')}`}>
+                                <option value="">未選擇 (由系統安排)</option>
+                                {registrationSlots.map(slot => (<option key={slot.id} value={slot.id}>{slot.name}</option>))}
+                              </select>
+                              {student.assignedSlot && !student.preferredSlot && (<div className="text-[10px] text-indigo-500 mt-1 flex items-center"><RefreshCw size={10} className="mr-1" /> 自動分發</div>)}
+                            </td>
+                            <td className="p-3 border-l border-slate-100">
+                               <div className="flex items-center gap-3">
+                                 <label className="flex items-center cursor-pointer">
+                                   <input type="checkbox" className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500" checked={student.isCrossDept} onChange={e => handleUpdateStudent(student.id, 'isCrossDept', e.target.checked)} />
+                                   <span className={`ml-2 font-bold ${student.isCrossDept ? 'text-orange-700' : 'text-slate-400'}`}>跨系</span>
+                                 </label>
+                                 {student.isCrossDept && (
+                                   <div className="flex items-center bg-white border border-orange-200 rounded-lg p-1 shadow-sm">
+                                     <span className="text-xs text-orange-600 font-medium px-2">避開</span>
+                                     <input type="time" value={student.blockedStart} onChange={e => handleUpdateStudent(student.id, 'blockedStart', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
+                                     <span className="mx-1 text-slate-400">-</span>
+                                     <input type="time" value={student.blockedEnd} onChange={e => handleUpdateStudent(student.id, 'blockedEnd', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
+                                   </div>
+                                 )}
+                               </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="animate-fade-in">
+                <div className="mb-6"><h2 className="text-2xl font-bold text-slate-800">時段與參數設定</h2><p className="text-slate-500 text-sm mt-1">請先設定四個報到時段，再調整面試與實作的時間長度。</p></div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                  <div className="lg:col-span-2 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center text-lg"><Clock className="mr-2 text-indigo-500" size={20} /> 四階段報到時段</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {registrationSlots.map((slot, index) => (
+                        <div key={slot.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-center">
+                          <label className="text-sm font-bold text-indigo-800 mb-2">{slot.name}</label>
+                          <div className="flex items-center gap-2">
+                            <input type="time" value={slot.start} onChange={e => { const newSlots = [...registrationSlots]; newSlots[index].start = e.target.value; setRegistrationSlots(newSlots); }} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold outline-none focus:border-indigo-500" />
+                            <span className="text-slate-400">-</span>
+                            <input type="time" value={slot.end} onChange={e => { const newSlots = [...registrationSlots]; newSlots[index].end = e.target.value; setRegistrationSlots(newSlots); }} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold outline-none focus:border-indigo-500" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col justify-center">
+                    <h3 className="font-bold text-slate-800 mb-4 flex items-center text-lg"><Clock className="mr-2 text-orange-500" size={20} /> 考場午休時間</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors"><label className="text-sm font-semibold text-slate-600">午休開始</label><input type="time" value={settings.lunchStart} onChange={e => setSettings({...settings, lunchStart: e.target.value})} className="border border-slate-300 rounded-lg p-2 font-medium outline-none focus:border-orange-500" /></div>
+                      <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors"><label className="text-sm font-semibold text-slate-600">午休結束</label><input type="time" value={settings.lunchEnd} onChange={e => setSettings({...settings, lunchEnd: e.target.value})} className="border border-slate-300 rounded-lg p-2 font-medium outline-none focus:border-orange-500" /></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                  <h3 className="font-bold text-slate-800 mb-4 flex items-center text-lg"><Settings className="mr-2 text-indigo-500" size={20} /> 活動流程機制配置</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-indigo-50/50 border border-indigo-100 p-3 rounded-xl"><label className="text-sm font-bold text-indigo-800">帶隊工作人員總數 (人)</label><input type="number" min="1" value={settings.assistantsCount} onChange={e => setSettings({...settings, assistantsCount: Number(e.target.value)})} className="border border-indigo-200 rounded-lg p-1.5 w-20 text-center font-bold text-indigo-900" /></div>
+                    <div className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">大組人數 (實作)</label><input type="number" min="1" value={settings.groupSize} onChange={e => setSettings({...settings, groupSize: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">合併寬限 (人)</label><input type="number" min="0" value={settings.groupTolerance} onChange={e => setSettings({...settings, groupTolerance: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">小批人數 (面試)</label><input type="number" min="1" value={settings.interviewBatchSize} onChange={e => setSettings({...settings, interviewBatchSize: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作需時 (分)</label><input type="number" value={settings.practiceMinutes} onChange={e => setSettings({...settings, practiceMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試單批 (分)</label><input type="number" value={settings.interviewMinutes} onChange={e => setSettings({...settings, interviewMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作教室數</label><input type="number" min="1" value={settings.practiceRooms} onChange={e => setSettings({...settings, practiceRooms: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試委員組數</label><input type="number" min="1" value={settings.interviewRooms} onChange={e => setSettings({...settings, interviewRooms: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                    </div>
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 p-3 rounded-xl mt-2"><label className="text-sm font-bold text-slate-700">換場走動時間 (分)</label><input type="number" value={settings.transitMinutes} onChange={e => setSettings({...settings, transitMinutes: Number(e.target.value)})} className="border border-slate-300 rounded-lg p-1.5 w-20 text-center font-bold" /></div>
+                  </div>
+                </div>
+
+                <div className="mt-10 text-center pt-8 border-t border-slate-100">
+                  <button onClick={handleGenerateSchedule} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-12 py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-xl inline-flex items-center">
+                    <Play className="mr-2" fill="currentColor" /> 自動分配補位 ＆ 產生排程
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'schedule' && schedule.combined.length > 0 && (
+              <div className="animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">排程結果表</h2>
+                    <p className="text-slate-500 text-sm mt-1">系統已完成分流排程。您可手動微調時間或產生正式 PDF 表格。</p>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-3">
+                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                       <button onClick={() => { setViewMode('cards'); setIsEditingSchedule(false); }} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>梯次專屬卡片</button>
+                       <button onClick={() => setViewMode('table')} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>大會時間總表</button>
+                    </div>
+                    
+                    {!isEditingSchedule ? (
+                      <button onClick={() => { setViewMode('table'); setIsEditingSchedule(true); }} className="flex items-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all border border-indigo-200">
+                        <Edit2 size={18} className="mr-2" /> 微調
+                      </button>
+                    ) : (
+                      <button onClick={handleSaveScheduleEdit} className="flex items-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-all">
+                        <Save size={18} className="mr-2" /> 儲存
+                      </button>
+                    )}
+
+                    <button onClick={() => setShowCloudModal(true)} disabled={isEditingSchedule} className={`flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all ${isEditingSchedule ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'}`}>
+                      <CloudUpload size={18} className="mr-2" /> 雲端備份
+                    </button>
+
+                    <button onClick={handlePrintPDF} disabled={isEditingSchedule} className={`flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all ${isEditingSchedule ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-800 hover:bg-black text-white hover:shadow-lg'}`}>
+                      <Printer size={18} className="mr-2" /> 匯出 PDF
+                    </button>
+                  </div>
+                </div>
+
+                {viewMode === 'cards' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {schedule.grouped.map((info) => {
+                      const regionConfig = regions.find(r => r.name === info.region);
+                      const palette = regionConfig ? COLOR_PALETTE[regionConfig.colorIdx] : { bg: 'bg-slate-600', text: 'text-slate-800' };
+                      const hasCrossDept = info.allStudents.some(s => s.isCrossDept);
+
+                      return (
+                        <div key={info.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 group ${hasCrossDept ? 'border-orange-400 ring-2 ring-orange-100' : 'border-slate-200'}`}>
+                          <div className={`bg-gradient-to-br ${palette.bg} to-black/20 text-white p-5 relative overflow-hidden`}>
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                            <div className="flex justify-between items-start mb-2 relative z-10">
+                              <h3 className="text-xl font-bold tracking-tight">梯次：{info.id}</h3>
+                              <div className="flex gap-2">
+                                {hasCrossDept && (<span className="bg-orange-500/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold border border-orange-200/50 flex items-center"><AlertTriangle size={12} className="mr-1" /> 跨系</span>)}
+                                <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium border border-white/30">{info.region}區</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="p-6 flex-1 bg-slate-50/50">
+                            <div className="relative border-l-2 border-indigo-100 ml-3 space-y-5 pb-2">
+                              {info.events.map((ev, idx) => (
+                                <div key={idx} className="relative pl-6">
+                                  <span className={`absolute -left-[11px] top-1 h-5 w-5 rounded-full border-4 flex items-center justify-center ${ev.isRegistration ? 'bg-teal-500 border-teal-100' : (ev.isTransit ? 'bg-slate-200 border-white' : 'bg-indigo-500 border-indigo-100')}`}></span>
+                                  <div className={`text-sm font-bold mb-1 ${ev.isRegistration ? 'text-teal-600' : (ev.isTransit ? 'text-slate-400' : 'text-indigo-600')}`}>{ev.startTime} - {ev.endTime}</div>
+                                  
+                                  <div className={`rounded-xl border p-3 ${ev.isTransit ? 'bg-transparent border-transparent' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                    <div className="flex items-center justify-between">
+                                      <span className={`font-bold flex items-center ${ev.isRegistration ? 'text-teal-700' : (ev.isTransit ? 'text-slate-500' : 'text-slate-800')}`}>
+                                        {ev.type}
+                                        {ev.batchInfo && (<span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-md font-semibold border border-blue-100">{ev.batchInfo}</span>)}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1.5 flex items-center text-sm text-slate-500"><Map size={14} className="mr-1.5 opacity-70" /> {ev.room}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="bg-white p-5 border-t border-slate-100">
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-sm font-bold text-slate-700">大組名單</h4>
+                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{info.allStudents.length} 人</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                               {info.allStudents.map(s => (
+                                 <span key={s.id} className={`text-xs border px-2 py-1 rounded-md flex items-center ${s.isCrossDept ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                   {s.isCrossDept && <AlertTriangle size={10} className="mr-1" />}
+                                   {s.name} <span className="opacity-50 ml-0.5">{s.id.slice(-4)}</span>
+                                 </span>
+                               ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="bg-slate-800 text-white">
+                          <th className="p-4 font-semibold whitespace-nowrap">時間</th>
+                          <th className="p-4 font-semibold">梯次</th>
+                          <th className="p-4 font-semibold">項目</th>
+                          <th className="p-4 font-semibold">場地</th>
+                          <th className="p-4 font-semibold">帶位人員</th>
+                          <th className="p-4 font-semibold">學生名單 (末四碼)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {schedule.combined.map((item, idx) => {
+                          const regionConfig = regions.find(r => r.name === item.region);
+                          const tagColorClass = regionConfig 
+                            ? `${COLOR_PALETTE[regionConfig.colorIdx].light} ${COLOR_PALETTE[regionConfig.colorIdx].text} ${COLOR_PALETTE[regionConfig.colorIdx].border}` 
+                            : 'bg-indigo-100 border-indigo-200 text-indigo-800';
+                          const hasCrossDept = item.students?.some(s => s.isCrossDept);
+
+                          return (
+                            <tr key={idx} className={`transition-colors ${item.isRegistration ? 'bg-teal-50/50 hover:bg-teal-100/50' : (item.isTransit ? 'bg-slate-50 text-slate-500' : (hasCrossDept ? 'bg-orange-50/40 hover:bg-orange-100/60' : 'hover:bg-indigo-50/50 text-slate-700'))}`}>
+                              <td className="p-4 font-bold whitespace-nowrap">
+                                {isEditingSchedule ? (
+                                  <div className="flex items-center gap-1">
+                                    <input type="time" value={item.startTime} onChange={e => handleScheduleChange(idx, 'startTime', e.target.value)} className="border rounded px-1 py-0.5 w-[85px] bg-white text-black" />
+                                    <span>-</span>
+                                    <input type="time" value={item.endTime} onChange={e => handleScheduleChange(idx, 'endTime', e.target.value)} className="border rounded px-1 py-0.5 w-[85px] bg-white text-black" />
+                                  </div>
+                                ) : (
+                                  `${item.startTime} - ${item.endTime}`
+                                )}
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${item.isTransit ? 'bg-slate-200 border-slate-300 text-slate-600' : tagColorClass}`}>
+                                  {item.groupId}
+                                </span>
+                              </td>
+                              <td className={`p-4 font-bold ${item.isRegistration ? 'text-teal-700' : ''}`}>
+                                {item.type} {item.batchInfo ? <span className="text-blue-600 text-xs ml-1 bg-blue-50 px-1 rounded border border-blue-100">{item.batchInfo}</span> : ''}
+                              </td>
+                              <td className="p-4 font-medium">
+                                {isEditingSchedule ? (
+                                  <input type="text" value={item.room} onChange={e => handleScheduleChange(idx, 'room', e.target.value)} className="border rounded px-2 py-1 w-full bg-white text-black" />
+                                ) : ( item.room )}
+                              </td>
+                              <td className="p-4">
+                                {isEditingSchedule ? (
+                                  <input type="text" value={item.assistant} onChange={e => handleScheduleChange(idx, 'assistant', e.target.value)} className="border rounded px-2 py-1 w-full bg-white text-black font-bold" />
+                                ) : ( <span className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold">{item.assistant}</span> )}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {item.students?.map((s, i) => (
+                                    <span key={i} className={`text-xs px-2 py-0.5 rounded flex items-center ${item.isTransit ? '' : (s.isCrossDept ? 'bg-orange-100 text-orange-800 border border-orange-200 font-bold' : (item.isRegistration ? 'bg-teal-100 text-teal-800 border-teal-200' : 'bg-white border border-slate-200 shadow-sm'))}`}>
+                                      {s.isCrossDept && <AlertTriangle size={12} className="mr-1 text-orange-600" />}
+                                      {s.name} <span className="opacity-50 ml-0.5">{s.id.slice(-4)}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+
+      {schedule.combined.length > 0 && (
+        <div className="hidden print:block w-full bg-white text-black p-2 font-serif">
+          <div className="text-center mb-6 relative">
+             <h1 className="text-2xl font-bold mb-2 tracking-widest">114學年度 四技甄選 作業流程分配、細項</h1>
+             <p className="text-lg font-bold">※請老師及幫手們於 8:00 到校準備！</p>
+          </div>
+
+          <table className="w-full border-collapse border-[2px] border-black text-sm">
+            <thead>
+              <tr className="bg-gray-100 border-b-[2px] border-black">
+                <th className="border border-black p-3 text-center w-[12%]">時間</th>
+                <th className="border border-black p-3 text-center w-[15%]">負責人員</th>
+                <th className="border border-black p-3 text-center w-[20%]">項目與場地</th>
+                <th className="border border-black p-3 text-left w-[53%]">工作內容與學生名單</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedule.combined.map((item, idx) => (
+                <tr key={idx} className="border-b border-black">
+                  <td className="border border-black p-3 text-center font-bold text-base align-top whitespace-nowrap">
+                    {item.startTime}<br/>|<br/>{item.endTime}
+                  </td>
+                  <td className="border border-black p-3 text-center align-top font-bold text-gray-800">
+                    {item.assistant}
+                  </td>
+                  <td className="border border-black p-3 text-center align-top">
+                    <div className="font-bold text-base mb-2">{item.type} {item.batchInfo}</div>
+                    <div className="text-gray-700 bg-gray-100 border border-gray-300 inline-block px-2 py-1 rounded">
+                       {item.groupId}
+                    </div>
+                    <div className="mt-2 text-gray-800 font-semibold">{item.room}</div>
+                  </td>
+                  <td className="border border-black p-3 align-top">
+                    {getTaskDescription(item.type, item.students)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 text-right text-xs text-gray-500">
+             表單產生時間：{new Date().toLocaleString('zh-TW', { hour12: false })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
