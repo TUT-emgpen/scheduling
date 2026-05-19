@@ -1046,15 +1046,15 @@ const App = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-                    <table className="w-full text-left text-sm">
+                    <table className="min-w-[980px] w-max text-left text-sm">
                       <thead>
                         <tr className="bg-slate-800 text-white">
                           <th className="p-4 font-semibold whitespace-nowrap">時間</th>
-                          <th className="p-4 font-semibold">梯次</th>
-                          <th className="p-4 font-semibold">項目</th>
-                          <th className="p-4 font-semibold">場地</th>
-                          <th className="p-4 font-semibold">帶位人員</th>
-                          <th className="p-4 font-semibold">學生名單 (末四碼)</th>
+                          <th className="p-4 font-semibold whitespace-nowrap w-[110px]">梯次</th>
+                          <th className="p-4 font-semibold whitespace-nowrap w-[170px]">項目</th>
+                          <th className="p-4 font-semibold whitespace-nowrap min-w-[220px]">場地</th>
+                          <th className="p-4 font-semibold whitespace-nowrap w-[160px]">帶位人員</th>
+                          <th className="p-4 font-semibold whitespace-nowrap min-w-[260px]">學生名單 (末四碼)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
@@ -1078,8 +1078,8 @@ const App = () => {
                                   `${item.startTime} - ${item.endTime}`
                                 )}
                               </td>
-                              <td className="p-4">
-                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${item.isTransit ? 'bg-slate-200 border-slate-300 text-slate-600' : tagColorClass}`}>
+                              <td className="p-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-bold border ${item.isTransit ? 'bg-slate-200 border-slate-300 text-slate-600' : tagColorClass}`}>
                                   {item.groupId}
                                 </span>
                               </td>
@@ -1094,7 +1094,7 @@ const App = () => {
                               <td className="p-4">
                                 {isEditingSchedule ? (
                                   <input type="text" value={item.assistant} onChange={e => handleScheduleChange(idx, 'assistant', e.target.value)} className="border rounded px-2 py-1 w-full bg-white text-black font-bold" />
-                                ) : ( <span className="bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold">{item.assistant}</span> )}
+                                ) : ( <span className="inline-flex items-center whitespace-nowrap bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold">{item.assistant}</span> )}
                               </td>
                               <td className="p-4">
                                 <div className="flex flex-wrap gap-1.5">
