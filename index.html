@@ -22,7 +22,7 @@
     <script type="text/babel" data-type="module" data-presets="react">
       import React, { useState, useEffect } from 'react';
       import { createRoot } from 'react-dom/client';
-      import { Users, Clock, Settings, FileText, ChevronUp, ChevronDown, Plus, Trash2, MapPin, Play, Calendar, Map, CheckCircle2, ChevronRight, UserCheck, MousePointer2, AlertTriangle, ClipboardList, RefreshCw, UploadCloud, Printer, Edit2, Save, CloudUpload, Download, X } from 'lucide-react';
+      import { Users, Clock, Settings, FileText, ChevronUp, ChevronDown, Plus, Trash2, MapPin, Play, Calendar, Map, CheckCircle2, ChevronRight, UserCheck, MousePointer2, AlertTriangle, ClipboardList, RefreshCw, UploadCloud, Printer, CloudUpload, Download, X } from 'lucide-react';
 
 const ALL_CITIES = [
   '基隆市', '台北市', '新北市', '桃園市', '新竹市', '新竹縣', '宜蘭縣',
@@ -50,6 +50,26 @@ const COLOR_PALETTE = [
   { bg: 'bg-purple-500', text: 'text-purple-700', light: 'bg-purple-100', border: 'border-purple-500' },
 ];
 
+const ASSISTANT_COLOR_PALETTE = [
+  { headerFrom: 'from-emerald-500', headerTo: 'to-emerald-600', accentText: 'text-emerald-700', accentSoftBg: 'bg-emerald-50', accentBorder: 'border-emerald-200', dotBg: 'bg-emerald-500', dotBorder: 'border-emerald-100', lineBorder: 'border-emerald-100' },
+  { headerFrom: 'from-blue-500', headerTo: 'to-blue-600', accentText: 'text-blue-700', accentSoftBg: 'bg-blue-50', accentBorder: 'border-blue-200', dotBg: 'bg-blue-500', dotBorder: 'border-blue-100', lineBorder: 'border-blue-100' },
+  { headerFrom: 'from-violet-500', headerTo: 'to-violet-600', accentText: 'text-violet-700', accentSoftBg: 'bg-violet-50', accentBorder: 'border-violet-200', dotBg: 'bg-violet-500', dotBorder: 'border-violet-100', lineBorder: 'border-violet-100' },
+  { headerFrom: 'from-amber-500', headerTo: 'to-amber-600', accentText: 'text-amber-700', accentSoftBg: 'bg-amber-50', accentBorder: 'border-amber-200', dotBg: 'bg-amber-500', dotBorder: 'border-amber-100', lineBorder: 'border-amber-100' },
+  { headerFrom: 'from-rose-500', headerTo: 'to-rose-600', accentText: 'text-rose-700', accentSoftBg: 'bg-rose-50', accentBorder: 'border-rose-200', dotBg: 'bg-rose-500', dotBorder: 'border-rose-100', lineBorder: 'border-rose-100' },
+  { headerFrom: 'from-cyan-500', headerTo: 'to-cyan-600', accentText: 'text-cyan-700', accentSoftBg: 'bg-cyan-50', accentBorder: 'border-cyan-200', dotBg: 'bg-cyan-500', dotBorder: 'border-cyan-100', lineBorder: 'border-cyan-100' },
+];
+
+const ASSISTANT_NEUTRAL_STYLE = {
+  headerFrom: 'from-slate-500',
+  headerTo: 'to-slate-600',
+  accentText: 'text-slate-700',
+  accentSoftBg: 'bg-slate-100',
+  accentBorder: 'border-slate-200',
+  dotBg: 'bg-slate-500',
+  dotBorder: 'border-slate-100',
+  lineBorder: 'border-slate-100'
+};
+
 const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbwUAlCt0556Q7I8zkvP95OdHNYP9Ar-I9Y6xiHTiHzVF3Cs3_ABFefHeJwCJWIAetA/exec';
 
 const generateMockData = () => {
@@ -73,6 +93,13 @@ const generateMockSlotData = () => {
 };
 
 const App = () => {
+  const getAssistantColor = (assistantName) => {
+    const m = String(assistantName || '').match(/工讀生\s*([A-Z])/i);
+    if (!m) return ASSISTANT_NEUTRAL_STYLE;
+    const idx = (m[1].toUpperCase().charCodeAt(0) - 65) % ASSISTANT_COLOR_PALETTE.length;
+    return ASSISTANT_COLOR_PALETTE[Math.max(0, idx)];
+  };
+
   const [activeTab, setActiveTab] = useState('import');
   const [importMode, setImportMode] = useState('students'); 
   const [rawData, setRawData] = useState('');
@@ -81,7 +108,6 @@ const App = () => {
   const [students, setStudents] = useState([]);
   const [schedule, setSchedule] = useState({ combined: [], grouped: [] });
   const [viewMode, setViewMode] = useState('cards');
-  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   
   // 雲端存檔相關 State
   const [showCloudModal, setShowCloudModal] = useState(false);
@@ -282,39 +308,6 @@ const App = () => {
   const parseTime = (timeStr) => { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
   const formatTime = (minutes) => { const h = Math.floor(minutes / 60); const m = minutes % 60; return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; };
 
-  const handleScheduleChange = (idx, field, value) => {
-    const newCombined = [...schedule.combined];
-    newCombined[idx] = { ...newCombined[idx], [field]: value };
-    if (field === 'startTime') newCombined[idx].startTimeMins = parseTime(value);
-    setSchedule({ ...schedule, combined: newCombined });
-  };
-
-  const handleSaveScheduleEdit = () => {
-    const sortedCombined = [...schedule.combined].sort((a, b) => a.startTimeMins - b.startTimeMins);
-    const groupsMap = {};
-    sortedCombined.forEach(item => {
-      if (!groupsMap[item.groupId]) groupsMap[item.groupId] = { id: item.groupId, region: item.region, assistant: item.assistant, allStudents: [], events: [] };
-      groupsMap[item.groupId].events.push(item);
-      if (item.students && !item.isTransit && !item.isRegistration) {
-        item.students.forEach(s => {
-          if (!groupsMap[item.groupId].allStudents.find(ex => ex.id === s.id)) groupsMap[item.groupId].allStudents.push(s);
-        });
-      }
-    });
-
-    const groupedFlow = Object.values(groupsMap).map(g => {
-       g.events.sort((a, b) => a.startTimeMins - b.startTimeMins);
-       if (g.allStudents.length === 0) {
-          const regEvent = g.events.find(e => e.isRegistration);
-          if (regEvent && regEvent.students) g.allStudents = regEvent.students;
-       }
-       return g;
-    });
-
-    setSchedule({ combined: sortedCombined, grouped: groupedFlow });
-    setIsEditingSchedule(false);
-  };
-
   const handleGenerateSchedule = () => {
     if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
 
@@ -375,6 +368,7 @@ const App = () => {
     });
 
     const newSchedule = [];
+    const INTERVIEW_BREAK_MINUTES = 10;
     const lunchStart = parseTime(settings.lunchStart);
     const lunchEnd = parseTime(settings.lunchEnd);
     
@@ -396,7 +390,8 @@ const App = () => {
 
       let t = Math.max(slotEndTime, parseTime(settings.startTime));
       const P_TIME = settings.practiceMinutes;
-      const I_TIME = group.subGroups.length * settings.interviewMinutes;
+      const interviewBreakCount = group.subGroups.length > 1 ? 1 : 0;
+      const I_TIME = (group.subGroups.length * settings.interviewMinutes) + (interviewBreakCount * INTERVIEW_BREAK_MINUTES);
       const TR_TIME = settings.transitMinutes;
       const TOTAL_TIME = P_TIME + TR_TIME + I_TIME; 
 
@@ -418,17 +413,34 @@ const App = () => {
         let p1_room = practiceRoomAvailable.findIndex(freeTime => freeTime <= t);
         let i1_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= t + P_TIME + TR_TIME);
         let ast1 = assistantAvailable.findIndex(freeTime => freeTime <= t);
-
-        if (p1_room !== -1 && i1_room !== -1 && ast1 !== -1) {
-          bestSlot = { start: t, pattern: 'P-I', pRoom: p1_room, iRoom: i1_room, ast: ast1 }; break;
-        }
+        const pFirstOk = p1_room !== -1 && i1_room !== -1 && ast1 !== -1;
 
         let i2_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= t);
         let p2_room = practiceRoomAvailable.findIndex(freeTime => freeTime <= t + I_TIME + TR_TIME);
         let ast2 = assistantAvailable.findIndex(freeTime => freeTime <= t);
+        const iFirstOk = i2_room !== -1 && p2_room !== -1 && ast2 !== -1;
 
-        if (i2_room !== -1 && p2_room !== -1 && ast2 !== -1) {
-          bestSlot = { start: t, pattern: 'I-P', pRoom: p2_room, iRoom: i2_room, ast: ast2 }; break;
+        if (pFirstOk && iFirstOk) {
+          const minPracticeFree = Math.min(...practiceRoomAvailable);
+          const minInterviewFree = Math.min(...interviewRoomAvailable);
+          const preferInterviewFirst = minInterviewFree > minPracticeFree;
+
+          if (preferInterviewFirst) {
+            bestSlot = { start: t, pattern: 'I-P', pRoom: p2_room, iRoom: i2_room, ast: ast2 };
+          } else {
+            bestSlot = { start: t, pattern: 'P-I', pRoom: p1_room, iRoom: i1_room, ast: ast1 };
+          }
+          break;
+        }
+
+        if (pFirstOk) {
+          bestSlot = { start: t, pattern: 'P-I', pRoom: p1_room, iRoom: i1_room, ast: ast1 };
+          break;
+        }
+
+        if (iFirstOk) {
+          bestSlot = { start: t, pattern: 'I-P', pRoom: p2_room, iRoom: i2_room, ast: ast2 };
+          break;
         }
         t += 5; 
       }
@@ -447,6 +459,34 @@ const App = () => {
         });
       }
 
+      const appendInterviewFlow = (startTime) => {
+        let interviewTime = startTime;
+        const midpoint = Math.ceil(group.subGroups.length / 2);
+
+        group.subGroups.forEach((subGroup, idx) => {
+          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
+          newSchedule.push({
+            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
+            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+            startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + settings.interviewMinutes),
+            startTimeMins: interviewTime, students: subGroup
+          });
+          interviewTime += settings.interviewMinutes;
+
+          if (interviewBreakCount > 0 && idx === midpoint - 1 && idx < group.subGroups.length - 1) {
+            newSchedule.push({
+              groupId: group.id, region: group.region, type: '面試中場休息',
+              room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+              startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + INTERVIEW_BREAK_MINUTES),
+              startTimeMins: interviewTime, students: [], isTransit: true
+            });
+            interviewTime += INTERVIEW_BREAK_MINUTES;
+          }
+        });
+
+        return interviewTime;
+      };
+
       if (bestSlot.pattern === 'P-I') {
         newSchedule.push({
           groupId: group.id, region: group.region, type: '實作測驗',
@@ -464,31 +504,13 @@ const App = () => {
         });
         currentEventTime += TR_TIME;
 
-        group.subGroups.forEach((subGroup, idx) => {
-          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
-          newSchedule.push({
-            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
-            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
-            startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + settings.interviewMinutes),
-            startTimeMins: currentEventTime, students: subGroup
-          });
-          currentEventTime += settings.interviewMinutes;
-        });
+        currentEventTime = appendInterviewFlow(currentEventTime);
         practiceRoomAvailable[bestSlot.pRoom] = bestSlot.start + P_TIME;
         interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + TOTAL_TIME;
         assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
 
       } else {
-        group.subGroups.forEach((subGroup, idx) => {
-          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
-          newSchedule.push({
-            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
-            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
-            startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + settings.interviewMinutes),
-            startTimeMins: currentEventTime, students: subGroup
-          });
-          currentEventTime += settings.interviewMinutes;
-        });
+        currentEventTime = appendInterviewFlow(currentEventTime);
 
         newSchedule.push({
           groupId: group.id, region: group.region, type: '換場移動',
@@ -528,6 +550,11 @@ const App = () => {
           const regEvent = g.events.find(e => e.isRegistration);
           if (regEvent && regEvent.students) g.allStudents = regEvent.students;
        }
+       const leadEvent =
+         g.events.find(e => !e.isRegistration && /^工讀生\s*[A-Z]/.test(String(e.assistant || ''))) ||
+         g.events.find(e => /^工讀生\s*[A-Z]/.test(String(e.assistant || ''))) ||
+         g.events.find(e => e.assistant);
+       if (leadEvent) g.assistant = leadEvent.assistant;
        return g;
     });
 
@@ -845,9 +872,14 @@ const App = () => {
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center">已解析名單與意願確認</h2>
                     <p className="text-slate-500 text-sm mt-1">未選擇報到時段的學生，將在產生排程時<strong className="text-indigo-600">由系統智慧自動補位</strong>。</p>
                   </div>
-                  <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-200">
-                    總計 {students.length} 人
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={handleGenerateSchedule} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-all text-sm inline-flex items-center">
+                      <RefreshCw size={16} className="mr-2" /> 套用個人時段並重排
+                    </button>
+                    <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-200">
+                      總計 {students.length} 人
+                    </span>
+                  </div>
                 </div>
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
                   <table className="w-full text-left text-sm">
@@ -957,29 +989,23 @@ const App = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-800">排程結果表</h2>
-                    <p className="text-slate-500 text-sm mt-1">系統已完成分流排程。您可手動微調時間或產生正式 PDF 表格。</p>
+                    <p className="text-slate-500 text-sm mt-1">系統已完成分流排程。若要微調，請調整學生個人報到時段後重新產生排程。</p>
                   </div>
                   <div className="flex items-center flex-wrap gap-3">
                     <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                       <button onClick={() => { setViewMode('cards'); setIsEditingSchedule(false); }} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>梯次專屬卡片</button>
+                       <button onClick={() => { setViewMode('cards'); }} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>梯次專屬卡片</button>
                        <button onClick={() => setViewMode('table')} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>大會時間總表</button>
                     </div>
                     
-                    {!isEditingSchedule ? (
-                      <button onClick={() => { setViewMode('table'); setIsEditingSchedule(true); }} className="flex items-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all border border-indigo-200">
-                        <Edit2 size={18} className="mr-2" /> 微調
-                      </button>
-                    ) : (
-                      <button onClick={handleSaveScheduleEdit} className="flex items-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-all">
-                        <Save size={18} className="mr-2" /> 儲存
-                      </button>
-                    )}
+                    <button onClick={() => setActiveTab('students')} className="flex items-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all border border-indigo-200">
+                      <UserCheck size={18} className="mr-2" /> 微調個人時段
+                    </button>
 
-                    <button onClick={() => setShowCloudModal(true)} disabled={isEditingSchedule} className={`flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all ${isEditingSchedule ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'}`}>
+                    <button onClick={() => setShowCloudModal(true)} className="flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg">
                       <CloudUpload size={18} className="mr-2" /> 雲端備份
                     </button>
 
-                    <button onClick={handlePrintPDF} disabled={isEditingSchedule} className={`flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all ${isEditingSchedule ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-800 hover:bg-black text-white hover:shadow-lg'}`}>
+                    <button onClick={handlePrintPDF} className="flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all bg-gray-800 hover:bg-black text-white hover:shadow-lg">
                       <Printer size={18} className="mr-2" /> 匯出 PDF
                     </button>
                   </div>
@@ -988,16 +1014,24 @@ const App = () => {
                 {viewMode === 'cards' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {schedule.grouped.map((info) => {
-                      const regionConfig = regions.find(r => r.name === info.region);
-                      const palette = regionConfig ? COLOR_PALETTE[regionConfig.colorIdx] : { bg: 'bg-slate-600', text: 'text-slate-800' };
+                      const leadAssistant =
+                        info.events.find(e => !e.isRegistration && /^工讀生\s*[A-Z]/.test(String(e.assistant || '')))?.assistant ||
+                        info.events.find(e => /^工讀生\s*[A-Z]/.test(String(e.assistant || '')))?.assistant ||
+                        info.assistant;
+                      const assistantColor = getAssistantColor(leadAssistant);
                       const hasCrossDept = info.allStudents.some(s => s.isCrossDept);
 
                       return (
                         <div key={info.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 group ${hasCrossDept ? 'border-orange-400 ring-2 ring-orange-100' : 'border-slate-200'}`}>
-                          <div className={`bg-gradient-to-br ${palette.bg} to-black/20 text-white p-5 relative overflow-hidden`}>
+                          <div className={`bg-gradient-to-br ${assistantColor.headerFrom} ${assistantColor.headerTo} to-black/20 text-white p-5 relative overflow-hidden`}>
                             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                             <div className="flex justify-between items-start mb-2 relative z-10">
-                              <h3 className="text-xl font-bold tracking-tight">梯次：{info.id}</h3>
+                              <div>
+                                <h3 className="text-xl font-bold tracking-tight">梯次：{info.id}</h3>
+                                <p className="mt-2 text-sm font-bold bg-white/20 border border-white/30 rounded-lg px-2.5 py-1 inline-flex items-center">
+                                  帶隊：{leadAssistant || '未指派'}
+                                </p>
+                              </div>
                               <div className="flex gap-2">
                                 {hasCrossDept && (<span className="bg-orange-500/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold border border-orange-200/50 flex items-center"><AlertTriangle size={12} className="mr-1" /> 跨系</span>)}
                                 <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium border border-white/30">{info.region}區</span>
@@ -1006,11 +1040,11 @@ const App = () => {
                           </div>
                           
                           <div className="p-6 flex-1 bg-slate-50/50">
-                            <div className="relative border-l-2 border-indigo-100 ml-3 space-y-5 pb-2">
+                            <div className={`relative border-l-2 ${assistantColor.lineBorder} ml-3 space-y-5 pb-2`}>
                               {info.events.map((ev, idx) => (
                                 <div key={idx} className="relative pl-6">
-                                  <span className={`absolute -left-[11px] top-1 h-5 w-5 rounded-full border-4 flex items-center justify-center ${ev.isRegistration ? 'bg-teal-500 border-teal-100' : (ev.isTransit ? 'bg-slate-200 border-white' : 'bg-indigo-500 border-indigo-100')}`}></span>
-                                  <div className={`text-sm font-bold mb-1 ${ev.isRegistration ? 'text-teal-600' : (ev.isTransit ? 'text-slate-400' : 'text-indigo-600')}`}>{ev.startTime} - {ev.endTime}</div>
+                                  <span className={`absolute -left-[11px] top-1 h-5 w-5 rounded-full border-4 flex items-center justify-center ${ev.isRegistration ? 'bg-teal-500 border-teal-100' : (ev.isTransit ? 'bg-slate-200 border-white' : `${assistantColor.dotBg} ${assistantColor.dotBorder}`)}`}></span>
+                                  <div className={`text-sm font-bold mb-1 ${ev.isRegistration ? 'text-teal-600' : (ev.isTransit ? 'text-slate-400' : assistantColor.accentText)}`}>{ev.startTime} - {ev.endTime}</div>
                                   
                                   <div className={`rounded-xl border p-3 ${ev.isTransit ? 'bg-transparent border-transparent' : 'bg-white border-slate-200 shadow-sm'}`}>
                                     <div className="flex items-center justify-between">
@@ -1029,7 +1063,7 @@ const App = () => {
                           <div className="bg-white p-5 border-t border-slate-100">
                             <div className="flex justify-between items-center mb-3">
                               <h4 className="text-sm font-bold text-slate-700">大組名單</h4>
-                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{info.allStudents.length} 人</span>
+                              <span className={`text-xs font-bold ${assistantColor.accentText} ${assistantColor.accentSoftBg} border ${assistantColor.accentBorder} px-2 py-1 rounded-md`}>{info.allStudents.length} 人</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                                {info.allStudents.map(s => (
@@ -1054,7 +1088,7 @@ const App = () => {
                           <th className="p-4 font-semibold whitespace-nowrap w-[170px]">項目</th>
                           <th className="p-4 font-semibold whitespace-nowrap min-w-[220px]">場地</th>
                           <th className="p-4 font-semibold whitespace-nowrap w-[160px]">帶位人員</th>
-                          <th className="p-4 font-semibold whitespace-nowrap min-w-[260px]">學生名單 (末四碼)</th>
+                          <th className="p-4 font-semibold whitespace-nowrap min-w-[360px]">學生名單 (末四碼)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
@@ -1063,20 +1097,13 @@ const App = () => {
                           const tagColorClass = regionConfig 
                             ? `${COLOR_PALETTE[regionConfig.colorIdx].light} ${COLOR_PALETTE[regionConfig.colorIdx].text} ${COLOR_PALETTE[regionConfig.colorIdx].border}` 
                             : 'bg-indigo-100 border-indigo-200 text-indigo-800';
+                          const assistantColor = getAssistantColor(item.assistant);
                           const hasCrossDept = item.students?.some(s => s.isCrossDept);
 
                           return (
                             <tr key={idx} className={`transition-colors ${item.isRegistration ? 'bg-teal-50/50 hover:bg-teal-100/50' : (item.isTransit ? 'bg-slate-50 text-slate-500' : (hasCrossDept ? 'bg-orange-50/40 hover:bg-orange-100/60' : 'hover:bg-indigo-50/50 text-slate-700'))}`}>
                               <td className="p-4 font-bold whitespace-nowrap">
-                                {isEditingSchedule ? (
-                                  <div className="flex items-center gap-1">
-                                    <input type="time" value={item.startTime} onChange={e => handleScheduleChange(idx, 'startTime', e.target.value)} className="border rounded px-1 py-0.5 w-[85px] bg-white text-black" />
-                                    <span>-</span>
-                                    <input type="time" value={item.endTime} onChange={e => handleScheduleChange(idx, 'endTime', e.target.value)} className="border rounded px-1 py-0.5 w-[85px] bg-white text-black" />
-                                  </div>
-                                ) : (
-                                  `${item.startTime} - ${item.endTime}`
-                                )}
+                                {`${item.startTime} - ${item.endTime}`}
                               </td>
                               <td className="p-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-bold border ${item.isTransit ? 'bg-slate-200 border-slate-300 text-slate-600' : tagColorClass}`}>
@@ -1087,19 +1114,15 @@ const App = () => {
                                 {item.type} {item.batchInfo ? <span className="text-blue-600 text-xs ml-1 bg-blue-50 px-1 rounded border border-blue-100">{item.batchInfo}</span> : ''}
                               </td>
                               <td className="p-4 font-medium">
-                                {isEditingSchedule ? (
-                                  <input type="text" value={item.room} onChange={e => handleScheduleChange(idx, 'room', e.target.value)} className="border rounded px-2 py-1 w-full bg-white text-black" />
-                                ) : ( item.room )}
+                                {item.room}
                               </td>
                               <td className="p-4">
-                                {isEditingSchedule ? (
-                                  <input type="text" value={item.assistant} onChange={e => handleScheduleChange(idx, 'assistant', e.target.value)} className="border rounded px-2 py-1 w-full bg-white text-black font-bold" />
-                                ) : ( <span className="inline-flex items-center whitespace-nowrap bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold">{item.assistant}</span> )}
+                                <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-bold border ${assistantColor.accentSoftBg} ${assistantColor.accentText} ${assistantColor.accentBorder}`}>{item.assistant}</span>
                               </td>
-                              <td className="p-4">
-                                <div className="flex flex-wrap gap-1.5">
+                              <td className="p-4 align-top">
+                                <div className="grid w-full grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
                                   {item.students?.map((s, i) => (
-                                    <span key={i} className={`text-xs px-2 py-0.5 rounded flex items-center ${item.isTransit ? '' : (s.isCrossDept ? 'bg-orange-100 text-orange-800 border border-orange-200 font-bold' : (item.isRegistration ? 'bg-teal-100 text-teal-800 border-teal-200' : 'bg-white border border-slate-200 shadow-sm'))}`}>
+                                    <span key={i} className={`text-xs px-2 py-0.5 rounded inline-flex items-center w-fit max-w-full ${item.isTransit ? '' : (s.isCrossDept ? 'bg-orange-100 text-orange-800 border border-orange-200 font-bold' : (item.isRegistration ? 'bg-teal-100 text-teal-800 border-teal-200' : 'bg-white border border-slate-200 shadow-sm'))}`}>
                                       {s.isCrossDept && <AlertTriangle size={12} className="mr-1 text-orange-600" />}
                                       {s.name} <span className="opacity-50 ml-0.5">{s.id.slice(-4)}</span>
                                     </span>
