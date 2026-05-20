@@ -22,7 +22,7 @@
     <script type="text/babel" data-type="module" data-presets="react">
       import React, { useState, useEffect } from 'react';
       import { createRoot } from 'react-dom/client';
-      import { Users, Clock, Settings, FileText, ChevronUp, ChevronDown, Plus, Trash2, MapPin, Play, Calendar, Map, CheckCircle2, ChevronRight, UserCheck, MousePointer2, AlertTriangle, ClipboardList, RefreshCw, UploadCloud, Printer, CloudUpload, Download, X } from 'lucide-react';
+      import { Users, Clock, Settings, FileText, ChevronUp, ChevronDown, Plus, Trash2, MapPin, Play, Calendar, Map as MapIcon, CheckCircle2, ChevronRight, UserCheck, MousePointer2, AlertTriangle, ClipboardList, RefreshCw, UploadCloud, Printer, CloudUpload, Download, X } from 'lucide-react';
 
 const ALL_CITIES = [
   '基隆市', '台北市', '新北市', '桃園市', '新竹市', '新竹縣', '宜蘭縣',
@@ -93,6 +93,39 @@ const generateMockSlotData = () => {
 };
 
 const App = () => {
+  const getSafeStorage = () => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const s = window.localStorage;
+      const k = '__scheduler_storage_probe__';
+      s.setItem(k, '1');
+      s.removeItem(k);
+      return s;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const safeStorageGet = (key) => {
+    try {
+      const s = getSafeStorage();
+      return s ? s.getItem(key) : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const safeStorageSet = (key, value) => {
+    try {
+      const s = getSafeStorage();
+      if (!s) return false;
+      s.setItem(key, value);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   const ensureScheduleShape = (rawSchedule) => {
     if (!rawSchedule || typeof rawSchedule !== 'object') {
       return { combined: [], grouped: [] };
@@ -206,7 +239,7 @@ const App = () => {
       document.body.appendChild(script);
     }
 
-    const savedData = localStorage.getItem('scheduleSystemData');
+    const savedData = safeStorageGet('scheduleSystemData');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -237,7 +270,7 @@ const App = () => {
         students, schedule, settings, registrationSlots, regions, cloudUrl,
         autoBackupEnabled, autoBackupMinutes, lastCloudSyncAt
       };
-      localStorage.setItem('scheduleSystemData', JSON.stringify(dataToSave));
+      safeStorageSet('scheduleSystemData', JSON.stringify(dataToSave));
     }
   }, [students, schedule, settings, registrationSlots, regions, cloudUrl, autoBackupEnabled, autoBackupMinutes, lastCloudSyncAt, isInitialized]);
 
@@ -1370,7 +1403,7 @@ const App = () => {
                                         {ev.batchInfo && (<span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-md font-semibold border border-blue-100">{ev.batchInfo}</span>)}
                                       </span>
                                     </div>
-                                    <div className="mt-1.5 flex items-center text-sm text-slate-500"><Map size={14} className="mr-1.5 opacity-70" /> {ev.room}</div>
+                                    <div className="mt-1.5 flex items-center text-sm text-slate-500"><MapIcon size={14} className="mr-1.5 opacity-70" /> {ev.room}</div>
                                   </div>
                                 </div>
                               ))}
@@ -1527,9 +1560,45 @@ const App = () => {
   );
 };
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: '', stack: '' };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, message: String(error?.message || error || '未知錯誤') };
+  }
+
+  componentDidCatch(error, info) {
+    this.setState({
+      stack: String(info?.componentStack || '')
+    });
+    console.error('UI Render Error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-100 p-6">
+          <div className="max-w-4xl mx-auto bg-white border border-rose-200 rounded-2xl shadow p-6">
+            <h1 className="text-2xl font-bold text-rose-700 mb-3">畫面載入失敗</h1>
+            <p className="text-slate-700 mb-2">已攔截到前端錯誤，請把下面訊息貼給我，我會立即修正。</p>
+            <pre className="text-xs bg-rose-50 border border-rose-200 rounded-lg p-3 overflow-auto whitespace-pre-wrap">{this.state.message}</pre>
+            {this.state.stack && (
+              <pre className="mt-3 text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 overflow-auto whitespace-pre-wrap">{this.state.stack}</pre>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 
       const root = createRoot(document.getElementById('root'));
-      root.render(<App />);
+      root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
   </body>
 </html>
