@@ -326,8 +326,7 @@ const App = () => {
     currentStudents = currentStudents.map(s => {
       if (s.preferredSlot) { return { ...s, assignedSlot: s.preferredSlot }; } 
       else {
-        let possibleSlots = [1, 2, 3, 4];
-        if (s.region === '南部' || s.region === '未分配 (其他)') possibleSlots = [2, 3, 4];
+        const possibleSlots = [1, 2, 3, 4];
         let minSlot = possibleSlots[0];
         for (let i = 1; i < possibleSlots.length; i++) {
           if (slotCounts[possibleSlots[i]] < slotCounts[minSlot]) minSlot = possibleSlots[i];
