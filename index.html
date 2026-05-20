@@ -500,6 +500,8 @@ const App = () => {
       return `實作教室 ${roomIndexes.map(i => i + 1).join('、')}`;
     };
 
+    const failedGroups = [];
+
     allGroups.forEach(group => {
       const slotConfig = registrationSlots.find(s => Number(s.id) === group.slotId);
       if (!slotConfig) return;
@@ -511,13 +513,6 @@ const App = () => {
         alert(`警告：梯次 ${group.id} 需要 ${requiredPracticeRooms} 間實作教室，但目前只設定 ${settings.practiceRooms} 間。\n請提高每間容量或增加實作教室數後再重排。`);
         return;
       }
-
-      newSchedule.push({
-        groupId: group.id, region: group.region, type: '📝 報到與身分查驗',
-        room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
-        startTime: formatTime(slotStartTime), endTime: formatTime(slotEndTime),
-        startTimeMins: slotStartTime, students: group.students, isRegistration: true
-      });
 
       let t = Math.max(slotEndTime, parseTime(settings.startTime));
       const P_TIME = settings.practiceMinutes;
@@ -555,15 +550,19 @@ const App = () => {
           let ast2 = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
           const iFirstOk = i2_room !== -1 && !!p2_rooms && ast2 !== -1;
 
-          if (group.preferredPattern === 'P-I' && pFirstOk) {
-            found = { start: cursor, pattern: 'P-I', pRooms: p1_rooms, iRoom: i1_room, ast: ast1 };
-            break;
-          }
-
-          if (group.preferredPattern === 'I-P' && iFirstOk) {
-            found = { start: cursor, pattern: 'I-P', pRooms: p2_rooms, iRoom: i2_room, ast: ast2 };
-            break;
-          }
+          const preferredFirst = group.preferredPattern === 'I-P' ? 'I-P' : 'P-I';
+          const fallbackSecond = preferredFirst === 'I-P' ? 'P-I' : 'I-P';
+          const choosePattern = (pattern) => {
+            if (pattern === 'P-I' && pFirstOk) {
+              return { start: cursor, pattern: 'P-I', pRooms: p1_rooms, iRoom: i1_room, ast: ast1 };
+            }
+            if (pattern === 'I-P' && iFirstOk) {
+              return { start: cursor, pattern: 'I-P', pRooms: p2_rooms, iRoom: i2_room, ast: ast2 };
+            }
+            return null;
+          };
+          found = choosePattern(preferredFirst) || choosePattern(fallbackSecond);
+          if (found) break;
           cursor += 5; 
         }
 
@@ -572,9 +571,16 @@ const App = () => {
 
       let bestSlot = findBestSlot(MAX_WAIT_AFTER_CHECKIN_MINUTES);
       if (!bestSlot) {
-        alert(`警告：梯次 ${group.id} 在報到後 ${MAX_WAIT_AFTER_CHECKIN_MINUTES} 分鐘內無法排入第一個活動。\n請增加場地/人力、調整報到時段，或分散學生時段後再重排。`);
+        failedGroups.push(group.id);
         return;
       }
+
+      newSchedule.push({
+        groupId: group.id, region: group.region, type: '📝 報到與身分查驗',
+        room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
+        startTime: formatTime(slotStartTime), endTime: formatTime(slotEndTime),
+        startTimeMins: slotStartTime, students: group.students, isRegistration: true
+      });
 
       const assistantName = `工讀生 ${String.fromCharCode(65 + bestSlot.ast)}`; 
       let currentEventTime = bestSlot.start;
@@ -690,6 +696,11 @@ const App = () => {
         assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
       }
     });
+
+    if (failedGroups.length > 0) {
+      alert(`以下隊伍在報到後 ${MAX_WAIT_AFTER_CHECKIN_MINUTES} 分鐘內無法排入第一個活動：\n${failedGroups.join('、')}\n\n請增加場地/人力，或調整學生報到時段後再重排。`);
+      return;
+    }
 
     const combinedSchedule = [...newSchedule].sort((a, b) => a.startTimeMins - b.startTimeMins);
     const groupsMap = {};
