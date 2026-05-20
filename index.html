@@ -93,6 +93,16 @@ const generateMockSlotData = () => {
 };
 
 const App = () => {
+  const ensureScheduleShape = (rawSchedule) => {
+    if (!rawSchedule || typeof rawSchedule !== 'object') {
+      return { combined: [], grouped: [] };
+    }
+    return {
+      combined: Array.isArray(rawSchedule.combined) ? rawSchedule.combined : [],
+      grouped: Array.isArray(rawSchedule.grouped) ? rawSchedule.grouped : []
+    };
+  };
+
   const ensureStudentCheckinNos = (list) => {
     return (list || []).map((s, idx) => ({
       ...s,
@@ -201,7 +211,7 @@ const App = () => {
       try {
         const parsed = JSON.parse(savedData);
         if (parsed.students) setStudents(ensureStudentCheckinNos(parsed.students));
-        if (parsed.schedule) setSchedule(parsed.schedule);
+        if (parsed.schedule) setSchedule(ensureScheduleShape(parsed.schedule));
         if (parsed.settings) setSettings(parsed.settings);
         if (parsed.registrationSlots) setRegistrationSlots(parsed.registrationSlots);
         if (parsed.regions) setRegions(parsed.regions);
@@ -850,7 +860,7 @@ const App = () => {
 
       const cloudData = json.data;
       if (cloudData.students) setStudents(ensureStudentCheckinNos(cloudData.students));
-      if (cloudData.schedule) setSchedule(cloudData.schedule);
+      if (cloudData.schedule) setSchedule(ensureScheduleShape(cloudData.schedule));
       if (cloudData.settings) setSettings(cloudData.settings);
       if (cloudData.registrationSlots) setRegistrationSlots(cloudData.registrationSlots);
       if (cloudData.regions) setRegions(cloudData.regions);
@@ -961,7 +971,7 @@ const App = () => {
       .map((row) => ({ ...row, mergedEntries: mergeEntries(row.entries) }));
   };
 
-  const printRows = buildPrintRows(schedule.combined);
+  const printRows = buildPrintRows(Array.isArray(schedule?.combined) ? schedule.combined : []);
 
   return (
     <>
