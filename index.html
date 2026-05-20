@@ -142,6 +142,36 @@ const App = () => {
   const [activeRegionId, setActiveRegionId] = useState(1);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  const addRegistrationSlot = () => {
+    const sorted = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    const last = sorted[sorted.length - 1];
+    const nextId = registrationSlots.reduce((m, s) => Math.max(m, s.id), 0) + 1;
+    let nextStart = '17:00';
+    let nextEnd = '17:30';
+    if (last) {
+      const lastStart = parseTime(last.start);
+      const lastEnd = parseTime(last.end);
+      const len = Math.max(10, lastEnd - lastStart);
+      const newStart = Math.min(23 * 60 + 30, lastEnd + 30);
+      const newEnd = Math.min(23 * 60 + 59, newStart + len);
+      nextStart = formatTime(newStart);
+      nextEnd = formatTime(newEnd);
+    }
+    setRegistrationSlots([...registrationSlots, { id: nextId, start: nextStart, end: nextEnd, name: `時段 ${registrationSlots.length + 1}` }]);
+  };
+
+  const removeRegistrationSlot = (slotId) => {
+    if (registrationSlots.length <= 1) return;
+    const kept = registrationSlots.filter(s => s.id !== slotId);
+    setRegistrationSlots(kept.map((s, idx) => ({ ...s, name: `時段 ${idx + 1}` })));
+    setStudents(prev => prev.map(st => {
+      if (st.preferredSlot === slotId || st.assignedSlot === slotId) {
+        return { ...st, preferredSlot: null, assignedSlot: null };
+      }
+      return st;
+    }));
+  };
+
   // 系統初始化：從 LocalStorage 載入上次的資料
   useEffect(() => { 
     if (!window.XLSX) {
@@ -281,6 +311,7 @@ const App = () => {
     let startIndex = isNaN(parseInt(lines[0].split(',')[0])) ? 1 : 0;
     let matchCount = 0;
     const updatedStudents = [...students];
+    const validSlotIds = new Set(registrationSlots.map(s => Number(s.id)));
 
     for (let i = startIndex; i < lines.length; i++) {
       const parts = lines[i].split(','); 
@@ -288,7 +319,7 @@ const App = () => {
       const id = parts[0]?.trim();
       const slotNum = parseInt(parts[1]?.trim());
 
-      if (id && !isNaN(slotNum) && slotNum >= 1 && slotNum <= 4) {
+      if (id && !isNaN(slotNum) && validSlotIds.has(slotNum)) {
         const studentIndex = updatedStudents.findIndex(s => s.id === id);
         if (studentIndex !== -1) {
           updatedStudents[studentIndex].preferredSlot = slotNum;
@@ -318,15 +349,21 @@ const App = () => {
 
   const handleGenerateSchedule = () => {
     if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
+    if (registrationSlots.length === 0) { alert("請至少設定一個報到時段。"); return; }
 
     let currentStudents = [...students];
-    let slotCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    currentStudents.forEach(s => { if (s.preferredSlot) slotCounts[s.preferredSlot]++; });
+    const sortedSlots = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    const slotIds = sortedSlots.map(s => Number(s.id));
+    const slotCounts = Object.fromEntries(slotIds.map(id => [id, 0]));
+    currentStudents.forEach(s => {
+      if (s.preferredSlot && slotCounts[s.preferredSlot] != null) slotCounts[s.preferredSlot]++;
+    });
 
     currentStudents = currentStudents.map(s => {
       if (s.preferredSlot) { return { ...s, assignedSlot: s.preferredSlot }; } 
       else {
-        const possibleSlots = [1, 2, 3, 4];
+        const possibleSlots = slotIds;
+        if (possibleSlots.length === 0) return { ...s, assignedSlot: null };
         let minSlot = possibleSlots[0];
         for (let i = 1; i < possibleSlots.length; i++) {
           if (slotCounts[possibleSlots[i]] < slotCounts[minSlot]) minSlot = possibleSlots[i];
@@ -365,7 +402,7 @@ const App = () => {
     };
 
     let allGroups = [];
-    [1, 2, 3, 4].forEach(slotId => {
+    slotIds.forEach(slotId => {
        const slotStudents = currentStudents.filter(s => s.assignedSlot === slotId);
        regions.forEach(config => {
          const regStudents = slotStudents.filter(s => s.region === config.name);
@@ -373,6 +410,11 @@ const App = () => {
        });
        const otherStudents = slotStudents.filter(s => s.region === '未分配 (其他)');
        if (otherStudents.length > 0) allGroups = allGroups.concat(createGroups(otherStudents, slotId, '其'));
+    });
+    allGroups.sort((a, b) => {
+      if (a.slotId !== b.slotId) return slotIds.indexOf(a.slotId) - slotIds.indexOf(b.slotId);
+      if (a.subGroups.length !== b.subGroups.length) return a.subGroups.length - b.subGroups.length;
+      return a.students.length - b.students.length;
     });
 
     const newSchedule = [];
@@ -1031,11 +1073,21 @@ const App = () => {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                   <div className="lg:col-span-2 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-                    <h3 className="font-bold text-slate-800 mb-4 flex items-center text-lg"><Clock className="mr-2 text-indigo-500" size={20} /> 四階段報到時段</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-slate-800 flex items-center text-lg"><Clock className="mr-2 text-indigo-500" size={20} /> 報到時段設定</h3>
+                      <button onClick={addRegistrationSlot} className="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-sm font-bold hover:bg-indigo-100 transition-colors">
+                        <Plus size={14} className="mr-1" /> 新增時段
+                      </button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {registrationSlots.map((slot, index) => (
                         <div key={slot.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-center">
-                          <label className="text-sm font-bold text-indigo-800 mb-2">{slot.name}</label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-bold text-indigo-800">{slot.name}</label>
+                            <button onClick={() => removeRegistrationSlot(slot.id)} disabled={registrationSlots.length <= 1} className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold border ${registrationSlots.length <= 1 ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'}`}>
+                              <Trash2 size={12} className="mr-1" /> 刪除
+                            </button>
+                          </div>
                           <div className="flex items-center gap-2">
                             <input type="time" value={slot.start} onChange={e => { const newSlots = [...registrationSlots]; newSlots[index].start = e.target.value; setRegistrationSlots(newSlots); }} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold outline-none focus:border-indigo-500" />
                             <span className="text-slate-400">-</span>
