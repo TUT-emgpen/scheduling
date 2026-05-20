@@ -351,6 +351,25 @@ const App = () => {
     if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
     if (registrationSlots.length === 0) { alert("請至少設定一個報到時段。"); return; }
 
+    const ROUND_COUNT = 4;
+    const TIERS_PER_ROUND = 2;
+    const BASE_TEAMS_PER_TIER = 2;
+    const GROUPS_PER_TEAM = 2;
+    const STUDENTS_PER_GROUP = 5;
+    const assistantsCount = Math.max(1, Number(settings.assistantsCount || 1));
+    if (assistantsCount < TIERS_PER_ROUND * BASE_TEAMS_PER_TIER) {
+      alert(`此模式需至少 ${TIERS_PER_ROUND * BASE_TEAMS_PER_TIER} 位工讀生，才能達成「一位工讀生帶一隊」。`);
+      return;
+    }
+    const teamsPerTier = BASE_TEAMS_PER_TIER + Math.floor(Math.max(0, assistantsCount - (TIERS_PER_ROUND * BASE_TEAMS_PER_TIER)) / TIERS_PER_ROUND);
+    const STUDENTS_PER_TIER = teamsPerTier * GROUPS_PER_TEAM * STUDENTS_PER_GROUP;
+    const STUDENTS_PER_ROUND = TIERS_PER_ROUND * STUDENTS_PER_TIER;
+
+    if (registrationSlots.length !== ROUND_COUNT) {
+      alert(`目前設定了 ${registrationSlots.length} 個報到時段。\n此模式固定為一天 ${ROUND_COUNT} 輪，請先將報到時段調整為 ${ROUND_COUNT} 個後再產生排程。`);
+      return;
+    }
+
     let currentStudents = [...students];
     const sortedSlots = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
     const slotIds = sortedSlots.map(s => Number(s.id));
@@ -374,47 +393,85 @@ const App = () => {
     });
     setStudents(currentStudents); 
 
-    const createGroups = (studentsArray, slotId, regionPrefix) => {
-      const groups = [];
-      let groupId = 1;
-      const maxPracticeGroupSize = Math.max(1, Number(settings.groupSize || 1)) * Math.max(1, Number(settings.practiceRooms || 1));
+    const overloadedSlots = sortedSlots
+      .map(slot => {
+        const count = currentStudents.filter(s => s.assignedSlot === Number(slot.id)).length;
+        return { slot, count };
+      })
+      .filter(({ count }) => count > STUDENTS_PER_ROUND);
+    if (overloadedSlots.length > 0) {
+      const msg = overloadedSlots.map(({ slot, count }) => `${slot.name}：${count} 人（上限 ${STUDENTS_PER_ROUND}）`).join('\n');
+      alert(`固定四輪模式下，每輪最多 ${STUDENTS_PER_ROUND} 人。\n以下輪次超過上限：\n${msg}\n\n請調整學生報到時段後再重排。`);
+      return;
+    }
 
-      for (let i = 0; i < studentsArray.length; ) {
-        let chunkSize = maxPracticeGroupSize;
-        let remaining = studentsArray.length - i;
-        // 合併寬限邏輯
-        if (remaining - chunkSize > 0 && remaining - chunkSize <= settings.groupTolerance) {
-          chunkSize = remaining;
-        } else if (remaining < chunkSize) {
-          chunkSize = remaining;
-        }
-
-        const currentGroup = studentsArray.slice(i, i + chunkSize);
-        const subGroups = [];
-        for (let j = 0; j < currentGroup.length; j += settings.interviewBatchSize) {
-          subGroups.push(currentGroup.slice(j, j + settings.interviewBatchSize));
-        }
-
-        groups.push({ id: `T${slotId}-${regionPrefix}-${groupId}`, slotId: slotId, students: currentGroup, subGroups: subGroups, region: currentGroup[0].region });
-        i += chunkSize; groupId++;
-      }
-      return groups;
+    const getMainRegion = (studentsArray) => {
+      if (studentsArray.length === 0) return '未分配 (其他)';
+      const regionCounter = {};
+      studentsArray.forEach(s => {
+        regionCounter[s.region] = (regionCounter[s.region] || 0) + 1;
+      });
+      return Object.entries(regionCounter).sort((a, b) => b[1] - a[1])[0][0];
     };
 
-    let allGroups = [];
-    slotIds.forEach(slotId => {
-       const slotStudents = currentStudents.filter(s => s.assignedSlot === slotId);
-       regions.forEach(config => {
-         const regStudents = slotStudents.filter(s => s.region === config.name);
-         allGroups = allGroups.concat(createGroups(regStudents, slotId, config.name.charAt(0)));
-       });
-       const otherStudents = slotStudents.filter(s => s.region === '未分配 (其他)');
-       if (otherStudents.length > 0) allGroups = allGroups.concat(createGroups(otherStudents, slotId, '其'));
+    const buildTierSubGroups = (tierStudents, teamsCount) => {
+      const subGroups = [];
+      for (let teamIdx = 0; teamIdx < teamsCount; teamIdx++) {
+        for (let groupIdx = 0; groupIdx < GROUPS_PER_TEAM; groupIdx++) {
+          const groupOrder = (teamIdx * GROUPS_PER_TEAM) + groupIdx;
+          const startIndex = groupOrder * STUDENTS_PER_GROUP;
+          const members = tierStudents.slice(startIndex, startIndex + STUDENTS_PER_GROUP);
+          if (members.length === 0) continue;
+          subGroups.push({
+            label: `第 ${teamIdx + 1} 隊・第 ${groupIdx + 1} 組`,
+            team: teamIdx + 1,
+            group: groupIdx + 1,
+            students: members
+          });
+        }
+      }
+      return subGroups;
+    };
+
+    const allGroups = [];
+    sortedSlots.forEach((slot, roundIdx) => {
+      const roundNo = roundIdx + 1;
+      const slotId = Number(slot.id);
+      const roundStudents = currentStudents.filter(s => s.assignedSlot === slotId);
+      const tierAStudents = roundStudents.slice(0, STUDENTS_PER_TIER);
+      const tierBStudents = roundStudents.slice(STUDENTS_PER_TIER, STUDENTS_PER_TIER * 2);
+
+      const tiers = [
+        { key: 'A', pattern: 'I-P', students: tierAStudents, tierNo: 1 },
+        { key: 'B', pattern: 'P-I', students: tierBStudents, tierNo: 2 }
+      ];
+
+      tiers.forEach(tier => {
+        if (tier.students.length === 0) return;
+        const tierSubGroups = buildTierSubGroups(tier.students, teamsPerTier);
+        for (let teamNo = 1; teamNo <= teamsPerTier; teamNo++) {
+          const teamSubGroups = tierSubGroups.filter(sg => sg.team === teamNo);
+          if (teamSubGroups.length === 0) continue;
+          const teamStudents = teamSubGroups.flatMap(sg => sg.students);
+          allGroups.push({
+            id: `R${roundNo}-梯${tier.tierNo}-隊${teamNo}`,
+            slotId,
+            roundNo,
+            tierNo: tier.tierNo,
+            teamNo,
+            preferredPattern: tier.pattern,
+            students: teamStudents,
+            subGroups: teamSubGroups,
+            region: getMainRegion(teamStudents)
+          });
+        }
+      });
     });
+
     allGroups.sort((a, b) => {
-      if (a.slotId !== b.slotId) return slotIds.indexOf(a.slotId) - slotIds.indexOf(b.slotId);
-      if (a.subGroups.length !== b.subGroups.length) return a.subGroups.length - b.subGroups.length;
-      return a.students.length - b.students.length;
+      if (a.roundNo !== b.roundNo) return a.roundNo - b.roundNo;
+      if (a.tierNo !== b.tierNo) return a.tierNo - b.tierNo;
+      return a.teamNo - b.teamNo;
     });
 
     const newSchedule = [];
@@ -444,7 +501,8 @@ const App = () => {
     };
 
     allGroups.forEach(group => {
-      const slotConfig = registrationSlots.find(s => s.id === group.slotId);
+      const slotConfig = registrationSlots.find(s => Number(s.id) === group.slotId);
+      if (!slotConfig) return;
       const slotStartTime = parseTime(slotConfig.start);
       const slotEndTime = parseTime(slotConfig.end);
       const requiredPracticeRooms = Math.max(1, Math.ceil(group.students.length / practiceCapacityPerRoom));
@@ -497,25 +555,12 @@ const App = () => {
           let ast2 = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
           const iFirstOk = i2_room !== -1 && !!p2_rooms && ast2 !== -1;
 
-          if (pFirstOk && iFirstOk) {
-            const minPracticeFree = Math.min(...practiceRoomAvailable);
-            const minInterviewFree = Math.min(...interviewRoomAvailable);
-            const preferInterviewFirst = minInterviewFree > minPracticeFree;
-
-            if (preferInterviewFirst) {
-              found = { start: cursor, pattern: 'I-P', pRooms: p2_rooms, iRoom: i2_room, ast: ast2 };
-            } else {
-              found = { start: cursor, pattern: 'P-I', pRooms: p1_rooms, iRoom: i1_room, ast: ast1 };
-            }
-            break;
-          }
-
-          if (pFirstOk) {
+          if (group.preferredPattern === 'P-I' && pFirstOk) {
             found = { start: cursor, pattern: 'P-I', pRooms: p1_rooms, iRoom: i1_room, ast: ast1 };
             break;
           }
 
-          if (iFirstOk) {
+          if (group.preferredPattern === 'I-P' && iFirstOk) {
             found = { start: cursor, pattern: 'I-P', pRooms: p2_rooms, iRoom: i2_room, ast: ast2 };
             break;
           }
@@ -573,12 +618,12 @@ const App = () => {
         let accumulatedInterviewMinutes = 0;
 
         group.subGroups.forEach((subGroup, idx) => {
-          const batchTag = group.subGroups.length > 1 ? `第 ${idx + 1} 批` : '';
+          const batchTag = subGroup.label;
           newSchedule.push({
             groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
             room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
             startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + settings.interviewMinutes),
-            startTimeMins: interviewTime, students: subGroup
+            startTimeMins: interviewTime, students: subGroup.students
           });
           interviewTime += settings.interviewMinutes;
           accumulatedInterviewMinutes += settings.interviewMinutes;
@@ -1079,6 +1124,7 @@ const App = () => {
                         <Plus size={14} className="mr-1" /> 新增時段
                       </button>
                     </div>
+                    <p className="text-xs text-slate-500 mb-4">固定流程模式為一天 4 輪；請維持 4 個報到時段。</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {registrationSlots.map((slot, index) => (
                         <div key={slot.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-center">
@@ -1110,14 +1156,27 @@ const App = () => {
                   <h3 className="font-bold text-slate-800 mb-4 flex items-center text-lg"><Settings className="mr-2 text-indigo-500" size={20} /> 活動流程機制配置</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-indigo-50/50 border border-indigo-100 p-3 rounded-xl"><label className="text-sm font-bold text-indigo-800">帶隊工作人員總數 (人)</label><input type="number" min="1" value={settings.assistantsCount} onChange={e => setSettings({...settings, assistantsCount: Number(e.target.value)})} className="border border-indigo-200 rounded-lg p-1.5 w-20 text-center font-bold text-indigo-900" /></div>
-                    <div className="grid grid-cols-2 lg:grid-cols-7 gap-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-8 gap-3">
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">每間實作教室容量 (人)</label>
                         <input type="number" min="1" value={settings.groupSize} onChange={e => setSettings({...settings, groupSize: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" />
                         <div className="mt-1 text-[10px] text-slate-500">單梯次總容量 = 每間容量 × 實作教室數</div>
                       </div>
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">合併寬限 (人)</label><input type="number" min="0" value={settings.groupTolerance} onChange={e => setSettings({...settings, groupTolerance: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">小批人數 (面試)</label><input type="number" min="1" value={settings.interviewBatchSize} onChange={e => setSettings({...settings, interviewBatchSize: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">每輪固定梯次</label>
+                        <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-lg p-1.5 text-center font-bold">2 梯次</div>
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">每梯次隊數 (依工讀生)</label>
+                        <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-lg p-1.5 text-center font-bold">
+                          {2 + Math.floor(Math.max(0, Number(settings.assistantsCount || 1) - 4) / 2)} 隊
+                        </div>
+                        <div className="mt-1 text-[10px] text-slate-500">規則：4 人=2 隊；每多 2 人 +1 隊</div>
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">每組固定人數</label>
+                        <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-lg p-1.5 text-center font-bold">5 人</div>
+                      </div>
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作需時 (分)</label><input type="number" value={settings.practiceMinutes} onChange={e => setSettings({...settings, practiceMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試單批 (分)</label><input type="number" value={settings.interviewMinutes} onChange={e => setSettings({...settings, interviewMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作教室數</label><input type="number" min="1" value={settings.practiceRooms} onChange={e => setSettings({...settings, practiceRooms: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
