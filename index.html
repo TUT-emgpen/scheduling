@@ -1438,7 +1438,7 @@ const App = () => {
                           <th className="p-4 font-semibold whitespace-nowrap w-[170px]">項目</th>
                           <th className="p-4 font-semibold whitespace-nowrap min-w-[220px]">場地</th>
                           <th className="p-4 font-semibold whitespace-nowrap w-[160px]">帶位人員</th>
-                          <th className="p-4 font-semibold whitespace-nowrap w-[520px]">學生名單 (報到編號/末四碼)</th>
+                          <th className="p-4 font-semibold whitespace-nowrap w-[620px]">學生名單 (報到編號/末四碼)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
@@ -1469,10 +1469,10 @@ const App = () => {
                               <td className="p-4">
                                 <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-bold border ${assistantColor.accentSoftBg} ${assistantColor.accentText} ${assistantColor.accentBorder}`}>{item.assistant}</span>
                               </td>
-                              <td className="p-4 align-top w-[520px]">
-                                <div className="grid w-full grid-cols-1 gap-1.5">
+                              <td className="p-4 align-top w-[620px]">
+                                <div className="grid w-full grid-cols-2 gap-1.5">
                                   {item.students?.map((s, i) => (
-                                    <span key={i} className={`text-xs px-2 py-0.5 rounded flex items-center w-full min-w-0 break-words whitespace-normal ${item.isTransit ? '' : (s.isCrossDept ? 'bg-orange-100 text-orange-800 border border-orange-200 font-bold' : (item.isRegistration ? 'bg-teal-100 text-teal-800 border-teal-200' : 'bg-white border border-slate-200 shadow-sm'))}`}>
+                                    <span key={i} className={`text-xs px-2 py-0.5 rounded flex items-center w-full min-w-0 whitespace-nowrap overflow-hidden text-ellipsis ${item.isTransit ? '' : (s.isCrossDept ? 'bg-orange-100 text-orange-800 border border-orange-200 font-bold' : (item.isRegistration ? 'bg-teal-100 text-teal-800 border-teal-200' : 'bg-white border border-slate-200 shadow-sm'))}`}>
                                       {s.isCrossDept && <AlertTriangle size={12} className="mr-1 text-orange-600" />}
                                       {formatStudentLabel(s)}
                                     </span>
