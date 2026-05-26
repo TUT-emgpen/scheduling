@@ -1700,6 +1700,20 @@ const App = () => {
 
   const isValidCloudUrl = (url) => url.includes("script.google.com/macros/s/");
 
+  const fetchLatestCloudSnapshot = async () => {
+    const url = `${cloudUrl}${cloudUrl.includes('?') ? '&' : '?'}action=getLatestSnapshot`;
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!json || !json.ok || !json.data) throw new Error('找不到可用的雲端資料');
+    return json.data;
+  };
+
+  const getProfilesNewestTime = (profiles) => Math.max(
+    0,
+    ...(Array.isArray(profiles) ? profiles.map(profile => Date.parse(profile?.updatedAt || '') || 0) : [])
+  );
+
   const buildCloudPayload = () => {
     const currentProfileSnapshot = selectedDepartmentId
       ? buildDepartmentSnapshot(currentDepartment || { id: selectedDepartmentId, name: currentDepartment?.name || '未命名系所' })
@@ -1736,18 +1750,39 @@ const App = () => {
 
   // Google 雲端儲存 (透過 Google Apps Script Web App)
   const submitToGoogleCloud = async ({ silent = false, closeModal = true, trigger = 'manual' } = {}) => {
-    if (!isValidCloudUrl(cloudUrl)) {
-      if (!silent) alert("請輸入有效的 Google Apps Script 網址 (通常以 https://script.google.com/... 開頭)");
-      return false;
-    }
+	    if (!isValidCloudUrl(cloudUrl)) {
+	      if (!silent) alert("請輸入有效的 Google Apps Script 網址 (通常以 https://script.google.com/... 開頭)");
+	      return false;
+	    }
+	    if (!isAdminMode) {
+	      if (!silent) alert("為避免其他裝置覆蓋資料，只有管理員模式可以推送到 Google。一般模式會自動讀取雲端最新資料。");
+	      return false;
+	    }
 
-    if (trigger === 'auto') setIsAutoSyncing(true);
-    else setIsSaving(true);
+	    if (trigger === 'auto') setIsAutoSyncing(true);
+	    else setIsSaving(true);
 
-    try {
-      const payload = buildCloudPayload();
-      const response = await fetch(cloudUrl, {
-        method: 'POST',
+	    try {
+	      const payload = buildCloudPayload();
+	      if (trigger === 'auto') {
+	        try {
+	          const latestCloudData = await fetchLatestCloudSnapshot();
+	          const cloudProfiles = latestCloudData?.departmentProfiles || [];
+	          const localProfiles = payload.data.departmentProfiles || [];
+	          const cloudHasMoreDepartments = Array.isArray(cloudProfiles) && cloudProfiles.length > localProfiles.length;
+	          const cloudIsNewer = getProfilesNewestTime(cloudProfiles) > getProfilesNewestTime(localProfiles) + 1000;
+	          if (cloudHasMoreDepartments || cloudIsNewer) {
+	            applyCloudSnapshot(latestCloudData);
+	            setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
+	            return false;
+	          }
+	        } catch (guardError) {
+	          console.warn('自動備份前檢查雲端版本失敗，暫停本次上傳：', guardError);
+	          return false;
+	        }
+	      }
+	      const response = await fetch(cloudUrl, {
+	        method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'upsertSnapshot',
@@ -1821,17 +1856,8 @@ const App = () => {
 
 	    setIsLoadingCloud(true);
 	    try {
-      const url = `${cloudUrl}${cloudUrl.includes('?') ? '&' : '?'}action=getLatestSnapshot`;
-      const res = await fetch(url, { method: 'GET' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const json = await res.json();
-      if (!json || !json.ok || !json.data) {
-        throw new Error('找不到可用的雲端資料');
-      }
-
-	      const cloudData = json.data;
-	      applyCloudSnapshot(cloudData);
+		      const cloudData = await fetchLatestCloudSnapshot();
+		      applyCloudSnapshot(cloudData);
 
 	      const syncedAt = new Date().toLocaleString('zh-TW', { hour12: false });
 	      setLastCloudSyncAt(syncedAt);
@@ -1851,7 +1877,7 @@ const App = () => {
 
 	  const applyLiveCloudData = (cloudData) => {
 	    if (!cloudData || typeof cloudData !== 'object') return;
-	    if (Array.isArray(cloudData.departmentProfiles) && cloudData.departmentProfiles.length > 0) {
+	    if (!isAdminMode && Array.isArray(cloudData.departmentProfiles) && cloudData.departmentProfiles.length > 0) {
 	      const normalizedProfiles = cloudData.departmentProfiles.map((profile, idx) => normalizeDepartmentProfile(profile, idx));
 	      setDepartmentProfiles(normalizedProfiles);
 	    }
@@ -1878,16 +1904,28 @@ const App = () => {
 	  const syncLiveFieldsFromGoogleCloud = async ({ silent = true } = {}) => {
 	    if (!isValidCloudUrl(cloudUrl)) return false;
 	    try {
-	      const url = `${cloudUrl}${cloudUrl.includes('?') ? '&' : '?'}action=getLatestSnapshot`;
-	      const res = await fetch(url, { method: 'GET' });
-	      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-	      const json = await res.json();
-	      if (!json || !json.ok || !json.data) throw new Error('找不到可用的雲端資料');
-	      applyLiveCloudData(json.data);
+	      const cloudData = await fetchLatestCloudSnapshot();
+	      applyLiveCloudData(cloudData);
 	      return true;
 	    } catch (error) {
 	      if (!silent) alert(`❌ 即時同步失敗：${error.message}`);
 	      else console.warn('即時同步失敗：', error);
+	      return false;
+	    }
+	  };
+
+	  const syncDepartmentProfilesFromGoogleCloud = async () => {
+	    if (!isValidCloudUrl(cloudUrl)) return false;
+	    try {
+	      const cloudData = await fetchLatestCloudSnapshot();
+	      if (Array.isArray(cloudData.departmentProfiles) && cloudData.departmentProfiles.length > 0) {
+	        const normalizedProfiles = cloudData.departmentProfiles.map((profile, idx) => normalizeDepartmentProfile(profile, idx));
+	        setDepartmentProfiles(normalizedProfiles);
+	        setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
+	      }
+	      return true;
+	    } catch (error) {
+	      console.warn('入口頁系所清單同步失敗：', error);
 	      return false;
 	    }
 	  };
@@ -1899,16 +1937,16 @@ const App = () => {
 	  }, [isInitialized, shouldAutoLoadCloudOnStart, cloudUrl]);
 
 	  useEffect(() => {
-	    if (!isInitialized || !autoBackupEnabled || isLoadingCloud || shouldAutoLoadCloudOnStart) return;
+	    if (!isInitialized || !isAdminMode || !autoBackupEnabled || isLoadingCloud || shouldAutoLoadCloudOnStart) return;
 	    if (!isValidCloudUrl(cloudUrl)) return;
 	    const timer = setTimeout(() => {
 	      submitToGoogleCloud({ silent: true, closeModal: false, trigger: 'auto' });
 	    }, 2500);
 	    return () => clearTimeout(timer);
-	  }, [isInitialized, autoBackupEnabled, isLoadingCloud, shouldAutoLoadCloudOnStart, cloudUrl, students, schedule, settings, registrationSlots, regions, fieldAnnouncement, taskConfirmations, departmentProfiles, selectedDepartmentId]);
+	  }, [isInitialized, isAdminMode, autoBackupEnabled, isLoadingCloud, shouldAutoLoadCloudOnStart, cloudUrl, students, schedule, settings, registrationSlots, regions, fieldAnnouncement, taskConfirmations, departmentProfiles, selectedDepartmentId]);
 
 	  useEffect(() => {
-	    if (!isInitialized || !autoBackupEnabled) return;
+	    if (!isInitialized || !isAdminMode || !autoBackupEnabled) return;
 	    if (!isValidCloudUrl(cloudUrl)) return;
 	    const minutes = Math.max(1, Number(autoBackupMinutes) || 5);
 	    const timer = setInterval(() => {
@@ -1916,15 +1954,23 @@ const App = () => {
 	    }, minutes * 60 * 1000);
 
 	    return () => clearInterval(timer);
-		  }, [isInitialized, autoBackupEnabled, autoBackupMinutes, cloudUrl]);
+		  }, [isInitialized, isAdminMode, autoBackupEnabled, autoBackupMinutes, cloudUrl]);
 
 	  useEffect(() => {
-		    if (!isInitialized || !isValidCloudUrl(cloudUrl)) return;
+		    if (!isInitialized || selectedDepartmentId || isAdminMode || !isValidCloudUrl(cloudUrl)) return;
+		    const timer = setInterval(() => {
+		      syncDepartmentProfilesFromGoogleCloud();
+		    }, 1000);
+		    return () => clearInterval(timer);
+		  }, [isInitialized, selectedDepartmentId, isAdminMode, cloudUrl]);
+
+	  useEffect(() => {
+		    if (!isInitialized || !selectedDepartmentId || !isValidCloudUrl(cloudUrl)) return;
 		    const timer = setInterval(() => {
 		      syncLiveFieldsFromGoogleCloud({ silent: true });
 		    }, 20000);
 		    return () => clearInterval(timer);
-		  }, [isInitialized, cloudUrl]);
+		  }, [isInitialized, selectedDepartmentId, cloudUrl]);
 
 	  const handlePrintPDF = () => { window.print(); };
 
@@ -2069,32 +2115,34 @@ const App = () => {
                 {isLoadingCloud ? <RefreshCw className="animate-spin mr-2" size={18} /> : <Download className="mr-2" size={18} />}
                 {isLoadingCloud ? '雲端讀取中...' : '從 Google 載入'}
               </button>
-              <button 
-                onClick={() => submitToGoogleCloud({ silent: false, closeModal: true, trigger: 'manual' })}
-                disabled={isSaving || isLoadingCloud}
-                className={`py-3 rounded-xl font-bold text-white shadow-lg transition-all flex justify-center items-center ${isSaving || isLoadingCloud ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-0.5'}`}
-              >
-                {isSaving ? <RefreshCw className="animate-spin mr-2" size={20} /> : <CloudUpload className="mr-2" size={20} />}
-                {isSaving ? '上傳同步中...' : '推送到 Google'}
-              </button>
+	              <button 
+	                onClick={() => submitToGoogleCloud({ silent: false, closeModal: true, trigger: 'manual' })}
+	                disabled={isSaving || isLoadingCloud || !isAdminMode}
+	                title={isAdminMode ? '推送完整系所資料到 Google' : '管理員模式才可推送，避免其他裝置覆蓋雲端資料'}
+	                className={`py-3 rounded-xl font-bold text-white shadow-lg transition-all flex justify-center items-center ${isSaving || isLoadingCloud || !isAdminMode ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-0.5'}`}
+	              >
+	                {isSaving ? <RefreshCw className="animate-spin mr-2" size={20} /> : <CloudUpload className="mr-2" size={20} />}
+	                {isSaving ? '上傳同步中...' : (isAdminMode ? '推送到 Google' : '管理員才可推送')}
+	              </button>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    checked={autoBackupEnabled}
-                    onChange={(e) => setAutoBackupEnabled(e.target.checked)}
-                  />
-                  啟用定時自動備份
-                </label>
+	                <label className={`flex items-center gap-2 text-sm font-bold ${isAdminMode ? 'text-slate-700 cursor-pointer' : 'text-slate-400 cursor-not-allowed'}`}>
+	                  <input
+	                    type="checkbox"
+	                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+	                    checked={autoBackupEnabled}
+	                    onChange={(e) => setAutoBackupEnabled(e.target.checked)}
+	                    disabled={!isAdminMode}
+	                  />
+	                  啟用管理員自動備份
+	                </label>
                 <select
                   value={autoBackupMinutes}
                   onChange={(e) => setAutoBackupMinutes(Number(e.target.value))}
                   className="border border-slate-300 rounded-lg px-2 py-1 text-sm bg-white"
-                  disabled={!autoBackupEnabled}
+	                  disabled={!autoBackupEnabled || !isAdminMode}
                 >
                   <option value={1}>每 1 分鐘</option>
                   <option value={3}>每 3 分鐘</option>
@@ -2104,8 +2152,8 @@ const App = () => {
                 </select>
               </div>
               <p className="text-xs text-slate-500">
-                狀態：{isAutoSyncing ? '自動備份中...' : '待機'}；最近同步：{lastCloudSyncAt || '尚未同步'}
-              </p>
+	                狀態：{isAdminMode ? (isAutoSyncing ? '自動備份中...' : '管理員可推送') : '一般模式僅讀取雲端，不會覆蓋資料'}；最近同步：{lastCloudSyncAt || '尚未同步'}
+	              </p>
             </div>
           </div>
         </div>
