@@ -78,7 +78,9 @@ const DEFAULT_SETTINGS = {
   practiceMinutes: 40, interviewMinutes: 15, transitMinutes: 10,
   groupSize: 10, groupTolerance: 2, interviewBatchSize: 5,
   practiceRooms: 2, interviewRooms: 2, assistantsCount: 6,
-  assistantNames: ['工讀生 A', '工讀生 B', '工讀生 C', '工讀生 D', '工讀生 E', '工讀生 F']
+  assistantNames: ['工讀生 A', '工讀生 B', '工讀生 C', '工讀生 D', '工讀生 E', '工讀生 F'],
+  practiceRoomNames: ['實作教室 1', '實作教室 2'],
+  interviewRoomNames: ['面試考場 1', '面試考場 2']
 };
 
 const DEFAULT_REGISTRATION_SLOTS = [
@@ -248,7 +250,9 @@ const App = () => {
     settings: {
       ...DEFAULT_SETTINGS,
       ...(profile?.settings || {}),
-      assistantNames: normalizeAssistantNames(profile?.settings?.assistantNames || DEFAULT_SETTINGS.assistantNames, profile?.settings?.assistantsCount || DEFAULT_SETTINGS.assistantsCount)
+      assistantNames: normalizeAssistantNames(profile?.settings?.assistantNames || DEFAULT_SETTINGS.assistantNames, profile?.settings?.assistantsCount || DEFAULT_SETTINGS.assistantsCount),
+      practiceRoomNames: normalizeRoomNames(profile?.settings?.practiceRoomNames || DEFAULT_SETTINGS.practiceRoomNames, profile?.settings?.practiceRooms || DEFAULT_SETTINGS.practiceRooms, '實作教室'),
+      interviewRoomNames: normalizeRoomNames(profile?.settings?.interviewRoomNames || DEFAULT_SETTINGS.interviewRoomNames, profile?.settings?.interviewRooms || DEFAULT_SETTINGS.interviewRooms, '面試考場')
     },
 	    registrationSlots: Array.isArray(profile?.registrationSlots) && profile.registrationSlots.length > 0 ? profile.registrationSlots : DEFAULT_REGISTRATION_SLOTS,
 	    regions: Array.isArray(profile?.regions) && profile.regions.length > 0 ? profile.regions : DEFAULT_REGIONS,
@@ -262,6 +266,14 @@ const App = () => {
     return Array.from({ length: total }, (_, idx) => {
       const value = Array.isArray(names) ? names[idx] : '';
       return value != null && String(value).trim() !== '' ? String(value).trim() : `工讀生 ${String.fromCharCode(65 + idx)}`;
+    });
+  };
+
+  const normalizeRoomNames = (names, count, prefix) => {
+    const total = Math.max(1, Number(count) || 1);
+    return Array.from({ length: total }, (_, idx) => {
+      const value = Array.isArray(names) ? names[idx] : '';
+      return value != null && String(value).trim() !== '' ? String(value).trim() : `${prefix} ${idx + 1}`;
     });
   };
 
@@ -739,6 +751,40 @@ const App = () => {
       const names = normalizeAssistantNames(prev.assistantNames, prev.assistantsCount);
       names[index] = value;
       return { ...prev, assistantNames: names };
+    });
+  };
+
+  const updatePracticeRoomCount = (value) => {
+    const nextCount = Math.max(1, Number(value) || 1);
+    setSettings(prev => ({
+      ...prev,
+      practiceRooms: nextCount,
+      practiceRoomNames: normalizeRoomNames(prev.practiceRoomNames, nextCount, '實作教室')
+    }));
+  };
+
+  const updateInterviewRoomCount = (value) => {
+    const nextCount = Math.max(1, Number(value) || 1);
+    setSettings(prev => ({
+      ...prev,
+      interviewRooms: nextCount,
+      interviewRoomNames: normalizeRoomNames(prev.interviewRoomNames, nextCount, '面試考場')
+    }));
+  };
+
+  const updatePracticeRoomName = (index, value) => {
+    setSettings(prev => {
+      const names = normalizeRoomNames(prev.practiceRoomNames, prev.practiceRooms, '實作教室');
+      names[index] = value;
+      return { ...prev, practiceRoomNames: names };
+    });
+  };
+
+  const updateInterviewRoomName = (index, value) => {
+    setSettings(prev => {
+      const names = normalizeRoomNames(prev.interviewRoomNames, prev.interviewRooms, '面試考場');
+      names[index] = value;
+      return { ...prev, interviewRoomNames: names };
     });
   };
 
@@ -1541,11 +1587,18 @@ const App = () => {
       return roomIndexes.slice(0, requiredRooms);
     };
 
+    const practiceRoomNames = normalizeRoomNames(settings.practiceRoomNames, settings.practiceRooms, '實作教室');
+    const interviewRoomNames = normalizeRoomNames(settings.interviewRoomNames, settings.interviewRooms, '面試考場');
+
     const formatPracticeRoomLabel = (roomIndexes) => {
-      if (!roomIndexes || roomIndexes.length === 0) return '實作教室';
-      if (roomIndexes.length === 1) return `實作教室 ${roomIndexes[0] + 1}`;
-      return `實作教室 ${roomIndexes.map(i => i + 1).join('、')}`;
+      if (!roomIndexes || roomIndexes.length === 0) return practiceRoomNames[0] || '實作教室';
+      if (roomIndexes.length === 1) return practiceRoomNames[roomIndexes[0]] || `實作教室 ${roomIndexes[0] + 1}`;
+      return roomIndexes.map(i => practiceRoomNames[i] || `實作教室 ${i + 1}`).join('、');
     };
+
+    const getInterviewRoomLabel = (roomIndex) => (
+      interviewRoomNames[roomIndex] || `面試考場 ${roomIndex + 1}`
+    );
 
     const failedGroups = [];
 
@@ -1710,7 +1763,7 @@ const App = () => {
           const batchTag = subGroup.label;
           newSchedule.push({
             groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
-            room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+            room: getInterviewRoomLabel(bestSlot.iRoom), assistant: assistantName,
             startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + settings.interviewMinutes),
             startTimeMins: interviewTime, students: subGroup.students
           });
@@ -1723,7 +1776,7 @@ const App = () => {
           ) {
             newSchedule.push({
               groupId: group.id, region: group.region, type: `面試休息 (${INTERVIEW_BREAK_MINUTES} 分鐘)`,
-              room: `面試考場 ${bestSlot.iRoom + 1}`, assistant: assistantName,
+              room: getInterviewRoomLabel(bestSlot.iRoom), assistant: assistantName,
               startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + INTERVIEW_BREAK_MINUTES),
               startTimeMins: interviewTime, students: [], isTransit: true
             });
@@ -2679,6 +2732,48 @@ const App = () => {
 	                        ))}
 	                      </div>
 	                    </div>
+	                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+	                      <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+	                        <div className="flex items-center justify-between mb-3">
+	                          <label className="text-sm font-bold text-slate-700">實作考試地點名稱</label>
+	                          <span className="text-xs font-bold text-slate-500">{settings.practiceRooms} 間</span>
+	                        </div>
+	                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+	                          {normalizeRoomNames(settings.practiceRoomNames, settings.practiceRooms, '實作教室').map((name, idx) => (
+	                            <div key={idx} className="flex items-center gap-2">
+	                              <span className="w-14 text-center text-xs font-bold text-slate-500">{idx + 1}</span>
+	                              <input
+	                                type="text"
+	                                value={name}
+	                                onChange={e => updatePracticeRoomName(idx, e.target.value)}
+	                                className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+	                                placeholder={`實作教室 ${idx + 1}`}
+	                              />
+	                            </div>
+	                          ))}
+	                        </div>
+	                      </div>
+	                      <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+	                        <div className="flex items-center justify-between mb-3">
+	                          <label className="text-sm font-bold text-slate-700">面試地點名稱</label>
+	                          <span className="text-xs font-bold text-slate-500">{settings.interviewRooms} 組</span>
+	                        </div>
+	                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+	                          {normalizeRoomNames(settings.interviewRoomNames, settings.interviewRooms, '面試考場').map((name, idx) => (
+	                            <div key={idx} className="flex items-center gap-2">
+	                              <span className="w-14 text-center text-xs font-bold text-slate-500">{idx + 1}</span>
+	                              <input
+	                                type="text"
+	                                value={name}
+	                                onChange={e => updateInterviewRoomName(idx, e.target.value)}
+	                                className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+	                                placeholder={`面試考場 ${idx + 1}`}
+	                              />
+	                            </div>
+	                          ))}
+	                        </div>
+	                      </div>
+	                    </div>
                     <div className="grid grid-cols-2 lg:grid-cols-8 gap-3">
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">每間實作教室容量 (人)</label>
@@ -2702,8 +2797,8 @@ const App = () => {
                       </div>
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作需時 (分)</label><input type="number" value={settings.practiceMinutes} onChange={e => setSettings({...settings, practiceMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試單批 (分)</label><input type="number" value={settings.interviewMinutes} onChange={e => setSettings({...settings, interviewMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作教室數</label><input type="number" min="1" value={settings.practiceRooms} onChange={e => setSettings({...settings, practiceRooms: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試委員組數</label><input type="number" min="1" value={settings.interviewRooms} onChange={e => setSettings({...settings, interviewRooms: Number(e.target.value)})} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">實作教室數</label><input type="number" min="1" value={settings.practiceRooms} onChange={e => updatePracticeRoomCount(e.target.value)} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200"><label className="block text-[11px] font-bold text-slate-500 mb-2 whitespace-nowrap">面試委員組數</label><input type="number" min="1" value={settings.interviewRooms} onChange={e => updateInterviewRoomCount(e.target.value)} className="w-full border border-slate-300 rounded-lg p-1.5 text-center font-bold" /></div>
                     </div>
                     <div className="flex items-center justify-between bg-slate-50 border border-slate-200 p-3 rounded-xl mt-2"><label className="text-sm font-bold text-slate-700">換場走動時間 (分)</label><input type="number" value={settings.transitMinutes} onChange={e => setSettings({...settings, transitMinutes: Number(e.target.value)})} className="border border-slate-300 rounded-lg p-1.5 w-20 text-center font-bold" /></div>
                   </div>
