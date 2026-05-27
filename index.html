@@ -227,15 +227,17 @@ const App = () => {
     };
   };
 
-	  const ensureStudentCheckinNos = (list) => {
-	    return (list || []).map((s, idx) => ({
-	      ...s,
-	      checkinNo: s.checkinNo != null && String(s.checkinNo).trim() !== ''
-	        ? String(s.checkinNo).trim()
-	        : String(idx + 1).padStart(3, '0'),
-	      checkinStatus: CHECKIN_STATUS_OPTIONS.includes(s.checkinStatus) ? s.checkinStatus : '未報到'
-	    }));
-	  };
+		  const ensureStudentCheckinNos = (list) => {
+		    return (list || []).map((s, idx) => ({
+		      ...s,
+			      checkinNo: s.checkinNo != null && String(s.checkinNo).trim() !== ''
+			        ? String(s.checkinNo).trim()
+			        : String(idx + 1).padStart(3, '0'),
+			      checkinStatus: CHECKIN_STATUS_OPTIONS.includes(s.checkinStatus) ? s.checkinStatus : '未報到',
+			      note: s.note != null ? String(s.note) : '',
+			      subsidyReceived: !!s.subsidyReceived
+			    }));
+		  };
 
   const normalizeDepartmentProfile = (profile, idx = 0) => ({
     id: profile?.id || `dept-${Date.now()}-${idx}`,
@@ -301,6 +303,9 @@ const App = () => {
 		  const [copiedAssistantName, setCopiedAssistantName] = useState('');
 		  const [fieldAnnouncement, setFieldAnnouncement] = useState('');
 		  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+		  const [insertStudentQuery, setInsertStudentQuery] = useState('');
+		  const [selectedInsertStudentKey, setSelectedInsertStudentKey] = useState('');
+		  const [showPendingSubsidyOnly, setShowPendingSubsidyOnly] = useState(false);
 		  const [taskConfirmations, setTaskConfirmations] = useState({});
 		  const [lastLiveSyncAt, setLastLiveSyncAt] = useState('');
 		  const [isAdminMode, setIsAdminMode] = useState(false);
@@ -656,11 +661,11 @@ const App = () => {
         }
       }
       if (id && name) {
-        parsedStudents.push({ 
-	          id, name, city, region: regionAssigned, regionOrder,
-	          isCrossDept: false, blockedStart: '10:00', blockedEnd: '12:00',
-	          preferredSlot: null, assignedSlot: null, checkinStatus: '未報到'
-	        });
+	        parsedStudents.push({ 
+		          id, name, city, region: regionAssigned, regionOrder,
+		          isCrossDept: false, blockedStart: '10:00', blockedEnd: '12:00',
+		          preferredSlot: null, assignedSlot: null, checkinStatus: '未報到', note: '', subsidyReceived: false
+		        });
       }
     }
     
@@ -821,10 +826,97 @@ const App = () => {
 	    return { group, leadAssistant, nextEvent };
 	  };
 
+	  const getStudentLookupKey = (student) => `${student?.checkinNo || ''}__${student?.id || ''}__${student?.name || ''}`;
+
+	  const getRoundCapacity = () => {
+	    const ROUND_COUNT = 4;
+	    const TIERS_PER_ROUND = 2;
+	    const BASE_TEAMS_PER_TIER = 2;
+	    const GROUPS_PER_TEAM = 2;
+	    const STUDENTS_PER_GROUP = 5;
+	    const assistantsCount = Math.max(1, Number(settings.assistantsCount || 1));
+	    if (registrationSlots.length !== ROUND_COUNT || assistantsCount < TIERS_PER_ROUND * BASE_TEAMS_PER_TIER) return null;
+	    const teamsPerTier = BASE_TEAMS_PER_TIER + Math.floor(Math.max(0, assistantsCount - (TIERS_PER_ROUND * BASE_TEAMS_PER_TIER)) / TIERS_PER_ROUND);
+	    return TIERS_PER_ROUND * teamsPerTier * GROUPS_PER_TEAM * STUDENTS_PER_GROUP;
+	  };
+
+	  const getFastestInsertSlotRecommendation = (targetStudent = null) => {
+	    const capacityPerRound = getRoundCapacity();
+	    if (!capacityPerRound || registrationSlots.length === 0) {
+	      return {
+	        capacityPerRound: 0,
+	        recommendedSlot: null,
+	        preferredSlot: null,
+	        preferredSlotAvailable: false,
+	        summary: [],
+	        constraintText: '請先完成四個報到時段設定並確保工讀生人數足夠。'
+	      };
+	    }
+
+	    const sortedSlots = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+	    const counts = Object.fromEntries(sortedSlots.map(slot => [Number(slot.id), 0]));
+	    const targetKey = targetStudent ? getStudentLookupKey(targetStudent) : '';
+
+	    students.forEach(student => {
+	      if (targetKey && getStudentLookupKey(student) === targetKey) return;
+	      const slotId = Number(student.assignedSlot);
+	      if (counts[slotId] != null) counts[slotId] += 1;
+	    });
+
+	    const afternoonStartTime = Math.max(parseTime(settings.lunchEnd), 12 * 60);
+	    let eligibleSlots = sortedSlots.filter(slot => counts[Number(slot.id)] < capacityPerRound);
+	    let constraintText = '依目前名額，顯示最早可補位的報到時段。';
+
+	    if (targetStudent?.isCrossDept) {
+	      const blockedEndTime = parseTime(targetStudent.blockedEnd || '');
+	      const readyTime = Number.isFinite(blockedEndTime) ? Math.max(blockedEndTime, afternoonStartTime) : afternoonStartTime;
+	      eligibleSlots = eligibleSlots.filter(slot => parseTime(slot.start) >= readyTime);
+	      constraintText = `此學生為跨系，會從 ${formatTime(readyTime)} 之後的時段開始找最快可補位場次。`;
+	    }
+
+	    const recommendedSlot = eligibleSlots[0] || null;
+	    const preferredSlot = targetStudent?.preferredSlot ? sortedSlots.find(slot => Number(slot.id) === Number(targetStudent.preferredSlot)) || null : null;
+	    const preferredSlotAvailable = !!preferredSlot && eligibleSlots.some(slot => Number(slot.id) === Number(preferredSlot.id));
+	    const summary = sortedSlots.map(slot => {
+	      const slotId = Number(slot.id);
+	      const count = counts[slotId] || 0;
+	      const remaining = Math.max(0, capacityPerRound - count);
+	      const isEligible = eligibleSlots.some(item => Number(item.id) === slotId);
+	      return {
+	        slot,
+	        count,
+	        remaining,
+	        isEligible,
+	        isRecommended: recommendedSlot ? Number(recommendedSlot.id) === slotId : false
+	      };
+	    });
+
+	    return { capacityPerRound, recommendedSlot, preferredSlot, preferredSlotAvailable, summary, constraintText };
+	  };
+
+	  const hasTravelSubsidyNote = (student) => {
+	    const note = String(student?.note || '').trim();
+	    if (!note) return false;
+	    return ['交通補助', '補助', '車資', '車馬費', '交通費'].some(keyword => note.includes(keyword));
+	  };
+
+	  const pendingSubsidyStudents = students
+	    .filter(student => hasTravelSubsidyNote(student) && !student.subsidyReceived)
+	    .sort((a, b) => {
+	      const aNo = String(a.checkinNo || '').padStart(6, '0');
+	      const bNo = String(b.checkinNo || '').padStart(6, '0');
+	      return aNo.localeCompare(bNo, 'zh-Hant');
+	    });
+
 	  const studentSearchResults = (() => {
 	    const q = studentSearchQuery.trim().toLowerCase();
-	    if (!q) return [];
-	    return students
+	    const baseStudents = showPendingSubsidyOnly ? pendingSubsidyStudents : students;
+	    if (!q) {
+	      return showPendingSubsidyOnly
+	        ? baseStudents.slice(0, 30).map(student => ({ student, scheduleInfo: getStudentScheduleInfo(student) }))
+	        : [];
+	    }
+	    return baseStudents
 	      .filter(s => {
 	        const haystack = `${s.checkinNo || ''} ${s.id || ''} ${String(s.id || '').slice(-4)} ${s.name || ''}`.toLowerCase();
 	        return haystack.includes(q);
@@ -832,6 +924,24 @@ const App = () => {
 	      .slice(0, 8)
 	      .map(student => ({ student, scheduleInfo: getStudentScheduleInfo(student) }));
 	  })();
+
+	  const insertStudentCandidates = (() => {
+	    const q = insertStudentQuery.trim().toLowerCase();
+	    if (!q) return [];
+	    return students
+	      .filter(student => {
+	        const haystack = `${student.checkinNo || ''} ${student.id || ''} ${String(student.id || '').slice(-4)} ${student.name || ''}`.toLowerCase();
+	        return haystack.includes(q);
+	      })
+	      .slice(0, 6);
+	  })();
+
+	  const selectedInsertStudent = selectedInsertStudentKey
+	    ? insertStudentCandidates.find(student => getStudentLookupKey(student) === selectedInsertStudentKey) || null
+	    : null;
+
+	  const activeInsertStudent = selectedInsertStudent || insertStudentCandidates[0] || null;
+	  const insertSlotRecommendation = getFastestInsertSlotRecommendation(activeInsertStudent);
 
 	  const buildAssistantSharePayload = (assistantName) => {
 	    const assistantNames = normalizeAssistantNames(settings.assistantNames, settings.assistantsCount);
@@ -1241,8 +1351,16 @@ const App = () => {
 	    );
 	  };
 
-	  const parseTime = (timeStr) => { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
-  const formatTime = (minutes) => { const h = Math.floor(minutes / 60); const m = minutes % 60; return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; };
+	  function parseTime(timeStr) {
+	    const [h, m] = String(timeStr || '').split(':').map(Number);
+	    return h * 60 + m;
+	  }
+
+  function formatTime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
 
   const handleGenerateSchedule = () => {
     if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
@@ -1728,7 +1846,7 @@ const App = () => {
       "項目": `${item.type} ${item.batchInfo || ''}`,
       "場地": item.room,
       "人員": item.assistant,
-      "名單": item.students ? item.students.map(s => `${s.checkinNo || ''}-${s.name}(${s.isCrossDept ? '跨' : ''})`).join(', ') : ''
+      "名單": item.students ? item.students.map(s => `${s.checkinNo || ''}-${s.name}${s.note ? `【${s.note}】` : ''}${s.subsidyReceived ? '【已領補助】' : ''}(${s.isCrossDept ? '跨' : ''})`).join(', ') : ''
     }));
 
     return {
@@ -2372,18 +2490,20 @@ const App = () => {
                     </span>
                   </div>
                 </div>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-	                      <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
-	                        <th className="p-4 font-bold w-[120px]">編號(報到)</th>
-	                        <th className="p-4 font-bold">准考證號</th><th className="p-4 font-bold">姓名</th><th className="p-4 font-bold">地區</th>
-	                        <th className="p-4 font-bold bg-emerald-50 text-emerald-800 border-l border-emerald-100 w-36">報到狀態</th>
-	                        <th className="p-4 font-bold bg-indigo-50 text-indigo-800 border-l border-indigo-100 w-40">報到時段意願</th>
-	                        <th className="p-4 font-bold bg-orange-50 text-orange-800 border-l border-orange-100">⚠️ 跨系 / 衝堂時段設定</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+	                <div className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+	                  <table className="w-full table-fixed text-left text-sm">
+	                    <thead>
+		                      <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
+			                        <th className="p-4 font-bold whitespace-nowrap w-[8%]">編號(報到)</th>
+			                        <th className="p-4 font-bold whitespace-nowrap w-[13%]">准考證號</th>
+			                        <th className="p-4 font-bold whitespace-nowrap w-[10%]">姓名</th>
+			                        <th className="p-4 font-bold whitespace-nowrap w-[8%]">地區</th>
+			                        <th className="p-4 font-bold whitespace-nowrap bg-emerald-50 text-emerald-800 border-l border-emerald-100 w-[10%]">報到狀態</th>
+			                        <th className="p-4 font-bold whitespace-nowrap bg-indigo-50 text-indigo-800 border-l border-indigo-100 w-[12%]">報到時段意願</th>
+			                        <th className="p-4 font-bold bg-amber-50 text-amber-800 border-l border-amber-100 w-[39%]">現場備註</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody className="divide-y divide-slate-100 bg-white">
                       {students.map((student, idx) => {
                          const isUnassigned = student.region === '未分配 (其他)';
                          return (
@@ -2393,7 +2513,7 @@ const App = () => {
                                 type="text"
                                 value={student.checkinNo || ''}
                                 onChange={e => handleUpdateStudentByIndex(idx, 'checkinNo', e.target.value)}
-                                className="w-full min-w-[90px] border border-slate-300 rounded-lg px-2 py-1 text-center font-mono text-slate-700 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
+	                                className="w-full min-w-0 border border-slate-300 rounded-lg px-2 py-1 text-center font-mono text-slate-700 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
                                 placeholder="001"
                               />
                             </td>
@@ -2402,7 +2522,7 @@ const App = () => {
                                 type="text"
                                 value={student.id}
                                 onChange={e => handleUpdateStudentByIndex(idx, 'id', e.target.value.trim())}
-                                className="w-full min-w-[140px] border border-slate-300 rounded-lg px-2 py-1 font-mono text-slate-700 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
+	                                className="w-full min-w-0 border border-slate-300 rounded-lg px-2 py-1 font-mono text-slate-700 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
                               />
                             </td>
                             <td className="p-3">
@@ -2410,14 +2530,14 @@ const App = () => {
                                 type="text"
                                 value={student.name}
                                 onChange={e => handleUpdateStudentByIndex(idx, 'name', e.target.value)}
-                                className="w-full min-w-[120px] border border-slate-300 rounded-lg px-2 py-1 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
+	                                className="w-full min-w-0 border border-slate-300 rounded-lg px-2 py-1 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
                               />
                             </td>
                             <td className="p-3">
                               <select
                                 value={student.region}
                                 onChange={e => handleUpdateStudentByIndex(idx, 'region', e.target.value)}
-                                className={`w-full min-w-[110px] p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 ${isUnassigned ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white border-slate-300 text-slate-700'}`}
+	                                className={`w-full min-w-0 p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 ${isUnassigned ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white border-slate-300 text-slate-700'}`}
                               >
                                 {regions.map(r => (<option key={r.id} value={r.name}>{r.name}</option>))}
                                 <option value="未分配 (其他)">未分配 (其他)</option>
@@ -2427,36 +2547,56 @@ const App = () => {
 	                              <select
 	                                value={student.checkinStatus || '未報到'}
 	                                onChange={e => handleUpdateStudentByIndex(idx, 'checkinStatus', e.target.value)}
-	                                className={`w-full min-w-[100px] p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${CHECKIN_STATUS_STYLE[student.checkinStatus || '未報到']}`}
+		                                className={`w-full min-w-0 p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${CHECKIN_STATUS_STYLE[student.checkinStatus || '未報到']}`}
 	                              >
 	                                {CHECKIN_STATUS_OPTIONS.map(status => (<option key={status} value={status}>{status}</option>))}
 	                              </select>
 	                            </td>
-	                            <td className="p-3 border-l border-slate-100 bg-slate-50/50">
-	                              <select value={student.assignedSlot || student.preferredSlot || ''} onChange={(e) => handleUpdateStudentByIndex(idx, 'preferredSlot', e.target.value ? parseInt(e.target.value) : null)} className={`w-full p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 ${student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) ? 'bg-orange-50 border-orange-300 text-orange-700' : (student.assignedSlot && !student.preferredSlot ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : (student.preferredSlot ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-300 text-slate-500'))}`}>
-	                                <option value="">未選擇 (由系統安排)</option>
-	                                {registrationSlots.map(slot => (<option key={slot.id} value={slot.id}>{slot.name}</option>))}
-	                              </select>
-	                              {student.assignedSlot && !student.preferredSlot && (<div className="text-[10px] text-indigo-500 mt-1 flex items-center"><RefreshCw size={10} className="mr-1" /> 自動分發</div>)}
-	                              {student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) && (<div className="text-[10px] text-orange-600 mt-1 flex items-center"><AlertTriangle size={10} className="mr-1" /> 跨系優先改排下午</div>)}
-	                            </td>
-                            <td className="p-3 border-l border-slate-100">
-                               <div className="flex items-center gap-3">
-                                 <label className="flex items-center cursor-pointer">
-                                   <input type="checkbox" className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500" checked={student.isCrossDept} onChange={e => handleUpdateStudentByIndex(idx, 'isCrossDept', e.target.checked)} />
-                                   <span className={`ml-2 font-bold ${student.isCrossDept ? 'text-orange-700' : 'text-slate-400'}`}>跨系</span>
-                                 </label>
-                                 {student.isCrossDept && (
-                                   <div className="flex items-center bg-white border border-orange-200 rounded-lg p-1 shadow-sm">
-                                     <span className="text-xs text-orange-600 font-medium px-2">避開</span>
-                                     <input type="time" value={student.blockedStart} onChange={e => handleUpdateStudentByIndex(idx, 'blockedStart', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
-                                     <span className="mx-1 text-slate-400">-</span>
-                                     <input type="time" value={student.blockedEnd} onChange={e => handleUpdateStudentByIndex(idx, 'blockedEnd', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
-                                   </div>
-                                 )}
-                               </div>
-                            </td>
-                          </tr>
+		                            <td className="p-3 border-l border-slate-100 bg-slate-50/50 align-top">
+		                              <select value={student.assignedSlot || student.preferredSlot || ''} onChange={(e) => handleUpdateStudentByIndex(idx, 'preferredSlot', e.target.value ? parseInt(e.target.value) : null)} className={`w-full p-1.5 rounded-lg border text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 ${student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) ? 'bg-orange-50 border-orange-300 text-orange-700' : (student.assignedSlot && !student.preferredSlot ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : (student.preferredSlot ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-300 text-slate-500'))}`}>
+		                                <option value="">未選擇 (由系統安排)</option>
+		                                {registrationSlots.map(slot => (<option key={slot.id} value={slot.id}>{slot.name}</option>))}
+		                              </select>
+		                              {student.assignedSlot && !student.preferredSlot && (<div className="text-[10px] text-indigo-500 mt-1 flex items-center"><RefreshCw size={10} className="mr-1" /> 自動分發</div>)}
+		                              {student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) && (<div className="text-[10px] text-orange-600 mt-1 flex items-center"><AlertTriangle size={10} className="mr-1" /> 跨系優先改排下午</div>)}
+		                            </td>
+	                            <td className="p-3 border-l border-amber-100 bg-amber-50/30 align-top">
+		                                 <div className="space-y-3 max-w-full overflow-hidden">
+	                                 <div className="flex items-center gap-3 flex-wrap">
+	                                   <label className="flex items-center cursor-pointer shrink-0">
+	                                   <input type="checkbox" className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500" checked={student.isCrossDept} onChange={e => handleUpdateStudentByIndex(idx, 'isCrossDept', e.target.checked)} />
+	                                   <span className={`ml-2 font-bold ${student.isCrossDept ? 'text-orange-700' : 'text-slate-400'}`}>跨系</span>
+	                                   </label>
+	                                   {student.isCrossDept && (
+		                                   <div className="max-w-full flex items-center bg-white border border-orange-200 rounded-lg p-1 shadow-sm flex-wrap gap-y-1">
+	                                     <span className="text-xs text-orange-600 font-medium px-2">避開</span>
+	                                     <input type="time" value={student.blockedStart} onChange={e => handleUpdateStudentByIndex(idx, 'blockedStart', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
+	                                     <span className="mx-1 text-slate-400">-</span>
+	                                     <input type="time" value={student.blockedEnd} onChange={e => handleUpdateStudentByIndex(idx, 'blockedEnd', e.target.value)} className="border-none text-xs bg-slate-50 rounded px-1 py-0.5 focus:ring-0 w-[72px]" />
+	                                   </div>
+	                                   )}
+		                                 </div>
+		                                 <div className="grid max-w-full grid-cols-[minmax(0,1fr)_116px] gap-2 items-center">
+		                                   <input
+		                                     type="text"
+		                                     value={student.note || ''}
+		                                     onChange={e => handleUpdateStudentByIndex(idx, 'note', e.target.value)}
+		                                     className="min-w-0 w-full border border-amber-200 rounded-lg px-2 py-1 text-sm font-bold text-amber-900 bg-white focus:ring-2 focus:ring-amber-200 focus:border-amber-400 outline-none"
+		                                     placeholder="例：交通補助"
+		                                   />
+		                                   <label className="inline-flex w-[116px] items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-amber-200 bg-white px-2 py-1.5 text-sm font-bold text-amber-900 cursor-pointer">
+		                                     <input
+		                                       type="checkbox"
+		                                       className="h-4 w-4 rounded border-amber-300 text-amber-500 focus:ring-amber-400"
+		                                       checked={!!student.subsidyReceived}
+		                                       onChange={e => handleUpdateStudentByIndex(idx, 'subsidyReceived', e.target.checked)}
+		                                     />
+		                                     已領補助
+		                                   </label>
+		                                 </div>
+		                               </div>
+		                            </td>
+	                          </tr>
                         );
                       })}
                     </tbody>
@@ -2609,7 +2749,7 @@ const App = () => {
 	                  </div>
 	                </div>
 
-	                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+	                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-8">
 	                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
 	                    <div className="flex items-center justify-between gap-3 mb-2">
 	                      <h3 className="font-extrabold text-amber-900">現場廣播公告</h3>
@@ -2629,24 +2769,40 @@ const App = () => {
 	                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
 	                    <div className="flex items-center justify-between gap-3 mb-2">
 	                      <h3 className="font-extrabold text-slate-800">學生查詢</h3>
-	                      <span className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-1">編號 / 姓名 / 末四碼</span>
+	                      <div className="flex items-center gap-2 flex-wrap justify-end">
+	                        <button
+	                          type="button"
+	                          onClick={() => setShowPendingSubsidyOnly(prev => !prev)}
+	                          className={`text-xs font-bold rounded-full px-3 py-1.5 border transition-colors ${showPendingSubsidyOnly ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'}`}
+	                        >
+	                          尚未領補助 {pendingSubsidyStudents.length} 人
+	                        </button>
+	                        <span className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-1">編號 / 姓名 / 末四碼</span>
+	                      </div>
 	                    </div>
 	                    <input
 	                      value={studentSearchQuery}
 	                      onChange={e => setStudentSearchQuery(e.target.value)}
-	                      placeholder="輸入報到編號、姓名、准考證末四碼..."
+	                      placeholder={showPendingSubsidyOnly ? '篩選尚未領補助學生...' : '輸入報到編號、姓名、准考證末四碼...'}
 	                      className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
 	                    />
 	                    <div className="mt-3 space-y-2 max-h-56 overflow-y-auto">
-	                      {studentSearchQuery.trim() && studentSearchResults.length === 0 && (
-	                        <div className="text-sm font-bold text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3">查無符合學生。</div>
+	                      {(studentSearchQuery.trim() || showPendingSubsidyOnly) && studentSearchResults.length === 0 && (
+	                        <div className="text-sm font-bold text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3">
+	                          {showPendingSubsidyOnly ? '目前沒有符合條件的尚未領補助學生。' : '查無符合學生。'}
+	                        </div>
 	                      )}
 	                      {studentSearchResults.map(({ student, scheduleInfo }) => (
 	                        <div key={`${student.checkinNo}-${student.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
 	                          <div className="flex items-start justify-between gap-2">
 	                            <div>
 	                              <div className="font-extrabold text-slate-900">{formatStudentLabel(student)}</div>
-	                              <div className="text-xs font-bold text-slate-500 mt-1">{student.region}區｜{student.city || '未填縣市'}</div>
+	                              <div className="text-xs font-bold text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+	                                <span>{student.region}區｜{student.city || '未填縣市'}</span>
+	                                {hasTravelSubsidyNote(student) && !student.subsidyReceived && (
+	                                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">待發補助</span>
+	                                )}
+	                              </div>
 	                            </div>
 	                            {renderCheckinStatusBadge(student.checkinStatus || '未報到')}
 	                          </div>
@@ -2659,6 +2815,93 @@ const App = () => {
 	                          ) : (
 	                            <div className="mt-2 text-xs font-bold text-rose-500">尚未出現在目前排程中。</div>
 	                          )}
+	                        </div>
+	                      ))}
+	                    </div>
+	                  </div>
+
+	                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+	                    <div className="flex items-center justify-between gap-3 mb-2">
+	                      <h3 className="font-extrabold text-slate-800">最快補位查詢</h3>
+	                      <span className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-1">
+	                        每輪上限 {insertSlotRecommendation.capacityPerRound || '-'} 人
+	                      </span>
+	                    </div>
+	                    <input
+	                      value={insertStudentQuery}
+	                      onChange={e => {
+	                        setInsertStudentQuery(e.target.value);
+	                        setSelectedInsertStudentKey('');
+	                      }}
+	                      placeholder="輸入學生姓名、報到編號或末四碼..."
+	                      className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+	                    />
+	                    <p className="mt-2 text-xs font-bold text-slate-500">
+	                      {activeInsertStudent ? `依 ${formatStudentLabel(activeInsertStudent)} 的條件估算最快可調整場次。` : '未指定學生時，會顯示目前整體最早還有名額的時段。'}
+	                    </p>
+
+	                    {insertStudentCandidates.length > 0 && (
+	                      <div className="mt-3 flex flex-wrap gap-2">
+	                        {insertStudentCandidates.map(student => {
+	                          const isActive = activeInsertStudent && getStudentLookupKey(student) === getStudentLookupKey(activeInsertStudent);
+	                          return (
+	                            <button
+	                              key={getStudentLookupKey(student)}
+	                              type="button"
+	                              onClick={() => setSelectedInsertStudentKey(getStudentLookupKey(student))}
+	                              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${isActive ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+	                            >
+	                              {formatStudentLabel(student)}
+	                            </button>
+	                          );
+	                        })}
+	                      </div>
+	                    )}
+
+	                    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+	                      <div className="text-xs font-extrabold text-emerald-700">建議結果</div>
+	                      {insertSlotRecommendation.recommendedSlot ? (
+	                        <div className="mt-2">
+	                          <div className="text-lg font-extrabold text-emerald-900">
+	                            {insertSlotRecommendation.recommendedSlot.name}
+	                          </div>
+	                          <div className="text-sm font-bold text-emerald-800 mt-1">
+	                            {insertSlotRecommendation.recommendedSlot.start} - {insertSlotRecommendation.recommendedSlot.end}
+	                          </div>
+	                          <div className="text-xs font-bold text-emerald-700 mt-2">
+	                            尚餘 {insertSlotRecommendation.summary.find(item => item.isRecommended)?.remaining ?? 0} 個名額，可最快安插進去。
+	                          </div>
+	                        </div>
+	                      ) : (
+	                        <div className="mt-2 text-sm font-bold text-rose-600">
+	                          目前沒有符合條件的可補位時段。
+	                        </div>
+	                      )}
+	                      <div className="mt-3 text-xs font-bold text-slate-600">
+	                        {insertSlotRecommendation.constraintText}
+	                      </div>
+	                      {activeInsertStudent?.preferredSlot && insertSlotRecommendation.preferredSlot && (
+	                        <div className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${insertSlotRecommendation.preferredSlotAvailable ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+	                          原意願：{insertSlotRecommendation.preferredSlot.name}
+	                          {insertSlotRecommendation.preferredSlotAvailable ? '（仍可安排）' : '（目前已滿或不符條件）'}
+	                        </div>
+	                      )}
+	                    </div>
+
+	                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+	                      {insertSlotRecommendation.summary.map(({ slot, count, remaining, isEligible, isRecommended }) => (
+	                        <div
+	                          key={slot.id}
+	                          className={`rounded-xl border p-3 ${isRecommended ? 'border-emerald-300 bg-emerald-50' : (isEligible ? 'border-slate-200 bg-slate-50' : 'border-slate-100 bg-slate-50/60 opacity-60')}`}
+	                        >
+	                          <div className="flex items-center justify-between gap-2">
+	                            <div className="font-extrabold text-slate-800">{slot.name}</div>
+	                            {isRecommended && <span className="text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 rounded-full px-2 py-0.5">最快</span>}
+	                          </div>
+	                          <div className="text-xs font-bold text-slate-500 mt-1">{slot.start} - {slot.end}</div>
+	                          <div className="text-xs font-bold text-slate-700 mt-2">
+	                            已排 {count} 人 / 尚餘 {remaining} 人
+	                          </div>
 	                        </div>
 	                      ))}
 	                    </div>
