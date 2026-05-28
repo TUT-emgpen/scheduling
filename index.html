@@ -11,8 +11,8 @@
           "react": "https://esm.sh/react@18.3.1",
           "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
           "lucide-react": "https://esm.sh/lucide-react@0.552.0?external=react"
-        }
-      }
+		      }
+		    }
     </script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
@@ -70,7 +70,7 @@ const ASSISTANT_NEUTRAL_STYLE = {
   lineBorder: 'border-slate-100'
 };
 
-const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbwUAlCt0556Q7I8zkvP95OdHNYP9Ar-I9Y6xiHTiHzVF3Cs3_ABFefHeJwCJWIAetA/exec';
+const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbwg9okipgE-FhVo0iTMAE2BDwy6jixTtVUbdYMRq8B6siU00IbU1QcYcl8Y0tng20g/exec';
 
 const DEFAULT_SETTINGS = {
   startTime: '08:00', endTime: '18:00',
@@ -89,6 +89,157 @@ const DEFAULT_REGISTRATION_SLOTS = [
   { id: 3, start: '13:00', end: '13:30', name: '時段 3 (午)' },
   { id: 4, start: '15:00', end: '15:30', name: '時段 4 (晚)' }
 ];
+
+const SCHEDULE_STRATEGIES = [
+  {
+    id: 'dual-stagger',
+    name: '四輪雙梯交錯分流',
+    shortName: '雙梯交錯',
+    badge: '建議',
+    description: '每輪兩梯互相錯開，一梯先面試，一梯先實作，適合大多數同時有實作與面試的系所。',
+    laneA: ['報到', '面試', '實作'],
+    laneB: ['報到', '實作', '面試']
+  },
+  {
+    id: 'practice-first',
+    name: '實作優先分流',
+    shortName: '先實作',
+    badge: '實作量大',
+    description: '所有梯次先進實作測驗，再依序面試，適合實作教室容量充足、想先把術科壓力處理掉的系所。',
+    laneA: ['報到', '實作', '面試'],
+    laneB: ['報到', '實作', '面試']
+  },
+  {
+    id: 'interview-first',
+    name: '面試優先分流',
+    shortName: '先面試',
+    badge: '老師優先',
+    description: '所有梯次先進面試審查，再進實作測驗，適合老師時段較集中、希望先消化面試量的系所。',
+    laneA: ['報到', '面試', '實作'],
+    laneB: ['報到', '面試', '實作']
+  },
+  {
+    id: 'round-rotate',
+    name: '輪次交替分流',
+    shortName: '輪次輪替',
+    badge: '彈性',
+    description: '奇數輪採面試優先，偶數輪採實作優先，讓老師與教室負載在一天中輪流被優先使用。',
+    laneA: ['奇數輪', '面試', '實作'],
+    laneB: ['偶數輪', '實作', '面試']
+  },
+  {
+    id: 'buffer-pool',
+    name: '緩衝池分流（湊滿進場）',
+    shortName: '緩衝池',
+    badge: '大時段',
+    description: '學生先依大時段報到，達門檻人數後依序進入面試與實作，適合只分早/午報到的科系。',
+    laneA: ['報到池', '湊滿 N 人', '面試→實作'],
+    laneB: ['報到池', '湊滿 N 人', '實作→面試']
+  }
+];
+
+const DEPT_RULE_SCHEMA = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Department Rule Engine Config',
+  type: 'object',
+  required: ['version', 'mode', 'resources', 'time', 'registrationSlots'],
+  properties: {
+    version: { type: 'string' },
+    mode: { type: 'string', enum: ['pipeline', 'buffer_pool'] },
+    strategyId: { type: 'string' },
+    resources: {
+      type: 'object',
+      required: ['assistants', 'practiceRooms', 'interviewRooms'],
+      properties: {
+        assistants: {
+          type: 'object',
+          properties: {
+            count: { type: 'integer', minimum: 1 },
+            names: { type: 'array', items: { type: 'string' } }
+          }
+        },
+        practiceRooms: {
+          type: 'object',
+          properties: {
+            count: { type: 'integer', minimum: 1 },
+            names: { type: 'array', items: { type: 'string' } },
+            capacityPerRoom: { type: 'integer', minimum: 1 }
+          }
+        },
+        interviewRooms: {
+          type: 'object',
+          properties: {
+            count: { type: 'integer', minimum: 1 },
+            names: { type: 'array', items: { type: 'string' } }
+          }
+        }
+      }
+    },
+    time: {
+      type: 'object',
+      required: ['dayStart', 'dayEnd', 'lunchStart', 'lunchEnd', 'practiceMinutes', 'interviewMinutes', 'transitMinutes'],
+      properties: {
+        dayStart: { type: 'string' },
+        dayEnd: { type: 'string' },
+        lunchStart: { type: 'string' },
+        lunchEnd: { type: 'string' },
+        practiceMinutes: { type: 'integer', minimum: 1 },
+        interviewMinutes: { type: 'integer', minimum: 1 },
+        transitMinutes: { type: 'integer', minimum: 0 },
+        interviewBreakRule: {
+          type: 'object',
+          properties: {
+            workBlockMinutes: { type: 'integer', minimum: 1 },
+            breakMinutes: { type: 'integer', minimum: 0 }
+          }
+        }
+      }
+    },
+    registrationSlots: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['id', 'start', 'end', 'name'],
+        properties: {
+          id: { type: ['string', 'integer'] },
+          start: { type: 'string' },
+          end: { type: 'string' },
+          name: { type: 'string' }
+        }
+      }
+    },
+    pipeline: {
+      type: 'object',
+      properties: {
+        rounds: { type: 'integer', minimum: 1 },
+        tiersPerRound: { type: 'integer', minimum: 1 },
+        baseTeamsPerTier: { type: 'integer', minimum: 1 },
+        groupsPerTeam: { type: 'integer', minimum: 1 },
+        studentsPerGroup: { type: 'integer', minimum: 1 },
+        allowPatternSwap: { type: 'boolean' }
+      }
+    },
+    bufferPool: {
+      type: 'object',
+      properties: {
+        bucketLabels: { type: 'array', items: { type: 'string' } },
+        launchSize: { type: 'integer', minimum: 1 },
+        groupsPerTeam: { type: 'integer', minimum: 1 },
+        studentsPerGroup: { type: 'integer', minimum: 1 },
+        flowPattern: { type: 'string', enum: ['P-I', 'I-P'] }
+      }
+    },
+    constraints: {
+      type: 'object',
+      properties: {
+        optimizeForEarlyFinish: { type: 'boolean' },
+        assistantNoOverlap: { type: 'boolean' },
+        preferRequestedSlot: { type: 'boolean' },
+        crossDeptPreferNearestAfternoon: { type: 'boolean' }
+      }
+    }
+  }
+};
 
 const DEFAULT_REGIONS = [
   { id: 1, name: '南部', counties: ['苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市', '嘉義縣', '台南市', '高雄市', '屏東縣', '台東縣', '花蓮縣', '澎湖縣', '金門縣', '連江縣'], colorIdx: 1 },
@@ -219,15 +370,17 @@ const App = () => {
     return `${(h2 >>> 0).toString(16).padStart(8, '0')}${(h1 >>> 0).toString(16).padStart(8, '0')}`;
   };
 
-  const ensureScheduleShape = (rawSchedule) => {
-    if (!rawSchedule || typeof rawSchedule !== 'object') {
-      return { combined: [], grouped: [] };
-    }
-    return {
-      combined: Array.isArray(rawSchedule.combined) ? rawSchedule.combined : [],
-      grouped: Array.isArray(rawSchedule.grouped) ? rawSchedule.grouped : []
-    };
-  };
+	  const ensureScheduleShape = (rawSchedule) => {
+	    if (!rawSchedule || typeof rawSchedule !== 'object') {
+	      return { combined: [], grouped: [] };
+	    }
+	    return {
+	      combined: Array.isArray(rawSchedule.combined) ? rawSchedule.combined : [],
+	      grouped: Array.isArray(rawSchedule.grouped) ? rawSchedule.grouped : [],
+	      strategyId: rawSchedule.strategyId || '',
+	      strategyName: rawSchedule.strategyName || ''
+	    };
+	  };
 
 		  const ensureStudentCheckinNos = (list) => {
 		    return (list || []).map((s, idx) => ({
@@ -318,6 +471,9 @@ const App = () => {
 		  const [insertStudentQuery, setInsertStudentQuery] = useState('');
 		  const [selectedInsertStudentKey, setSelectedInsertStudentKey] = useState('');
 		  const [showPendingSubsidyOnly, setShowPendingSubsidyOnly] = useState(false);
+		  const [printMode, setPrintMode] = useState('master');
+		  const [showStrategyModal, setShowStrategyModal] = useState(false);
+		  const [selectedScheduleStrategy, setSelectedScheduleStrategy] = useState('dual-stagger');
 		  const [taskConfirmations, setTaskConfirmations] = useState({});
 		  const [lastLiveSyncAt, setLastLiveSyncAt] = useState('');
 		  const [isAdminMode, setIsAdminMode] = useState(false);
@@ -415,6 +571,18 @@ const App = () => {
     setSelectedDepartmentId(normalized.id);
   };
 
+  const applyDepartmentProfileDataSilently = (profile) => {
+    const normalized = normalizeDepartmentProfile(profile);
+    setCloudUrl(normalized.cloudUrl);
+    setStudents(normalized.students);
+    setSchedule(normalized.schedule);
+    setSettings(normalized.settings);
+    setRegistrationSlots(normalized.registrationSlots);
+    setRegions(normalized.regions);
+    setFieldAnnouncement(normalized.announcement || '');
+    setTaskConfirmations(normalized.taskConfirmations || {});
+  };
+
   const persistCurrentDepartment = () => {
     if (!selectedDepartmentId) return;
     setDepartmentProfiles(prev => prev.map(profile => (
@@ -433,7 +601,7 @@ const App = () => {
     setSelectedDepartmentId(null);
   };
 
-  const addDepartmentProfile = () => {
+  const addDepartmentProfile = async () => {
     if (!isAdminMode) return;
     const name = departmentDraftName.trim();
     if (!name) {
@@ -443,9 +611,10 @@ const App = () => {
     const nextProfile = createDepartmentProfile(name);
     setDepartmentProfiles(prev => [...prev, nextProfile]);
     setDepartmentDraftName('');
+    await upsertDepartmentProfileToCloud(nextProfile, { silent: true });
   };
 
-  const copyDepartmentProfile = (profileId) => {
+  const copyDepartmentProfile = async (profileId) => {
     if (!isAdminMode) return;
     const source = departmentProfiles.find(profile => profile.id === profileId);
     if (!source) return;
@@ -456,9 +625,10 @@ const App = () => {
       schedule: { combined: [], grouped: [] }
     });
     setDepartmentProfiles(prev => [...prev, copied]);
+    await upsertDepartmentProfileToCloud(copied, { silent: true });
   };
 
-  const renameDepartmentProfile = (profileId) => {
+  const renameDepartmentProfile = async (profileId) => {
     if (!isAdminMode) return;
     const source = departmentProfiles.find(profile => profile.id === profileId);
     if (!source) return;
@@ -472,9 +642,10 @@ const App = () => {
     setDepartmentProfiles(prev => prev.map(profile => (
       profile.id === profileId ? { ...profile, name: trimmed, updatedAt: new Date().toISOString() } : profile
     )));
+    await renameDepartmentProfileInCloud(profileId, trimmed, { silent: true });
   };
 
-  const deleteDepartmentProfile = (profileId) => {
+  const deleteDepartmentProfile = async (profileId) => {
     if (!isAdminMode) return;
     const source = departmentProfiles.find(profile => profile.id === profileId);
     if (!source) return;
@@ -488,6 +659,7 @@ const App = () => {
     if (selectedDepartmentId === profileId) {
       setSelectedDepartmentId(null);
     }
+    await deleteDepartmentProfileInCloud(profileId, { silent: true });
   };
 
   const addRegistrationSlot = () => {
@@ -788,12 +960,16 @@ const App = () => {
     });
   };
 
-  const getLeadAssistant = (info) => (
-    info.events.find(e => !e.isRegistration && String(e.assistant || '').trim())?.assistant ||
-    info.events.find(e => String(e.assistant || '').trim())?.assistant ||
-    info.assistant ||
-    ''
-  );
+	  const isLeadAssistantName = (name) => (
+	    normalizeAssistantNames(settings.assistantNames, settings.assistantsCount).includes(String(name || '').trim())
+	  );
+
+	  const getLeadAssistant = (info) => (
+	    info.events.find(e => !e.isRegistration && isLeadAssistantName(e.assistant))?.assistant ||
+	    info.events.find(e => isLeadAssistantName(e.assistant))?.assistant ||
+	    (isLeadAssistantName(info.assistant) ? info.assistant : '') ||
+	    ''
+	  );
 
 	  const getNextMobileEvent = (info) => (
 	    info.events.find(e => !e.isRegistration && !e.isTransit) ||
@@ -1078,13 +1254,99 @@ const App = () => {
 	    try {
 	      json = JSON.parse(raw);
 	    } catch (_) {
+      if (String(raw).includes('存取遭拒') || String(raw).includes('Access Denied') || String(raw).includes('需要存取權')) {
+        throw new Error('Web App 權限遭拒：請確認部署為「任何人可存取」，且使用的是 /exec 網址。');
+      }
 	      throw new Error('Web App 回傳非 JSON，請確認 Apps Script 已更新並重新部署。');
 	    }
 	    if (!response.ok || !json.ok) {
 	      throw new Error(json.error || `HTTP ${response.status}`);
 	    }
-	    return json;
-	  };
+    return json;
+  };
+
+	  const fetchCloudAction = async (targetUrl, action, params = {}) => {
+    if (!targetUrl || !isValidCloudUrl(targetUrl)) return { ok: false, skipped: true };
+    const search = new URLSearchParams({ action, ...params }).toString();
+    const sep = targetUrl.includes('?') ? '&' : '?';
+    const response = await fetch(`${targetUrl}${sep}${search}`, { method: 'GET' });
+    const raw = await response.text();
+	    let json = null;
+	    try {
+	      json = JSON.parse(raw);
+	    } catch (_) {
+      if (String(raw).includes('存取遭拒') || String(raw).includes('Access Denied') || String(raw).includes('需要存取權')) {
+        throw new Error('Web App 權限遭拒：請確認部署為「任何人可存取」，且使用的是 /exec 網址。');
+      }
+	      throw new Error('Web App 回傳非 JSON，請確認 Apps Script 已更新並重新部署。');
+	    }
+    if (!response.ok || !json.ok) {
+      throw new Error(json.error || `HTTP ${response.status}`);
+    }
+    return json;
+  };
+
+  const upsertDepartmentProfileToCloud = async (profile, { silent = true } = {}) => {
+    if (!isAdminMode || !isValidCloudUrl(cloudUrl) || !profile) return false;
+    try {
+      const normalized = normalizeDepartmentProfile(profile);
+      await postCloudAction(cloudUrl, {
+        action: 'upsertDepartmentProfile',
+        payload: {
+          departmentId: normalized.id,
+          name: normalized.name,
+          profile: normalized,
+          updatedAt: new Date().toISOString(),
+          localTime: new Date().toLocaleString('zh-TW', { hour12: false })
+        }
+      });
+      setLastCloudSyncAt(new Date().toLocaleString('zh-TW', { hour12: false }));
+      return true;
+    } catch (error) {
+      if (!silent) alert(`❌ 雲端建立/更新科系失敗：${error.message}`);
+      else console.warn('雲端建立/更新科系失敗：', error);
+      return false;
+    }
+  };
+
+  const renameDepartmentProfileInCloud = async (departmentId, newName, { silent = true } = {}) => {
+    if (!isAdminMode || !isValidCloudUrl(cloudUrl) || !departmentId) return false;
+    try {
+      await postCloudAction(cloudUrl, {
+        action: 'renameDepartmentProfile',
+        payload: {
+          departmentId,
+          name: newName,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      setLastCloudSyncAt(new Date().toLocaleString('zh-TW', { hour12: false }));
+      return true;
+    } catch (error) {
+      if (!silent) alert(`❌ 雲端改名失敗：${error.message}`);
+      else console.warn('雲端改名失敗：', error);
+      return false;
+    }
+  };
+
+  const deleteDepartmentProfileInCloud = async (departmentId, { silent = true } = {}) => {
+    if (!isAdminMode || !isValidCloudUrl(cloudUrl) || !departmentId) return false;
+    try {
+      await postCloudAction(cloudUrl, {
+        action: 'deleteDepartmentProfile',
+        payload: {
+          departmentId,
+          deletedAt: new Date().toISOString()
+        }
+      });
+      setLastCloudSyncAt(new Date().toLocaleString('zh-TW', { hour12: false }));
+      return true;
+    } catch (error) {
+      if (!silent) alert(`❌ 雲端刪除失敗：${error.message}`);
+      else console.warn('雲端刪除失敗：', error);
+      return false;
+    }
+  };
 
 	  const submitTaskConfirmationToCloud = async ({ targetUrl, departmentId, assistantName, groupId, eventIndex, status }) => {
 	    try {
@@ -1098,9 +1360,9 @@ const App = () => {
 	          status,
 	          taskKey: getTaskKey(assistantName, groupId, eventIndex),
 	          updatedAt: new Date().toISOString(),
-	          localTime: new Date().toLocaleString('zh-TW', { hour12: false })
-	        }
-	      });
+		          localTime: new Date().toLocaleString('zh-TW', { hour12: false })
+		        }
+		      });
 	      setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
 	      return true;
 	    } catch (error) {
@@ -1408,113 +1670,221 @@ const App = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   }
 
-  const handleGenerateSchedule = () => {
+  const isNoSnapshotError = (error) => String(error?.message || error || '').includes('no_snapshot');
+
+  const openScheduleStrategyModal = () => {
     if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
     if (registrationSlots.length === 0) { alert("請至少設定一個報到時段。"); return; }
+    setShowStrategyModal(true);
+  };
 
-    const ROUND_COUNT = 4;
-    const TIERS_PER_ROUND = 2;
-    const BASE_TEAMS_PER_TIER = 2;
-    const GROUPS_PER_TEAM = 2;
-    const STUDENTS_PER_GROUP = 5;
+  const getStrategyPattern = (strategyId, roundNo, tierNo) => {
+    if (strategyId === 'practice-first') return 'P-I';
+    if (strategyId === 'interview-first') return 'I-P';
+    if (strategyId === 'round-rotate') return roundNo % 2 === 1 ? 'I-P' : 'P-I';
+    return tierNo === 1 ? 'I-P' : 'P-I';
+  };
+
+  const buildDepartmentRuleConfig = (strategyId = selectedScheduleStrategy) => {
+    const sortedSlots = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
     const assistantsCount = Math.max(1, Number(settings.assistantsCount || 1));
-    if (assistantsCount < TIERS_PER_ROUND * BASE_TEAMS_PER_TIER) {
-      alert(`此模式需至少 ${TIERS_PER_ROUND * BASE_TEAMS_PER_TIER} 位工讀生，才能達成「一位工讀生帶一隊」。`);
-      return;
+    const selectedStrategy = SCHEDULE_STRATEGIES.find(strategy => strategy.id === strategyId) || SCHEDULE_STRATEGIES[0];
+    const ruleMode = strategyId === 'buffer-pool'
+      ? 'buffer_pool'
+      : (settings.ruleMode === 'buffer_pool' ? 'buffer_pool' : 'pipeline');
+    return {
+      version: '1.0.0',
+      mode: ruleMode,
+      strategyId: selectedStrategy.id,
+      strategyName: selectedStrategy.name,
+      resources: {
+        assistants: {
+          count: assistantsCount,
+          names: normalizeAssistantNames(settings.assistantNames, assistantsCount)
+        },
+        practiceRooms: {
+          count: Math.max(1, Number(settings.practiceRooms || 1)),
+          names: normalizeRoomNames(settings.practiceRoomNames, settings.practiceRooms, '實作教室'),
+          capacityPerRoom: Math.max(1, Number(settings.groupSize || 1))
+        },
+        interviewRooms: {
+          count: Math.max(1, Number(settings.interviewRooms || 1)),
+          names: normalizeRoomNames(settings.interviewRoomNames, settings.interviewRooms, '面試考場')
+        }
+      },
+      time: {
+        dayStart: settings.startTime,
+        dayEnd: settings.endTime,
+        lunchStart: settings.lunchStart,
+        lunchEnd: settings.lunchEnd,
+        practiceMinutes: Math.max(1, Number(settings.practiceMinutes || 1)),
+        interviewMinutes: Math.max(1, Number(settings.interviewMinutes || 1)),
+        transitMinutes: Math.max(0, Number(settings.transitMinutes || 0)),
+        interviewBreakRule: {
+          workBlockMinutes: 40,
+          breakMinutes: 10
+        }
+      },
+      registrationSlots: sortedSlots,
+      pipeline: {
+        rounds: sortedSlots.length,
+        tiersPerRound: 2,
+        baseTeamsPerTier: 2,
+        groupsPerTeam: 2,
+        studentsPerGroup: 5,
+        allowPatternSwap: true
+      },
+      bufferPool: {
+        bucketLabels: sortedSlots.map(slot => slot.name),
+        launchSize: Math.max(1, Number(settings.interviewBatchSize || 5)),
+        groupsPerTeam: 2,
+        studentsPerGroup: 5,
+        flowPattern: selectedStrategy.id === 'interview-first' ? 'I-P' : 'P-I'
+      },
+      constraints: {
+        optimizeForEarlyFinish: true,
+        assistantNoOverlap: true,
+        preferRequestedSlot: true,
+        crossDeptPreferNearestAfternoon: true
+      }
+    };
+  };
+
+  const buildGroupedFlow = (events, assistantNames) => {
+    const groupsMap = {};
+    events.forEach(item => {
+      if (!groupsMap[item.groupId]) groupsMap[item.groupId] = { id: item.groupId, region: item.region, assistant: '', allStudents: [], events: [] };
+      groupsMap[item.groupId].events.push(item);
+      if (item.students && !item.isTransit && !item.isRegistration) {
+        item.students.forEach(s => {
+          if (!groupsMap[item.groupId].allStudents.find(ex => ex.id === s.id)) groupsMap[item.groupId].allStudents.push(s);
+        });
+      }
+    });
+    const assistantNameSet = new Set(assistantNames.map(name => String(name || '').trim()));
+    return Object.values(groupsMap).map(group => {
+      group.events.sort((a, b) => a.startTimeMins - b.startTimeMins);
+      if (group.allStudents.length === 0) {
+        const regEvent = group.events.find(e => e.isRegistration);
+        if (regEvent?.students) group.allStudents = regEvent.students;
+      }
+      const leadEvent =
+        group.events.find(e => !e.isRegistration && assistantNameSet.has(String(e.assistant || '').trim())) ||
+        group.events.find(e => assistantNameSet.has(String(e.assistant || '').trim()));
+      group.assistant = leadEvent ? leadEvent.assistant : '';
+      return group;
+    });
+  };
+
+  const findAssistantConflicts = (events, assistantNames) => {
+    const assistantNameSet = new Set(assistantNames.map(name => String(name || '').trim()));
+    const assistantEvents = events
+      .filter(item => assistantNameSet.has(String(item.assistant || '').trim()))
+      .map(item => ({
+        assistant: item.assistant,
+        groupId: item.groupId,
+        start: item.startTimeMins,
+        end: parseTime(item.endTime)
+      }))
+      .filter(item => Number.isFinite(item.start) && Number.isFinite(item.end) && item.end > item.start)
+      .sort((a, b) => a.assistant.localeCompare(b.assistant, 'zh-Hant') || a.start - b.start);
+    const conflicts = [];
+    for (let i = 1; i < assistantEvents.length; i++) {
+      const prev = assistantEvents[i - 1];
+      const curr = assistantEvents[i];
+      if (prev.assistant === curr.assistant && curr.start < prev.end) {
+        conflicts.push(`${curr.assistant}：${formatTime(curr.start)}-${formatTime(Math.min(prev.end, curr.end))}（${prev.groupId} / ${curr.groupId}）`);
+      }
     }
-    const teamsPerTier = BASE_TEAMS_PER_TIER + Math.floor(Math.max(0, assistantsCount - (TIERS_PER_ROUND * BASE_TEAMS_PER_TIER)) / TIERS_PER_ROUND);
-    const STUDENTS_PER_TIER = teamsPerTier * GROUPS_PER_TEAM * STUDENTS_PER_GROUP;
-    const STUDENTS_PER_ROUND = TIERS_PER_ROUND * STUDENTS_PER_TIER;
+    return conflicts;
+  };
 
-    if (registrationSlots.length !== ROUND_COUNT) {
-      alert(`目前設定了 ${registrationSlots.length} 個報到時段。\n此模式固定為一天 ${ROUND_COUNT} 輪，請先將報到時段調整為 ${ROUND_COUNT} 個後再產生排程。`);
-      return;
+  const generatePipelineSchedule = (inputStudents, deptConfig) => {
+    const slots = [...(deptConfig.registrationSlots || [])].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    if (slots.length === 0) return { ok: false, error: '請至少設定一個報到時段。' };
+
+    const assistantsCount = Math.max(1, Number(deptConfig.resources?.assistants?.count || 1));
+    const tiersPerRound = Math.max(1, Number(deptConfig.pipeline?.tiersPerRound || 2));
+    const baseTeamsPerTier = Math.max(1, Number(deptConfig.pipeline?.baseTeamsPerTier || 2));
+    const groupsPerTeam = Math.max(1, Number(deptConfig.pipeline?.groupsPerTeam || 2));
+    const studentsPerGroup = Math.max(1, Number(deptConfig.pipeline?.studentsPerGroup || 5));
+    const minAssistantsNeeded = tiersPerRound * baseTeamsPerTier;
+    if (assistantsCount < minAssistantsNeeded) {
+      return { ok: false, error: `此分法至少需要 ${minAssistantsNeeded} 位工讀生。` };
     }
+    const teamsPerTier = baseTeamsPerTier + Math.floor(Math.max(0, assistantsCount - minAssistantsNeeded) / tiersPerRound);
+    const studentsPerTier = teamsPerTier * groupsPerTeam * studentsPerGroup;
+    const studentsPerRound = tiersPerRound * studentsPerTier;
 
-	    let currentStudents = [...students];
-	    const sortedSlots = [...registrationSlots].sort((a, b) => parseTime(a.start) - parseTime(b.start));
-	    const slotIds = sortedSlots.map(s => Number(s.id));
-	    const slotCounts = Object.fromEntries(slotIds.map(id => [id, 0]));
-	    const assignedSlotsByIndex = new Map();
-	    const afternoonStartTime = Math.max(parseTime(settings.lunchEnd), 12 * 60);
+    const slotIds = slots.map(slot => Number(slot.id));
+    const slotCounts = Object.fromEntries(slotIds.map(id => [id, 0]));
+    const assignedSlotsByIndex = new Map();
+    const lunchEnd = parseTime(deptConfig.time?.lunchEnd || '13:00');
+    const afternoonStartTime = Math.max(lunchEnd, 12 * 60);
 
-	    const findLeastFilledSlot = (possibleSlots = slotIds) => {
-	      if (possibleSlots.length === 0) return null;
-	      let minSlot = possibleSlots[0];
-	      for (let i = 1; i < possibleSlots.length; i++) {
-	        if (slotCounts[possibleSlots[i]] < slotCounts[minSlot]) minSlot = possibleSlots[i];
-	      }
-	      return minSlot;
-	    };
+    const findLeastFilledSlot = (possibleSlots = slotIds) => {
+      if (!possibleSlots.length) return null;
+      return possibleSlots.reduce((minSlot, slotId) => (slotCounts[slotId] < slotCounts[minSlot] ? slotId : minSlot), possibleSlots[0]);
+    };
 
-	    const findCrossDeptPreferredSlot = (student) => {
-	      if (!student.isCrossDept) return null;
-	      const blockedEnd = parseTime(student.blockedEnd || '');
-	      const readyTime = Number.isFinite(blockedEnd) ? Math.max(blockedEnd, afternoonStartTime) : afternoonStartTime;
-	      const afternoonSlots = sortedSlots
-	        .filter(slot => parseTime(slot.start) >= readyTime)
-	        .map(slot => Number(slot.id));
-	      if (afternoonSlots.length === 0) return null;
-	      const availableSlot = afternoonSlots.find(slotId => slotCounts[slotId] < STUDENTS_PER_ROUND);
-	      return availableSlot || afternoonSlots[0];
-	    };
+    const findCrossDeptPreferredSlot = (student) => {
+      if (!student.isCrossDept) return null;
+      const blockedEnd = parseTime(student.blockedEnd || '');
+      const readyTime = Number.isFinite(blockedEnd) ? Math.max(blockedEnd, afternoonStartTime) : afternoonStartTime;
+      const possible = slots.filter(slot => parseTime(slot.start) >= readyTime).map(slot => Number(slot.id));
+      if (!possible.length) return null;
+      const available = possible.find(slotId => slotCounts[slotId] < studentsPerRound);
+      return available || possible[0];
+    };
 
-	    currentStudents.forEach((student, idx) => {
-	      const crossDeptSlot = findCrossDeptPreferredSlot(student);
-	      if (crossDeptSlot) {
-	        assignedSlotsByIndex.set(idx, crossDeptSlot);
-	        slotCounts[crossDeptSlot]++;
-	      }
-	    });
+    let currentStudents = [...inputStudents];
+    currentStudents.forEach((student, idx) => {
+      if (student.preferredSlot && slotCounts[student.preferredSlot] != null) {
+        assignedSlotsByIndex.set(idx, student.preferredSlot);
+        slotCounts[student.preferredSlot]++;
+      }
+    });
+    currentStudents.forEach((student, idx) => {
+      if (assignedSlotsByIndex.has(idx)) return;
+      const crossDeptSlot = findCrossDeptPreferredSlot(student);
+      if (crossDeptSlot) {
+        assignedSlotsByIndex.set(idx, crossDeptSlot);
+        slotCounts[crossDeptSlot]++;
+      }
+    });
+    currentStudents = currentStudents.map((student, idx) => {
+      if (assignedSlotsByIndex.has(idx)) return { ...student, assignedSlot: assignedSlotsByIndex.get(idx) };
+      const minSlot = findLeastFilledSlot();
+      if (!minSlot) return { ...student, assignedSlot: null };
+      slotCounts[minSlot]++;
+      return { ...student, assignedSlot: minSlot };
+    });
 
-	    currentStudents.forEach((student, idx) => {
-	      if (assignedSlotsByIndex.has(idx)) return;
-	      if (student.preferredSlot && slotCounts[student.preferredSlot] != null) {
-	        assignedSlotsByIndex.set(idx, student.preferredSlot);
-	        slotCounts[student.preferredSlot]++;
-	      }
-	    });
-
-	    currentStudents = currentStudents.map((student, idx) => {
-	      if (assignedSlotsByIndex.has(idx)) {
-	        return { ...student, assignedSlot: assignedSlotsByIndex.get(idx) };
-	      }
-	      const minSlot = findLeastFilledSlot();
-	      if (!minSlot) return { ...student, assignedSlot: null };
-	      slotCounts[minSlot]++;
-	      return { ...student, assignedSlot: minSlot };
-	    });
-    setStudents(currentStudents); 
-
-    const overloadedSlots = sortedSlots
-      .map(slot => {
-        const count = currentStudents.filter(s => s.assignedSlot === Number(slot.id)).length;
-        return { slot, count };
-      })
-      .filter(({ count }) => count > STUDENTS_PER_ROUND);
+    const overloadedSlots = slots
+      .map(slot => ({ slot, count: currentStudents.filter(student => student.assignedSlot === Number(slot.id)).length }))
+      .filter(item => item.count > studentsPerRound);
     if (overloadedSlots.length > 0) {
-      const msg = overloadedSlots.map(({ slot, count }) => `${slot.name}：${count} 人（上限 ${STUDENTS_PER_ROUND}）`).join('\n');
-      alert(`固定四輪模式下，每輪最多 ${STUDENTS_PER_ROUND} 人。\n以下輪次超過上限：\n${msg}\n\n請調整學生報到時段後再重排。`);
-      return;
+      const details = overloadedSlots.map(item => `${item.slot.name}：${item.count} 人（上限 ${studentsPerRound}）`).join('\n');
+      return { ok: false, error: `以下時段超過容量：\n${details}\n\n請調整報到時段後再重排。` };
     }
 
-    const getMainRegion = (studentsArray) => {
-      if (studentsArray.length === 0) return '未分配 (其他)';
-      const regionCounter = {};
-      studentsArray.forEach(s => {
-        regionCounter[s.region] = (regionCounter[s.region] || 0) + 1;
+    const getMainRegion = (groupStudents) => {
+      if (!groupStudents.length) return '未分配 (其他)';
+      const counter = {};
+      groupStudents.forEach(student => {
+        const key = student.region || '其他';
+        counter[key] = (counter[key] || 0) + 1;
       });
-      return Object.entries(regionCounter).sort((a, b) => b[1] - a[1])[0][0];
+      return Object.entries(counter).sort((a, b) => b[1] - a[1])[0][0];
     };
 
     const buildTierSubGroups = (tierStudents, teamsCount) => {
       const subGroups = [];
       for (let teamIdx = 0; teamIdx < teamsCount; teamIdx++) {
-        for (let groupIdx = 0; groupIdx < GROUPS_PER_TEAM; groupIdx++) {
-          const groupOrder = (teamIdx * GROUPS_PER_TEAM) + groupIdx;
-          const startIndex = groupOrder * STUDENTS_PER_GROUP;
-          const members = tierStudents.slice(startIndex, startIndex + STUDENTS_PER_GROUP);
-          if (members.length === 0) continue;
+        for (let groupIdx = 0; groupIdx < groupsPerTeam; groupIdx++) {
+          const startIndex = ((teamIdx * groupsPerTeam) + groupIdx) * studentsPerGroup;
+          const members = tierStudents.slice(startIndex, startIndex + studentsPerGroup);
+          if (!members.length) continue;
           subGroups.push({
             label: `第 ${teamIdx + 1} 隊・第 ${groupIdx + 1} 組`,
             team: teamIdx + 1,
@@ -1527,25 +1897,23 @@ const App = () => {
     };
 
     const allGroups = [];
-    sortedSlots.forEach((slot, roundIdx) => {
+    slots.forEach((slot, roundIdx) => {
       const roundNo = roundIdx + 1;
       const slotId = Number(slot.id);
-      const roundStudents = currentStudents.filter(s => s.assignedSlot === slotId);
-      const tierAStudents = roundStudents.slice(0, STUDENTS_PER_TIER);
-      const tierBStudents = roundStudents.slice(STUDENTS_PER_TIER, STUDENTS_PER_TIER * 2);
-
+      const roundStudents = currentStudents.filter(student => student.assignedSlot === slotId);
+      const tierAStudents = roundStudents.slice(0, studentsPerTier);
+      const tierBStudents = roundStudents.slice(studentsPerTier, studentsPerTier * 2);
       const tiers = [
-        { key: 'A', pattern: 'I-P', students: tierAStudents, tierNo: 1 },
-        { key: 'B', pattern: 'P-I', students: tierBStudents, tierNo: 2 }
+        { students: tierAStudents, tierNo: 1, pattern: getStrategyPattern(deptConfig.strategyId, roundNo, 1) },
+        { students: tierBStudents, tierNo: 2, pattern: getStrategyPattern(deptConfig.strategyId, roundNo, 2) }
       ];
-
       tiers.forEach(tier => {
-        if (tier.students.length === 0) return;
-        const tierSubGroups = buildTierSubGroups(tier.students, teamsPerTier);
+        if (!tier.students.length) return;
+        const subGroups = buildTierSubGroups(tier.students, teamsPerTier);
         for (let teamNo = 1; teamNo <= teamsPerTier; teamNo++) {
-          const teamSubGroups = tierSubGroups.filter(sg => sg.team === teamNo);
-          if (teamSubGroups.length === 0) continue;
-          const teamStudents = teamSubGroups.flatMap(sg => sg.students);
+          const teamSubGroups = subGroups.filter(subGroup => subGroup.team === teamNo);
+          if (!teamSubGroups.length) continue;
+          const teamStudents = teamSubGroups.flatMap(subGroup => subGroup.students);
           allGroups.push({
             id: `R${roundNo}-梯${tier.tierNo}-隊${teamNo}`,
             slotId,
@@ -1561,310 +1929,464 @@ const App = () => {
       });
     });
 
-    allGroups.sort((a, b) => {
-      if (a.roundNo !== b.roundNo) return a.roundNo - b.roundNo;
-      if (a.tierNo !== b.tierNo) return a.tierNo - b.tierNo;
-      return a.teamNo - b.teamNo;
-    });
+    allGroups.sort((a, b) => (
+      a.roundNo - b.roundNo ||
+      a.tierNo - b.tierNo ||
+      a.teamNo - b.teamNo
+    ));
 
-    const newSchedule = [];
-    const MAX_WAIT_AFTER_CHECKIN_MINUTES = 50;
-    const INTERVIEW_WORK_BLOCK_MINUTES = 40;
-    const INTERVIEW_BREAK_MINUTES = 10;
-    const lunchStart = parseTime(settings.lunchStart);
-    const lunchEnd = parseTime(settings.lunchEnd);
-    
-    const practiceRoomAvailable = Array(Number(settings.practiceRooms)).fill(parseTime(settings.startTime));
-    const interviewRoomAvailable = Array(Number(settings.interviewRooms)).fill(parseTime(settings.startTime));
-    const assistantAvailable = Array(Number(settings.assistantsCount)).fill(parseTime(settings.startTime));
-    const practiceCapacityPerRoom = Math.max(1, Number(settings.groupSize || 1));
+    const dayStart = parseTime(deptConfig.time?.dayStart || '08:00');
+    const dayEnd = parseTime(deptConfig.time?.dayEnd || '18:00');
+    const lunchStart = parseTime(deptConfig.time?.lunchStart || '12:00');
+    const lunchEndMins = parseTime(deptConfig.time?.lunchEnd || '13:00');
+    const practiceMinutes = Number(deptConfig.time?.practiceMinutes || 40);
+    const interviewMinutes = Number(deptConfig.time?.interviewMinutes || 10);
+    const transitMinutes = Number(deptConfig.time?.transitMinutes || 10);
+    const interviewWorkBlock = Number(deptConfig.time?.interviewBreakRule?.workBlockMinutes || 40);
+    const interviewBreakMinutes = Number(deptConfig.time?.interviewBreakRule?.breakMinutes || 10);
+    const practiceRoomCount = Math.max(1, Number(deptConfig.resources?.practiceRooms?.count || 1));
+    const practiceRoomNames = normalizeRoomNames(deptConfig.resources?.practiceRooms?.names, practiceRoomCount, '實作教室');
+    const interviewRoomCount = Math.max(1, Number(deptConfig.resources?.interviewRooms?.count || 1));
+    const interviewRoomNames = normalizeRoomNames(deptConfig.resources?.interviewRooms?.names, interviewRoomCount, '面試考場');
+    const assistantNames = normalizeAssistantNames(deptConfig.resources?.assistants?.names, assistantsCount);
+    const practiceCapacityPerRoom = Math.max(1, Number(deptConfig.resources?.practiceRooms?.capacityPerRoom || 1));
 
-    const getAvailablePracticeRooms = (atTime, requiredRooms) => {
-      const roomIndexes = practiceRoomAvailable
-        .map((freeTime, idx) => (freeTime <= atTime ? idx : -1))
-        .filter(idx => idx !== -1);
-      if (roomIndexes.length < requiredRooms) return null;
-      return roomIndexes.slice(0, requiredRooms);
+    const practiceRoomBookings = Array.from({ length: practiceRoomCount }, () => []);
+    const interviewRoomAvailable = Array.from({ length: interviewRoomCount }, () => dayStart);
+    const assistantAvailable = Array.from({ length: assistantsCount }, () => dayStart);
+    const events = [];
+
+    const getAvailablePracticeAllocation = (startTime, duration, studentCount) => {
+      const endTime = startTime + duration;
+      let remaining = Math.max(1, Number(studentCount || 0));
+      const assignments = [];
+      for (let roomIdx = 0; roomIdx < practiceRoomCount; roomIdx++) {
+        const bookedCount = practiceRoomBookings[roomIdx]
+          .filter(booking => Math.max(startTime, booking.start) < Math.min(endTime, booking.end))
+          .reduce((sum, booking) => sum + booking.count, 0);
+        const availableCount = practiceCapacityPerRoom - bookedCount;
+        if (availableCount <= 0) continue;
+        const assignedCount = Math.min(availableCount, remaining);
+        assignments.push({ roomIdx, count: assignedCount });
+        remaining -= assignedCount;
+        if (remaining <= 0) break;
+      }
+      if (remaining > 0) return null;
+      return { roomIndexes: assignments.map(item => item.roomIdx), assignments };
     };
 
-    const practiceRoomNames = normalizeRoomNames(settings.practiceRoomNames, settings.practiceRooms, '實作教室');
-    const interviewRoomNames = normalizeRoomNames(settings.interviewRoomNames, settings.interviewRooms, '面試考場');
+    const reservePracticeRooms = (allocation, startTime, duration) => {
+      if (!allocation?.assignments?.length) return;
+      const endTime = startTime + duration;
+      allocation.assignments.forEach(({ roomIdx, count }) => {
+        practiceRoomBookings[roomIdx].push({ start: startTime, end: endTime, count });
+      });
+    };
 
     const formatPracticeRoomLabel = (roomIndexes) => {
-      if (!roomIndexes || roomIndexes.length === 0) return practiceRoomNames[0] || '實作教室';
+      if (!roomIndexes?.length) return practiceRoomNames[0] || '實作教室';
       if (roomIndexes.length === 1) return practiceRoomNames[roomIndexes[0]] || `實作教室 ${roomIndexes[0] + 1}`;
-      return roomIndexes.map(i => practiceRoomNames[i] || `實作教室 ${i + 1}`).join('、');
+      return roomIndexes.map(roomIdx => practiceRoomNames[roomIdx] || `實作教室 ${roomIdx + 1}`).join('、');
     };
 
-    const getInterviewRoomLabel = (roomIndex) => (
-      interviewRoomNames[roomIndex] || `面試考場 ${roomIndex + 1}`
-    );
-
+    const getInterviewRoomLabel = (roomIndex) => interviewRoomNames[roomIndex] || `面試考場 ${roomIndex + 1}`;
     const failedGroups = [];
+    const impossiblePracticeGroup = allGroups.find(group => group.students.length > practiceCapacityPerRoom * practiceRoomCount);
+    if (impossiblePracticeGroup) {
+      return { ok: false, error: `梯次 ${impossiblePracticeGroup.id} 有 ${impossiblePracticeGroup.students.length} 人，超過實作總容量 ${practiceCapacityPerRoom * practiceRoomCount} 人。` };
+    }
 
-    allGroups.forEach(group => {
-      const slotConfig = registrationSlots.find(s => Number(s.id) === group.slotId);
-      if (!slotConfig) return;
-      const slotStartTime = parseTime(slotConfig.start);
-      const slotEndTime = parseTime(slotConfig.end);
-      const requiredPracticeRooms = Math.max(1, Math.ceil(group.students.length / practiceCapacityPerRoom));
-
-      if (requiredPracticeRooms > Number(settings.practiceRooms)) {
-        alert(`警告：梯次 ${group.id} 需要 ${requiredPracticeRooms} 間實作教室，但目前只設定 ${settings.practiceRooms} 間。\n請提高每間容量或增加實作教室數後再重排。`);
-        return;
-      }
-
-      let t = Math.max(slotEndTime, parseTime(settings.startTime));
-      const P_TIME = settings.practiceMinutes;
-      const interviewWorkMinutes = group.subGroups.length * settings.interviewMinutes;
-      const interviewBreakCount = Math.floor(Math.max(0, interviewWorkMinutes - 1) / INTERVIEW_WORK_BLOCK_MINUTES);
-      const I_TIME = interviewWorkMinutes + (interviewBreakCount * INTERVIEW_BREAK_MINUTES);
-      const TR_TIME = settings.transitMinutes;
-      const TOTAL_TIME = P_TIME + TR_TIME + I_TIME; 
+    const previewGroupFit = (group) => {
+      const slot = slots.find(item => Number(item.id) === group.slotId);
+      if (!slot) return null;
+      const slotEnd = parseTime(slot.end);
+      let cursor = Math.max(slotEnd, dayStart);
+      const interviewWorkMinutes = group.subGroups.length * interviewMinutes;
+      const interviewBreakCount = Math.floor(Math.max(0, interviewWorkMinutes - 1) / interviewWorkBlock);
+      const interviewTotal = interviewWorkMinutes + (interviewBreakCount * interviewBreakMinutes);
+      const totalTime = practiceMinutes + transitMinutes + interviewTotal;
+      const shouldWaitForLunchEnd = slotEnd >= lunchStart && slotEnd < lunchEndMins;
       const crossDeptBlocks = group.students
-        .filter(s => s.isCrossDept && s.blockedStart && s.blockedEnd)
-        .map(s => ({
-          start: parseTime(s.blockedStart),
-          end: parseTime(s.blockedEnd)
-        }))
+        .filter(student => student.isCrossDept && student.blockedStart && student.blockedEnd)
+        .map(student => ({ start: parseTime(student.blockedStart), end: parseTime(student.blockedEnd) }))
         .filter(block => Number.isFinite(block.start) && Number.isFinite(block.end) && block.end > block.start);
+      const preferredPattern = group.preferredPattern === 'I-P' ? 'I-P' : 'P-I';
 
-      const getWaitingEventType = (start, end) => {
-        const overlapsCrossDeptBlock = crossDeptBlocks.some(block => Math.max(start, block.start) < Math.min(end, block.end));
-        return overlapsCrossDeptBlock ? '跨系避開 / 候位' : '休息 / 準備移動';
-      };
-
-      const getCountedWaitMinutes = (activityStart) => {
-        if (activityStart <= slotEndTime) return 0;
-        const excludedBlocks = [
-          ...crossDeptBlocks,
-          { start: lunchStart, end: lunchEnd }
-        ]
-          .map(block => ({
-            start: Math.max(slotEndTime, block.start),
-            end: Math.min(activityStart, block.end)
-          }))
-          .filter(block => block.end > block.start)
-          .sort((a, b) => a.start - b.start);
-
-        const mergedBlocks = [];
-        excludedBlocks.forEach(block => {
-          const last = mergedBlocks[mergedBlocks.length - 1];
-          if (last && block.start <= last.end) {
-            last.end = Math.max(last.end, block.end);
-          } else {
-            mergedBlocks.push({ ...block });
-          }
-        });
-
-        const excludedMinutes = mergedBlocks.reduce((sum, block) => sum + (block.end - block.start), 0);
-        return Math.max(0, (activityStart - slotEndTime) - excludedMinutes);
-      };
-
-      const findBestSlot = (maxWaitMinutes = null) => {
-        let cursor = t;
-        let found = null;
-
-        while (cursor <= parseTime(settings.endTime) + 480) { 
-          if (maxWaitMinutes != null && getCountedWaitMinutes(cursor) > maxWaitMinutes) break;
-          if (cursor < lunchStart && cursor + TOTAL_TIME > lunchStart) { cursor = lunchEnd; continue; }
-          if (cursor >= lunchStart && cursor < lunchEnd) { cursor = lunchEnd; continue; }
-
-          const hasCrossDeptConflict = crossDeptBlocks.some(block => (
-            Math.max(cursor, block.start) < Math.min(cursor + TOTAL_TIME, block.end)
-          ));
-
-          if (hasCrossDeptConflict) { cursor += 5; continue; }
-
-          let p1_rooms = getAvailablePracticeRooms(cursor, requiredPracticeRooms);
-          let i1_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor + P_TIME + TR_TIME);
-          let ast1 = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
-          const pFirstOk = !!p1_rooms && i1_room !== -1 && ast1 !== -1;
-
-          let i2_room = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor);
-          let p2_rooms = getAvailablePracticeRooms(cursor + I_TIME + TR_TIME, requiredPracticeRooms);
-          let ast2 = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
-          const iFirstOk = i2_room !== -1 && !!p2_rooms && ast2 !== -1;
-
-          const preferredFirst = group.preferredPattern === 'I-P' ? 'I-P' : 'P-I';
-          const fallbackSecond = preferredFirst === 'I-P' ? 'P-I' : 'I-P';
-          const choosePattern = (pattern) => {
-            if (pattern === 'P-I' && pFirstOk) {
-              return { start: cursor, pattern: 'P-I', pRooms: p1_rooms, iRoom: i1_room, ast: ast1 };
-            }
-            if (pattern === 'I-P' && iFirstOk) {
-              return { start: cursor, pattern: 'I-P', pRooms: p2_rooms, iRoom: i2_room, ast: ast2 };
-            }
-            return null;
-          };
-          found = choosePattern(preferredFirst) || choosePattern(fallbackSecond);
-          if (found) break;
-          cursor += 5; 
+      while (cursor <= dayEnd + 480) {
+        if (shouldWaitForLunchEnd && cursor >= lunchStart && cursor < lunchEndMins) {
+          cursor = lunchEndMins;
+          continue;
         }
-
-        return found;
-      };
-
-      let bestSlot = findBestSlot(MAX_WAIT_AFTER_CHECKIN_MINUTES);
-      if (!bestSlot) {
-        failedGroups.push(group.id);
-        return;
+        const hasCrossDeptConflict = crossDeptBlocks.some(block => Math.max(cursor, block.start) < Math.min(cursor + totalTime, block.end));
+        if (hasCrossDeptConflict) {
+          cursor += 5;
+          continue;
+        }
+        const pFirstPractice = getAvailablePracticeAllocation(cursor, practiceMinutes, group.students.length);
+        const pFirstInterviewRoom = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor + practiceMinutes + transitMinutes);
+        const pFirstAssistant = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
+        const iFirstInterviewRoom = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor);
+        const iFirstPractice = getAvailablePracticeAllocation(cursor + interviewTotal + transitMinutes, practiceMinutes, group.students.length);
+        const iFirstAssistant = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
+        if (preferredPattern === 'P-I' && pFirstPractice && pFirstInterviewRoom !== -1 && pFirstAssistant !== -1) {
+          return { start: cursor, end: cursor + totalTime, slotEnd, roundNo: group.roundNo, tierNo: group.tierNo, teamNo: group.teamNo };
+        }
+        if (preferredPattern === 'I-P' && iFirstInterviewRoom !== -1 && iFirstPractice && iFirstAssistant !== -1) {
+          return { start: cursor, end: cursor + totalTime, slotEnd, roundNo: group.roundNo, tierNo: group.tierNo, teamNo: group.teamNo };
+        }
+        cursor += 5;
       }
+      return null;
+    };
 
-      newSchedule.push({
-        groupId: group.id, region: group.region, type: '📝 報到與身分查驗',
-        room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
-        startTime: formatTime(slotStartTime), endTime: formatTime(slotEndTime),
-        startTimeMins: slotStartTime, students: group.students, isRegistration: true
+    const remainingGroups = [...allGroups];
+    while (remainingGroups.length > 0) {
+      let selectedIndex = -1;
+      let selectedRank = null;
+      remainingGroups.forEach((candidateGroup, idx) => {
+        const rank = previewGroupFit(candidateGroup);
+        if (!rank) return;
+        const isBetter =
+          !selectedRank ||
+          rank.end < selectedRank.end ||
+          (rank.end === selectedRank.end && rank.start < selectedRank.start) ||
+          (rank.end === selectedRank.end && rank.start === selectedRank.start && rank.slotEnd < selectedRank.slotEnd) ||
+          (rank.end === selectedRank.end && rank.start === selectedRank.start && rank.slotEnd === selectedRank.slotEnd && rank.roundNo < selectedRank.roundNo) ||
+          (rank.end === selectedRank.end && rank.start === selectedRank.start && rank.slotEnd === selectedRank.slotEnd && rank.roundNo === selectedRank.roundNo && rank.tierNo < selectedRank.tierNo) ||
+          (rank.end === selectedRank.end && rank.start === selectedRank.start && rank.slotEnd === selectedRank.slotEnd && rank.roundNo === selectedRank.roundNo && rank.tierNo === selectedRank.tierNo && rank.teamNo < selectedRank.teamNo);
+        if (isBetter) {
+          selectedRank = rank;
+          selectedIndex = idx;
+        }
       });
 
-      const assistantName = normalizeAssistantNames(settings.assistantNames, settings.assistantsCount)[bestSlot.ast] || `工讀生 ${String.fromCharCode(65 + bestSlot.ast)}`; 
-      let currentEventTime = bestSlot.start;
+      if (selectedIndex === -1) {
+        failedGroups.push(...remainingGroups.map(group => group.id));
+        break;
+      }
 
-      if (currentEventTime > slotEndTime) {
-        if (slotEndTime < lunchStart && currentEventTime > lunchStart) {
-          if (lunchStart > slotEndTime) {
-            newSchedule.push({
-              groupId: group.id, region: group.region, type: getWaitingEventType(slotEndTime, lunchStart),
-              room: '考生休息室', assistant: assistantName,
-              startTime: formatTime(slotEndTime), endTime: formatTime(lunchStart),
-              startTimeMins: slotEndTime, students: [], isTransit: true
-            });
+      const group = remainingGroups.splice(selectedIndex, 1)[0];
+      const slot = slots.find(item => Number(item.id) === group.slotId);
+      if (!slot) continue;
+      const slotStart = parseTime(slot.start);
+      const slotEnd = parseTime(slot.end);
+      let t = Math.max(slotEnd, dayStart);
+      const interviewWorkMinutes = group.subGroups.length * interviewMinutes;
+      const interviewBreakCount = Math.floor(Math.max(0, interviewWorkMinutes - 1) / interviewWorkBlock);
+      const interviewTotal = interviewWorkMinutes + (interviewBreakCount * interviewBreakMinutes);
+      const totalTime = practiceMinutes + transitMinutes + interviewTotal;
+      const shouldWaitForLunchEnd = slotEnd >= lunchStart && slotEnd < lunchEndMins;
+      const crossDeptBlocks = group.students
+        .filter(student => student.isCrossDept && student.blockedStart && student.blockedEnd)
+        .map(student => ({ start: parseTime(student.blockedStart), end: parseTime(student.blockedEnd) }))
+        .filter(block => Number.isFinite(block.start) && Number.isFinite(block.end) && block.end > block.start);
+
+      const getWaitingEventType = (start, end) => (
+        crossDeptBlocks.some(block => Math.max(start, block.start) < Math.min(end, block.end)) ? '跨系避開 / 候位' : '休息 / 準備移動'
+      );
+      const getPreActivityWaitingAssistant = (start, end) => (
+        getWaitingEventType(start, end).includes('跨系') ? '行政報到組' : '考生休息室'
+      );
+
+      const findBestSlot = () => {
+        let cursor = t;
+        while (cursor <= dayEnd + 480) {
+          if (shouldWaitForLunchEnd && cursor >= lunchStart && cursor < lunchEndMins) {
+            cursor = lunchEndMins;
+            continue;
           }
-          newSchedule.push({
-            groupId: group.id, region: group.region, type: '午休',
-            room: '考生休息室', assistant: assistantName,
-            startTime: formatTime(lunchStart), endTime: formatTime(lunchEnd),
-            startTimeMins: lunchStart, students: [], isTransit: true
-          });
-          if (currentEventTime > lunchEnd) {
-            newSchedule.push({
-              groupId: group.id, region: group.region, type: getWaitingEventType(lunchEnd, currentEventTime),
-              room: '考生休息室', assistant: assistantName,
-              startTime: formatTime(lunchEnd), endTime: formatTime(currentEventTime),
-              startTimeMins: lunchEnd, students: [], isTransit: true
-            });
+          const hasCrossDeptConflict = crossDeptBlocks.some(block => Math.max(cursor, block.start) < Math.min(cursor + totalTime, block.end));
+          if (hasCrossDeptConflict) {
+            cursor += 5;
+            continue;
           }
-        } else {
-          newSchedule.push({
-            groupId: group.id, region: group.region, type: getWaitingEventType(slotEndTime, currentEventTime),
-            room: '考生休息室', assistant: assistantName,
-            startTime: formatTime(slotEndTime), endTime: formatTime(currentEventTime),
-            startTimeMins: slotEndTime, students: [], isTransit: true
-          });
+          const pFirstPractice = getAvailablePracticeAllocation(cursor, practiceMinutes, group.students.length);
+          const pFirstInterviewRoom = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor + practiceMinutes + transitMinutes);
+          const pFirstAssistant = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
+          const pFirstOk = !!pFirstPractice && pFirstInterviewRoom !== -1 && pFirstAssistant !== -1;
+          const iFirstInterviewRoom = interviewRoomAvailable.findIndex(freeTime => freeTime <= cursor);
+          const iFirstPractice = getAvailablePracticeAllocation(cursor + interviewTotal + transitMinutes, practiceMinutes, group.students.length);
+          const iFirstAssistant = assistantAvailable.findIndex(freeTime => freeTime <= cursor);
+          const iFirstOk = iFirstInterviewRoom !== -1 && !!iFirstPractice && iFirstAssistant !== -1;
+          const preferredPattern = group.preferredPattern === 'I-P' ? 'I-P' : 'P-I';
+          if (preferredPattern === 'P-I' && pFirstOk) {
+            return { start: cursor, pattern: 'P-I', pRooms: pFirstPractice.roomIndexes, pAllocation: pFirstPractice, iRoom: pFirstInterviewRoom, ast: pFirstAssistant };
+          }
+          if (preferredPattern === 'I-P' && iFirstOk) {
+            return { start: cursor, pattern: 'I-P', pRooms: iFirstPractice.roomIndexes, pAllocation: iFirstPractice, iRoom: iFirstInterviewRoom, ast: iFirstAssistant };
+          }
+          cursor += 5;
         }
+        return null;
+      };
+
+      const bestSlot = findBestSlot();
+      if (!bestSlot) {
+        failedGroups.push(group.id);
+        continue;
+      }
+
+      events.push({
+        groupId: group.id, region: group.region, type: '📝 報到與身分查驗',
+        room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
+        startTime: formatTime(slotStart), endTime: formatTime(slotEnd),
+        startTimeMins: slotStart, students: group.students, isRegistration: true
+      });
+
+      const assistantName = assistantNames[bestSlot.ast] || `工讀生 ${String.fromCharCode(65 + bestSlot.ast)}`;
+      let currentEventTime = bestSlot.start;
+      if (currentEventTime > slotEnd) {
+        events.push({
+          groupId: group.id, region: group.region, type: getWaitingEventType(slotEnd, currentEventTime),
+          room: '考生休息室', assistant: getPreActivityWaitingAssistant(slotEnd, currentEventTime),
+          startTime: formatTime(slotEnd), endTime: formatTime(currentEventTime),
+          startTimeMins: slotEnd, students: [], isTransit: true
+        });
       }
 
       const appendInterviewFlow = (startTime) => {
         let interviewTime = startTime;
         let accumulatedInterviewMinutes = 0;
-
         group.subGroups.forEach((subGroup, idx) => {
-          const batchTag = subGroup.label;
-          newSchedule.push({
-            groupId: group.id, region: group.region, type: `面試審查`, batchInfo: batchTag,
+          events.push({
+            groupId: group.id, region: group.region, type: '面試審查', batchInfo: subGroup.label,
             room: getInterviewRoomLabel(bestSlot.iRoom), assistant: assistantName,
-            startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + settings.interviewMinutes),
+            startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + interviewMinutes),
             startTimeMins: interviewTime, students: subGroup.students
           });
-          interviewTime += settings.interviewMinutes;
-          accumulatedInterviewMinutes += settings.interviewMinutes;
-
-          if (
-            idx < group.subGroups.length - 1 &&
-            accumulatedInterviewMinutes >= INTERVIEW_WORK_BLOCK_MINUTES
-          ) {
-            newSchedule.push({
-              groupId: group.id, region: group.region, type: `面試休息 (${INTERVIEW_BREAK_MINUTES} 分鐘)`,
+          interviewTime += interviewMinutes;
+          accumulatedInterviewMinutes += interviewMinutes;
+          if (idx < group.subGroups.length - 1 && accumulatedInterviewMinutes >= interviewWorkBlock) {
+            events.push({
+              groupId: group.id, region: group.region, type: `面試休息 (${interviewBreakMinutes} 分鐘)`,
               room: getInterviewRoomLabel(bestSlot.iRoom), assistant: assistantName,
-              startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + INTERVIEW_BREAK_MINUTES),
+              startTime: formatTime(interviewTime), endTime: formatTime(interviewTime + interviewBreakMinutes),
               startTimeMins: interviewTime, students: [], isTransit: true
             });
-            interviewTime += INTERVIEW_BREAK_MINUTES;
+            interviewTime += interviewBreakMinutes;
             accumulatedInterviewMinutes = 0;
           }
         });
-
         return interviewTime;
       };
 
       if (bestSlot.pattern === 'P-I') {
-        newSchedule.push({
+        events.push({
           groupId: group.id, region: group.region, type: '實作測驗',
           room: formatPracticeRoomLabel(bestSlot.pRooms), assistant: assistantName,
-          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + P_TIME),
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + practiceMinutes),
           startTimeMins: currentEventTime, students: group.students
         });
-        currentEventTime += P_TIME;
-
-        newSchedule.push({
+        currentEventTime += practiceMinutes;
+        events.push({
           groupId: group.id, region: group.region, type: '換場移動',
           room: '依考場動線引導', assistant: assistantName,
-          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + TR_TIME),
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + transitMinutes),
           startTimeMins: currentEventTime, students: group.students, isTransit: true
         });
-        currentEventTime += TR_TIME;
-
+        currentEventTime += transitMinutes;
         currentEventTime = appendInterviewFlow(currentEventTime);
-        bestSlot.pRooms.forEach(roomIdx => { practiceRoomAvailable[roomIdx] = bestSlot.start + P_TIME; });
-        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + TOTAL_TIME;
-        assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
-
+        reservePracticeRooms(bestSlot.pAllocation, bestSlot.start, practiceMinutes);
+        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + totalTime;
+        assistantAvailable[bestSlot.ast] = bestSlot.start + totalTime;
       } else {
         currentEventTime = appendInterviewFlow(currentEventTime);
-
-        newSchedule.push({
+        events.push({
           groupId: group.id, region: group.region, type: '換場移動',
           room: '依考場動線引導', assistant: assistantName,
-          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + TR_TIME),
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + transitMinutes),
           startTimeMins: currentEventTime, students: group.students, isTransit: true
         });
-        currentEventTime += TR_TIME;
-
-        newSchedule.push({
+        currentEventTime += transitMinutes;
+        events.push({
           groupId: group.id, region: group.region, type: '實作測驗',
           room: formatPracticeRoomLabel(bestSlot.pRooms), assistant: assistantName,
-          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + P_TIME),
+          startTime: formatTime(currentEventTime), endTime: formatTime(currentEventTime + practiceMinutes),
           startTimeMins: currentEventTime, students: group.students
         });
-        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + I_TIME;
-        bestSlot.pRooms.forEach(roomIdx => { practiceRoomAvailable[roomIdx] = bestSlot.start + TOTAL_TIME; });
-        assistantAvailable[bestSlot.ast] = bestSlot.start + TOTAL_TIME;
+        interviewRoomAvailable[bestSlot.iRoom] = bestSlot.start + interviewTotal;
+        reservePracticeRooms(bestSlot.pAllocation, currentEventTime, practiceMinutes);
+        assistantAvailable[bestSlot.ast] = bestSlot.start + totalTime;
       }
-    });
-
-    if (failedGroups.length > 0) {
-      alert(`以下隊伍扣除跨系避開時段後，仍無法在 ${MAX_WAIT_AFTER_CHECKIN_MINUTES} 分鐘內排入第一個活動：\n${failedGroups.join('、')}\n\n請增加場地/人力，或調整學生報到時段後再重排。`);
-      return;
     }
 
-    const combinedSchedule = [...newSchedule].sort((a, b) => a.startTimeMins - b.startTimeMins);
-    const groupsMap = {};
-    newSchedule.forEach(item => {
-      if (!groupsMap[item.groupId]) { groupsMap[item.groupId] = { id: item.groupId, region: item.region, assistant: item.assistant, allStudents: [], events: [] }; }
-      groupsMap[item.groupId].events.push(item);
-      if (item.students && !item.isTransit && !item.isRegistration) {
-        item.students.forEach(s => {
-          if (!groupsMap[item.groupId].allStudents.find(ex => ex.id === s.id)) groupsMap[item.groupId].allStudents.push(s);
+    if (failedGroups.length > 0) {
+      return { ok: false, error: `以下隊伍目前仍無法排入完整流程：\n${failedGroups.join('、')}\n\n請增加場地/人力，或調整學生報到時段後再重排。` };
+    }
+
+    const combined = [...events].sort((a, b) => a.startTimeMins - b.startTimeMins);
+    const assistantConflicts = findAssistantConflicts(combined, assistantNames);
+    if (assistantConflicts.length > 0) {
+      return { ok: false, error: `偵測到工讀生同時間被安排到多件事情：\n${assistantConflicts.slice(0, 8).join('\n')}\n\n請增加工讀生或調整分法後再產生排程。` };
+    }
+    return {
+      ok: true,
+      students: currentStudents,
+      schedule: {
+        combined,
+        grouped: buildGroupedFlow(events, assistantNames),
+        strategyId: deptConfig.strategyId,
+        strategyName: deptConfig.strategyName
+      }
+    };
+  };
+
+  const generateBufferPoolSchedule = (inputStudents, deptConfig) => {
+    const slots = [...(deptConfig.registrationSlots || [])].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    if (slots.length === 0) return { ok: false, error: '請至少設定一個報到時段。' };
+
+    const launchSize = Math.max(1, Number(deptConfig.bufferPool?.launchSize || 10));
+    const groupsPerTeam = Math.max(1, Number(deptConfig.bufferPool?.groupsPerTeam || 2));
+    const studentsPerGroup = Math.max(1, Number(deptConfig.bufferPool?.studentsPerGroup || 5));
+    const teamSize = groupsPerTeam * studentsPerGroup;
+    const assistantsCount = Math.max(1, Number(deptConfig.resources?.assistants?.count || 1));
+    const assistantNames = normalizeAssistantNames(deptConfig.resources?.assistants?.names, assistantsCount);
+    const practiceRoomNames = normalizeRoomNames(deptConfig.resources?.practiceRooms?.names, deptConfig.resources?.practiceRooms?.count, '實作教室');
+    const interviewRoomNames = normalizeRoomNames(deptConfig.resources?.interviewRooms?.names, deptConfig.resources?.interviewRooms?.count, '面試考場');
+    const dayStart = parseTime(deptConfig.time?.dayStart || '08:00');
+    const practiceMinutes = Number(deptConfig.time?.practiceMinutes || 40);
+    const interviewMinutes = Number(deptConfig.time?.interviewMinutes || 10);
+    const transitMinutes = Number(deptConfig.time?.transitMinutes || 10);
+    const defaultPattern = deptConfig.bufferPool?.flowPattern === 'I-P' ? 'I-P' : 'P-I';
+
+    let currentStudents = [...inputStudents];
+    const slotIds = slots.map(slot => Number(slot.id));
+    const slotCounts = Object.fromEntries(slotIds.map(id => [id, 0]));
+    const assignedSlotsByIndex = new Map();
+    currentStudents.forEach((student, idx) => {
+      if (student.preferredSlot && slotCounts[student.preferredSlot] != null) {
+        assignedSlotsByIndex.set(idx, student.preferredSlot);
+        slotCounts[student.preferredSlot]++;
+      }
+    });
+    currentStudents = currentStudents.map((student, idx) => {
+      if (assignedSlotsByIndex.has(idx)) return { ...student, assignedSlot: assignedSlotsByIndex.get(idx) };
+      const fallbackSlot = slotIds.reduce((minId, slotId) => (slotCounts[slotId] < slotCounts[minId] ? slotId : minId), slotIds[0]);
+      slotCounts[fallbackSlot]++;
+      return { ...student, assignedSlot: fallbackSlot };
+    });
+
+    const events = [];
+    const grouped = [];
+    let cursor = dayStart;
+    let queueOrder = 0;
+    slots.forEach((slot, slotIdx) => {
+      const slotStudents = currentStudents.filter(student => Number(student.assignedSlot) === Number(slot.id));
+      const readyTime = parseTime(slot.end);
+      for (let i = 0; i < slotStudents.length; i += teamSize) {
+        const teamStudents = slotStudents.slice(i, i + teamSize);
+        if (!teamStudents.length) continue;
+        queueOrder++;
+        const teamNo = i / teamSize + 1;
+        const groupId = `B${slotIdx + 1}-隊${teamNo}`;
+        const pattern = (queueOrder % 2 === 0 && deptConfig.pipeline?.allowPatternSwap) ? (defaultPattern === 'P-I' ? 'I-P' : 'P-I') : defaultPattern;
+        const assistantName = assistantNames[(queueOrder - 1) % assistantNames.length];
+        const roomPractice = practiceRoomNames[(queueOrder - 1) % practiceRoomNames.length];
+        const roomInterview = interviewRoomNames[(queueOrder - 1) % interviewRoomNames.length];
+        const start = Math.max(cursor, readyTime);
+        const interviewTotal = Math.ceil(teamStudents.length / launchSize) * interviewMinutes;
+        let t = start;
+
+        events.push({
+          groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '📝 報到與身分查驗',
+          room: '系辦報到處 / 考生休息室', assistant: '行政報到組',
+          startTime: formatTime(parseTime(slot.start)), endTime: formatTime(readyTime),
+          startTimeMins: parseTime(slot.start), students: teamStudents, isRegistration: true
+        });
+
+        if (pattern === 'I-P') {
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '面試審查',
+            room: roomInterview, assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + interviewTotal),
+            startTimeMins: t, students: teamStudents
+          });
+          t += interviewTotal;
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '換場移動',
+            room: '依考場動線引導', assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + transitMinutes),
+            startTimeMins: t, students: teamStudents, isTransit: true
+          });
+          t += transitMinutes;
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '實作測驗',
+            room: roomPractice, assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + practiceMinutes),
+            startTimeMins: t, students: teamStudents
+          });
+          t += practiceMinutes;
+        } else {
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '實作測驗',
+            room: roomPractice, assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + practiceMinutes),
+            startTimeMins: t, students: teamStudents
+          });
+          t += practiceMinutes;
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '換場移動',
+            room: '依考場動線引導', assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + transitMinutes),
+            startTimeMins: t, students: teamStudents, isTransit: true
+          });
+          t += transitMinutes;
+          events.push({
+            groupId, region: teamStudents[0]?.region || '未分配 (其他)', type: '面試審查',
+            room: roomInterview, assistant: assistantName,
+            startTime: formatTime(t), endTime: formatTime(t + interviewTotal),
+            startTimeMins: t, students: teamStudents
+          });
+          t += interviewTotal;
+        }
+
+        cursor = t;
+        grouped.push({
+          id: groupId,
+          region: teamStudents[0]?.region || '未分配 (其他)',
+          assistant: assistantName,
+          allStudents: teamStudents,
+          events: events.filter(event => event.groupId === groupId).sort((a, b) => a.startTimeMins - b.startTimeMins)
         });
       }
     });
 
-    const groupedFlow = Object.values(groupsMap).map(g => {
-       g.events.sort((a, b) => a.startTimeMins - b.startTimeMins);
-       if (g.allStudents.length === 0) {
-          const regEvent = g.events.find(e => e.isRegistration);
-          if (regEvent && regEvent.students) g.allStudents = regEvent.students;
-       }
-       const leadEvent =
-         g.events.find(e => !e.isRegistration && /^工讀生\s*[A-Z]/.test(String(e.assistant || ''))) ||
-         g.events.find(e => /^工讀生\s*[A-Z]/.test(String(e.assistant || ''))) ||
-         g.events.find(e => e.assistant);
-       if (leadEvent) g.assistant = leadEvent.assistant;
-       return g;
-    });
+    const combined = [...events].sort((a, b) => a.startTimeMins - b.startTimeMins);
+    const assistantConflicts = findAssistantConflicts(combined, assistantNames);
+    if (assistantConflicts.length > 0) {
+      return { ok: false, error: `緩衝池模式出現工讀生重疊：\n${assistantConflicts.slice(0, 8).join('\n')}` };
+    }
 
-    setSchedule({ combined: combinedSchedule, grouped: groupedFlow });
+    return {
+      ok: true,
+      students: currentStudents,
+      schedule: {
+        combined,
+        grouped,
+        strategyId: `${deptConfig.strategyId}-buffer`,
+        strategyName: `${deptConfig.strategyName}（緩衝池）`
+      }
+    };
+  };
+
+  const generateSchedule = (inputStudents, deptConfig) => {
+    if (deptConfig?.mode === 'buffer_pool') return generateBufferPoolSchedule(inputStudents, deptConfig);
+    return generatePipelineSchedule(inputStudents, deptConfig);
+  };
+
+  const handleGenerateSchedule = (strategyId = selectedScheduleStrategy) => {
+    setShowStrategyModal(false);
+    if (students.length === 0) { alert("請先匯入並解析學生資料！"); return; }
+    if (registrationSlots.length === 0) { alert("請至少設定一個報到時段。"); return; }
+
+    const deptConfig = buildDepartmentRuleConfig(strategyId);
+    const result = generateSchedule(students, deptConfig);
+    if (!result.ok) {
+      alert(result.error || '排程失敗，請檢查設定後重試。');
+      return;
+    }
+    setStudents(result.students);
+    setSchedule(result.schedule);
     setActiveTab('schedule');
     setViewMode('table');
   };
@@ -1876,8 +2398,32 @@ const App = () => {
     const res = await fetch(url, { method: 'GET' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    if (!json || !json.ok || !json.data) throw new Error('找不到可用的雲端資料');
+    if (!json || !json.ok) {
+      if (isNoSnapshotError(json?.error)) throw new Error('no_snapshot');
+      throw new Error(json?.error || '找不到可用的雲端資料');
+    }
+    if (!json.data) throw new Error('找不到可用的雲端資料');
     return json.data;
+  };
+
+  const fetchDepartmentProfilesFromCloud = async () => {
+    try {
+      const json = await fetchCloudAction(cloudUrl, 'listDepartmentProfiles');
+      const profiles = Array.isArray(json?.data?.departmentProfiles) ? json.data.departmentProfiles : [];
+      if (profiles.length > 0) {
+        return {
+          departmentProfiles: profiles,
+          selectedDepartmentId: json?.data?.selectedDepartmentId || ''
+        };
+      }
+    } catch (error) {
+      console.warn('listDepartmentProfiles 失敗，改用 getLatestSnapshot：', error);
+    }
+    const cloudData = await fetchLatestCloudSnapshot();
+    return {
+      departmentProfiles: Array.isArray(cloudData?.departmentProfiles) ? cloudData.departmentProfiles : [],
+      selectedDepartmentId: cloudData?.selectedDepartmentId || ''
+    };
   };
 
   const getProfilesNewestTime = (profiles) => Math.max(
@@ -1948,8 +2494,12 @@ const App = () => {
 	            return false;
 	          }
 	        } catch (guardError) {
+	          if (isNoSnapshotError(guardError)) {
+	            console.info('雲端尚未有第一筆快照，這次自動備份會直接建立初始資料。');
+	          } else {
 	          console.warn('自動備份前檢查雲端版本失敗，暫停本次上傳：', guardError);
 	          return false;
+	          }
 	        }
 	      }
 	      const response = await fetch(cloudUrl, {
@@ -2036,7 +2586,11 @@ const App = () => {
 	      return true;
 	    } catch (error) {
 	      if (!silent) {
+	        if (isNoSnapshotError(error)) {
+	          alert('ℹ️ Google 雲端目前還沒有第一筆快照。\n請先用管理員模式按一次「推送到 Google」，之後其他裝置就能同步讀取。');
+	        } else {
 	        alert(`❌ 載入失敗：${error.message}\n請確認您的 Apps Script 有實作 action=getLatestSnapshot。`);
+	        }
 	      } else {
 	        console.warn('初始雲端載入失敗：', error);
 	      }
@@ -2085,15 +2639,15 @@ const App = () => {
 	    }
 	  };
 
-	  const syncDepartmentProfilesFromGoogleCloud = async () => {
-	    if (!isValidCloudUrl(cloudUrl)) return false;
-	    try {
-	      const cloudData = await fetchLatestCloudSnapshot();
-	      if (Array.isArray(cloudData.departmentProfiles) && cloudData.departmentProfiles.length > 0) {
-	        const normalizedProfiles = cloudData.departmentProfiles.map((profile, idx) => normalizeDepartmentProfile(profile, idx));
-	        setDepartmentProfiles(normalizedProfiles);
-	        setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
-	      }
+  const syncDepartmentProfilesFromGoogleCloud = async () => {
+    if (!isValidCloudUrl(cloudUrl)) return false;
+    try {
+      const cloudData = await fetchDepartmentProfilesFromCloud();
+      if (Array.isArray(cloudData.departmentProfiles) && cloudData.departmentProfiles.length > 0) {
+        const normalizedProfiles = cloudData.departmentProfiles.map((profile, idx) => normalizeDepartmentProfile(profile, idx));
+        setDepartmentProfiles(normalizedProfiles);
+        setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
+      }
 	      return true;
 	    } catch (error) {
 	      console.warn('入口頁系所清單同步失敗：', error);
@@ -2135,15 +2689,19 @@ const App = () => {
 		    return () => clearInterval(timer);
 		  }, [isInitialized, selectedDepartmentId, isAdminMode, cloudUrl]);
 
-	  useEffect(() => {
-		    if (!isInitialized || !selectedDepartmentId || !isValidCloudUrl(cloudUrl)) return;
-		    const timer = setInterval(() => {
-		      syncLiveFieldsFromGoogleCloud({ silent: true });
-		    }, 20000);
-		    return () => clearInterval(timer);
-		  }, [isInitialized, selectedDepartmentId, cloudUrl]);
+  useEffect(() => {
+	    if (!isInitialized || !selectedDepartmentId || !isValidCloudUrl(cloudUrl)) return;
+	    const timer = setInterval(() => {
+	      if (isAdminMode) syncLiveFieldsFromGoogleCloud({ silent: true });
+	      else syncSelectedDepartmentFromGoogleCloud({ silent: true });
+	    }, 3000);
+	    return () => clearInterval(timer);
+	  }, [isInitialized, selectedDepartmentId, cloudUrl, isAdminMode]);
 
-	  const handlePrintPDF = () => { window.print(); };
+	  const handlePrintPDF = (mode = 'master') => {
+	    setPrintMode(mode);
+	    setTimeout(() => window.print(), 60);
+	  };
 
   const getTaskDescription = (type, studentsList) => {
     if (type.includes('報到')) {
@@ -2172,6 +2730,23 @@ const App = () => {
           <p className="pt-2 mt-2 border-t border-gray-300 text-gray-600">※ 確保考試順利進行，並清點人數無誤。</p>
         </div>
       );
+    }
+  };
+
+  const syncSelectedDepartmentFromGoogleCloud = async ({ silent = true } = {}) => {
+    if (!isValidCloudUrl(cloudUrl) || !selectedDepartmentId) return false;
+    try {
+      const json = await fetchCloudAction(cloudUrl, 'getDepartmentProfile', { departmentId: selectedDepartmentId });
+      const profile = json?.data?.profile;
+      if (profile && !isAdminMode) {
+        applyDepartmentProfileDataSilently(profile);
+        setLastLiveSyncAt(new Date().toLocaleTimeString('zh-TW', { hour12: false }));
+      }
+      return true;
+    } catch (error) {
+      if (!silent) alert(`❌ 科系即時同步失敗：${error.message}`);
+      else console.warn('科系即時同步失敗：', error);
+      return false;
     }
   };
 
@@ -2228,7 +2803,101 @@ const App = () => {
       .map((row) => ({ ...row, mergedEntries: mergeEntries(row.entries) }));
   };
 
+		  const renderStrategyDiagram = (strategy) => {
+		    const lanes = [
+		      { label: '梯次 A', caption: '第一梯', steps: strategy.laneA, accent: 'from-cyan-400 to-blue-500' },
+		      { label: '梯次 B', caption: '第二梯', steps: strategy.laneB, accent: 'from-emerald-400 to-teal-500' }
+		    ];
+		    const stepMeta = {
+		      '報到': { tone: 'teal', hint: '集合與查驗', dot: 'bg-teal-500', card: 'border-teal-200 bg-teal-50 text-teal-900' },
+		      '面試': { tone: 'blue', hint: '老師審查', dot: 'bg-blue-500', card: 'border-blue-200 bg-blue-50 text-blue-900' },
+		      '實作': { tone: 'emerald', hint: '教室測驗', dot: 'bg-emerald-500', card: 'border-emerald-200 bg-emerald-50 text-emerald-900' },
+		      '奇數輪': { tone: 'indigo', hint: '面試優先', dot: 'bg-indigo-500', card: 'border-indigo-200 bg-indigo-50 text-indigo-900' },
+		      '偶數輪': { tone: 'amber', hint: '實作優先', dot: 'bg-amber-500', card: 'border-amber-200 bg-amber-50 text-amber-900' }
+		    };
+		    const phaseLabels = ['報到', '第一活動', '第二活動'];
+
+		    return (
+		      <div className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 overflow-hidden shadow-sm">
+		        <div className="relative mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-white">
+		          <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(45,212,191,.55),transparent_30%),radial-gradient(circle_at_80%_30%,rgba(99,102,241,.55),transparent_28%),linear-gradient(120deg,rgba(15,23,42,.95),rgba(30,41,59,.9))]"></div>
+		          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent strategy-sweep"></div>
+		          <div className="relative flex items-center justify-between gap-3">
+		            <div>
+		              <div className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-cyan-100">Flow Preview</div>
+		              <div className="mt-1 text-sm font-extrabold">兩梯同步流動，系統依資源找最快完成路徑</div>
+		            </div>
+		            <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-extrabold">
+		              <span className="h-2 w-2 rounded-full bg-emerald-300 strategy-live-dot"></span>
+		              動態預覽
+		            </div>
+		          </div>
+		        </div>
+
+		        <div className="grid grid-cols-[72px_1fr] gap-3 mb-3 text-[11px] font-extrabold text-slate-500">
+		          <div></div>
+		          <div className="grid grid-cols-3 gap-3">
+		            {phaseLabels.map(label => (
+		              <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 py-2 text-center">{label}</div>
+		            ))}
+		          </div>
+		        </div>
+
+		        <div className="space-y-4">
+		          {lanes.map((lane, laneIdx) => (
+		            <div key={lane.label} className="grid grid-cols-[72px_1fr] gap-3 items-center">
+		              <div className="rounded-2xl border border-slate-200 bg-white p-2 text-center shadow-sm">
+		                <div className={`mx-auto mb-2 h-2 w-10 rounded-full bg-gradient-to-r ${lane.accent}`}></div>
+		                <div className="text-xs font-black text-slate-800">{lane.label}</div>
+		                <div className="text-[10px] font-bold text-slate-400">{lane.caption}</div>
+		              </div>
+		              <div className="relative">
+		                <div className="absolute left-[8%] right-[8%] top-1/2 h-1 -translate-y-1/2 rounded-full bg-slate-100"></div>
+		                <div
+		                  className={`absolute left-[8%] right-[8%] top-1/2 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r ${lane.accent} strategy-route`}
+		                  style={{ animationDelay: `${laneIdx * 0.55}s` }}
+		                ></div>
+		                <div
+		                  className={`absolute top-1/2 z-20 h-4 w-4 -translate-y-1/2 rounded-full bg-gradient-to-r ${lane.accent} shadow-lg shadow-indigo-200 strategy-runner`}
+		                  style={{ animationDelay: `${laneIdx * 0.55}s` }}
+		                ></div>
+		                <div className="relative z-10 grid grid-cols-3 gap-3">
+		                  {lane.steps.map((step, stepIdx) => {
+		                    const meta = stepMeta[step] || { hint: '流程節點', dot: 'bg-slate-500', card: 'border-slate-200 bg-slate-50 text-slate-800' };
+		                    return (
+		                      <div
+		                        key={`${lane.label}-${stepIdx}`}
+		                        className={`strategy-node rounded-2xl border px-3 py-3 text-center shadow-sm ${meta.card}`}
+		                        style={{ animationDelay: `${(laneIdx * 0.55) + (stepIdx * 0.45)}s` }}
+		                      >
+		                        <div className={`mx-auto mb-2 h-3 w-3 rounded-full ${meta.dot} ring-4 ring-white shadow-sm`}></div>
+		                        <div className="text-sm font-black">{step}</div>
+		                        <div className="mt-1 text-[10px] font-extrabold opacity-60">{meta.hint}</div>
+		                      </div>
+		                    );
+		                  })}
+		                </div>
+		              </div>
+		            </div>
+		          ))}
+		        </div>
+		      </div>
+		    );
+		  };
+
 	  const printRows = buildPrintRows(Array.isArray(schedule?.combined) ? schedule.combined : []);
+	  const signInSheets = schedule.grouped.map((group) => {
+	    const leadAssistant = getLeadAssistant(group);
+	    const registrationEvent = [...(group.events || [])].sort((a, b) => a.startTimeMins - b.startTimeMins).find(ev => ev.isRegistration) || group.events?.[0] || null;
+	    const currentStudents = (group.allStudents || []).map(student => getCurrentStudent(student));
+	    return {
+	      id: group.id,
+	      region: group.region,
+	      leadAssistant,
+	      registrationEvent,
+	      students: currentStudents
+	    };
+	  });
 	  const isAssistantPublicRoute = new URLSearchParams(window.location.search).get('assistantCard') === '1';
 	  const assistantPublicPayload = isAssistantPublicRoute ? getAssistantSharePayloadFromUrl() : null;
 
@@ -2248,8 +2917,37 @@ const App = () => {
         @media print {
           @page { size: A4 landscape; margin: 12mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
+          .print-page-break { page-break-before: always; break-before: page; }
         }
-      `}</style>
+	        @keyframes strategySweep {
+	          0% { transform: translateX(-120%) skewX(-16deg); }
+	          100% { transform: translateX(260%) skewX(-16deg); }
+	        }
+	        @keyframes strategyRoute {
+	          0% { clip-path: inset(0 100% 0 0); opacity: .55; }
+	          45% { clip-path: inset(0 0 0 0); opacity: 1; }
+	          100% { clip-path: inset(0 0 0 0); opacity: .75; }
+	        }
+	        @keyframes strategyRunner {
+	          0% { left: 7%; transform: translate(-50%, -50%) scale(.85); opacity: .45; }
+	          42% { left: 50%; transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+	          82% { left: 93%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+	          100% { left: 93%; transform: translate(-50%, -50%) scale(.85); opacity: .35; }
+	        }
+	        @keyframes strategyNode {
+	          0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
+	          45% { transform: translateY(-5px) scale(1.025); box-shadow: 0 16px 30px rgba(79, 70, 229, .12); }
+	        }
+	        @keyframes strategyLiveDot {
+	          0%, 100% { transform: scale(1); opacity: .65; }
+	          50% { transform: scale(1.6); opacity: 1; }
+	        }
+	        .strategy-sweep { animation: strategySweep 3.4s ease-in-out infinite; }
+	        .strategy-route { animation: strategyRoute 3.2s ease-in-out infinite; transform-origin: left center; }
+	        .strategy-runner { animation: strategyRunner 3.2s ease-in-out infinite; }
+	        .strategy-node { animation: strategyNode 3.2s ease-in-out infinite; }
+	        .strategy-live-dot { animation: strategyLiveDot 1.4s ease-in-out infinite; }
+	      `}</style>
 
       {/* 雲端存檔 Modal */}
       {showCloudModal && (
@@ -2356,6 +3054,91 @@ const App = () => {
               {adminPasswordHash ? '進入管理員模式' : '設定並進入管理員模式'}
             </button>
           </form>
+        </div>
+      )}
+
+      {showStrategyModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-y-auto border border-slate-200">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-100 p-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-extrabold text-slate-900">選擇排程分法</h2>
+                <p className="text-sm font-bold text-slate-500 mt-1">選好後系統會依同一份名單、場地與工讀生設定產生排程。</p>
+              </div>
+              <button type="button" onClick={() => setShowStrategyModal(false)} className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
+              <div className="space-y-3">
+                {SCHEDULE_STRATEGIES.map(strategy => {
+                  const isActive = selectedScheduleStrategy === strategy.id;
+                  return (
+                    <button
+                      key={strategy.id}
+                      type="button"
+                      onClick={() => setSelectedScheduleStrategy(strategy.id)}
+                      className={`w-full text-left rounded-2xl border p-4 transition-all ${isActive ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-100' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className={`font-extrabold ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>{strategy.name}</div>
+                        <span className={`text-[11px] font-bold border px-2 py-0.5 rounded-full ${isActive ? 'bg-white text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                          {strategy.badge}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs font-bold text-slate-500 leading-relaxed">{strategy.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const strategy = SCHEDULE_STRATEGIES.find(item => item.id === selectedScheduleStrategy) || SCHEDULE_STRATEGIES[0];
+                return (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+                      <div>
+                        <div className="text-xs font-extrabold text-indigo-600 mb-1">分法圖解</div>
+                        <h3 className="text-2xl font-extrabold text-slate-900">{strategy.name}</h3>
+                        <p className="mt-2 text-sm font-bold text-slate-600 leading-relaxed">{strategy.description}</p>
+                      </div>
+                      <div className="shrink-0 rounded-2xl bg-white border border-slate-200 p-3 text-center">
+                        <div className="text-[11px] font-extrabold text-slate-500">目前模式</div>
+                        <div className="text-base font-extrabold text-indigo-700">{strategy.shortName}</div>
+                      </div>
+                    </div>
+
+                    {renderStrategyDiagram(strategy)}
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <div className="text-xs font-extrabold text-slate-500">基本骨架</div>
+                        <div className="mt-1 text-sm font-extrabold text-slate-800">4 輪 × 2 梯 × 依工讀生分隊</div>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <div className="text-xs font-extrabold text-slate-500">每隊組成</div>
+                        <div className="mt-1 text-sm font-extrabold text-slate-800">2 組，每組 5 人</div>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                        <div className="text-xs font-extrabold text-slate-500">套用範圍</div>
+	                        <div className="mt-1 text-sm font-extrabold text-slate-800">含跨系避開、上午流程不中斷與場地容量</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex flex-col sm:flex-row justify-end gap-3">
+                      <button type="button" onClick={() => setShowStrategyModal(false)} className="px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50">
+                        取消
+                      </button>
+                      <button type="button" onClick={() => handleGenerateSchedule(strategy.id)} className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold shadow-lg shadow-indigo-100 inline-flex items-center justify-center">
+                        <Play size={18} className="mr-2" fill="currentColor" /> 使用此分法產生排程
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
 
@@ -2535,7 +3318,7 @@ const App = () => {
                     <p className="text-slate-500 text-sm mt-1">未選擇報到時段的學生，將在產生排程時<strong className="text-indigo-600">由系統智慧自動補位</strong>。</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={handleGenerateSchedule} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-all text-sm inline-flex items-center">
+                    <button onClick={openScheduleStrategyModal} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition-all text-sm inline-flex items-center">
                       <RefreshCw size={16} className="mr-2" /> 套用個人時段並重排
                     </button>
                     <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-200">
@@ -2611,7 +3394,7 @@ const App = () => {
 		                                {registrationSlots.map(slot => (<option key={slot.id} value={slot.id}>{slot.name}</option>))}
 		                              </select>
 		                              {student.assignedSlot && !student.preferredSlot && (<div className="text-[10px] text-indigo-500 mt-1 flex items-center"><RefreshCw size={10} className="mr-1" /> 自動分發</div>)}
-		                              {student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) && (<div className="text-[10px] text-orange-600 mt-1 flex items-center"><AlertTriangle size={10} className="mr-1" /> 跨系優先改排下午</div>)}
+		                              {student.isCrossDept && student.assignedSlot && student.preferredSlot && Number(student.assignedSlot) !== Number(student.preferredSlot) && (<div className="text-[10px] text-orange-600 mt-1 flex items-center"><AlertTriangle size={10} className="mr-1" /> 跨系自動補位時段</div>)}
 		                            </td>
 	                            <td className="p-3 border-l border-amber-100 bg-amber-50/30 align-top">
 		                                 <div className="space-y-3 max-w-full overflow-hidden">
@@ -2805,7 +3588,7 @@ const App = () => {
                 </div>
 
                 <div className="mt-10 text-center pt-8 border-t border-slate-100">
-                  <button onClick={handleGenerateSchedule} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-12 py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-xl inline-flex items-center">
+                  <button onClick={openScheduleStrategyModal} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-12 py-4 rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-xl inline-flex items-center">
                     <Play className="mr-2" fill="currentColor" /> 自動分配補位 ＆ 產生排程
                   </button>
                 </div>
@@ -2815,10 +3598,15 @@ const App = () => {
             {activeTab === 'schedule' && schedule.combined.length > 0 && (
               <div className="animate-fade-in">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">排程結果表</h2>
-                    <p className="text-slate-500 text-sm mt-1">系統已完成分流排程。若要微調，請調整學生個人報到時段後重新產生排程。</p>
-                  </div>
+	                  <div>
+	                    <h2 className="text-2xl font-bold text-slate-800">排程結果表</h2>
+	                    <p className="text-slate-500 text-sm mt-1">系統已完成分流排程。若要微調，請調整學生個人報到時段後重新產生排程。</p>
+	                    {schedule.strategyName && (
+	                      <div className="mt-2 inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-xs font-extrabold text-indigo-700">
+	                        本次分法：{schedule.strategyName}
+	                      </div>
+	                    )}
+	                  </div>
                   <div className="flex items-center flex-wrap gap-3">
 	                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
 	                       <button onClick={() => { setViewMode('cards'); }} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>梯次專屬卡片</button>
@@ -2838,9 +3626,12 @@ const App = () => {
 	                      <RefreshCw size={18} className="mr-2" /> 同步現場
 	                    </button>
 
-	                    <button onClick={handlePrintPDF} className="flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all bg-gray-800 hover:bg-black text-white hover:shadow-lg">
+	                    <button onClick={() => handlePrintPDF('master')} className="flex items-center px-4 py-2.5 rounded-xl font-bold shadow-md transition-all bg-gray-800 hover:bg-black text-white hover:shadow-lg">
 	                      <Printer size={18} className="mr-2" /> 匯出 PDF
                     </button>
+	                    <button onClick={() => handlePrintPDF('signin')} className="flex items-center px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all bg-white hover:bg-slate-50 text-slate-700 border border-slate-200">
+	                      <ClipboardList size={18} className="mr-2" /> 匯出簽到表
+	                    </button>
 	                  </div>
 	                </div>
 
@@ -3145,7 +3936,7 @@ const App = () => {
 	      </div>
 	      )}
 
-	      {schedule.combined.length > 0 && (
+	      {schedule.combined.length > 0 && printMode === 'master' && (
         <div className="hidden print:block w-full bg-white text-black p-2 font-serif">
           <div className="text-center mb-6 relative">
 	             <h1 className="text-2xl font-bold mb-2 tracking-widest">{currentDepartment?.name || ''} 114學年度 四技甄選 作業流程分配、細項</h1>
@@ -3206,6 +3997,86 @@ const App = () => {
           <div className="mt-4 text-right text-xs text-gray-500">
              表單產生時間：{new Date().toLocaleString('zh-TW', { hour12: false })}
           </div>
+        </div>
+      )}
+
+	      {schedule.combined.length > 0 && printMode === 'signin' && (
+        <div className="hidden print:block w-full bg-white text-black p-2 font-serif">
+	          {signInSheets.map((sheet, idx) => (
+	            <div key={sheet.id} className={idx === 0 ? '' : 'print-page-break'}>
+	              <div className="text-center mb-5">
+	                <h1 className="text-2xl font-bold tracking-widest">{currentDepartment?.name || ''} 面試 / 實作 簽到表</h1>
+	                <p className="text-lg font-bold mt-2">梯次：{sheet.id}</p>
+	              </div>
+
+	              <div className="grid grid-cols-4 gap-3 mb-5 text-sm">
+	                <div className="border-[1.5px] border-black p-3">
+	                  <div className="font-bold mb-1">報到時間</div>
+	                  <div>{sheet.registrationEvent ? `${sheet.registrationEvent.startTime} - ${sheet.registrationEvent.endTime}` : '未排定'}</div>
+	                </div>
+	                <div className="border-[1.5px] border-black p-3">
+	                  <div className="font-bold mb-1">報到地點</div>
+	                  <div>{sheet.registrationEvent?.room || '未排定'}</div>
+	                </div>
+	                <div className="border-[1.5px] border-black p-3">
+	                  <div className="font-bold mb-1">帶隊工讀生</div>
+	                  <div>{sheet.leadAssistant || '未指派'}</div>
+	                </div>
+	                <div className="border-[1.5px] border-black p-3">
+	                  <div className="font-bold mb-1">區域 / 人數</div>
+	                  <div>{sheet.region}區 / {sheet.students.length} 人</div>
+	                </div>
+	              </div>
+
+	              <table className="w-full border-collapse border-[2px] border-black text-sm">
+	                <thead>
+	                  <tr className="bg-gray-100">
+	                    <th className="border border-black p-2 text-center w-[12%]">報到編號</th>
+	                    <th className="border border-black p-2 text-center w-[16%]">准考證號</th>
+	                    <th className="border border-black p-2 text-center w-[16%]">姓名</th>
+	                    <th className="border border-black p-2 text-center w-[12%]">狀態</th>
+	                    <th className="border border-black p-2 text-center w-[18%]">備註</th>
+	                    <th className="border border-black p-2 text-center w-[13%]">簽到</th>
+	                    <th className="border border-black p-2 text-center w-[13%]">補助簽領</th>
+	                  </tr>
+	                </thead>
+	                <tbody>
+	                  {sheet.students.map((student, rowIdx) => (
+	                    <tr key={`${sheet.id}-${student.id}-${rowIdx}`}>
+	                      <td className="border border-black p-2 text-center font-bold">{student.checkinNo || ''}</td>
+	                      <td className="border border-black p-2 text-center">{student.id || ''}</td>
+	                      <td className="border border-black p-2 text-center font-bold">{student.name || ''}</td>
+	                      <td className="border border-black p-2 text-center">{student.checkinStatus || '未報到'}</td>
+	                      <td className="border border-black p-2">{student.note || (student.isCrossDept ? '跨系' : '')}</td>
+	                      <td className="border border-black p-2 h-10"></td>
+	                      <td className="border border-black p-2 h-10">{student.subsidyReceived ? '已領' : ''}</td>
+	                    </tr>
+	                  ))}
+	                  {sheet.students.length < 10 && Array.from({ length: 10 - sheet.students.length }).map((_, extraIdx) => (
+	                    <tr key={`${sheet.id}-empty-${extraIdx}`}>
+	                      <td className="border border-black p-2 h-10"></td>
+	                      <td className="border border-black p-2"></td>
+	                      <td className="border border-black p-2"></td>
+	                      <td className="border border-black p-2"></td>
+	                      <td className="border border-black p-2"></td>
+	                      <td className="border border-black p-2"></td>
+	                      <td className="border border-black p-2"></td>
+	                    </tr>
+	                  ))}
+	                </tbody>
+	              </table>
+
+	              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+	                <div className="border border-black p-3 min-h-[72px]">
+	                  <div className="font-bold mb-2">現場確認</div>
+	                  <div>□ 身分已核對　□ 資料已更新　□ 補助已發放</div>
+	                </div>
+	                <div className="border border-black p-3 min-h-[72px]">
+	                  <div className="font-bold mb-2">備註欄</div>
+	                </div>
+	              </div>
+	            </div>
+	          ))}
         </div>
       )}
     </>
