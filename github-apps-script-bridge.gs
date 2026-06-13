@@ -25,6 +25,7 @@ const SETTINGS_KEYS = [
   ['cfg_oral_team_group_count', '一隊幾組'],
   ['cfg_team_capacity', '單間筆試教室上限'],
   ['cfg_oral_group_capacity', '口試每組人數'],
+  ['cfg_oral_tail_merge_limit', '口試尾組超收'],
   ['cfg_scheduler_strategy', '排法代碼'],
   ['cfg_school_grouping', '同校分組偏好'],
   ['written_rooms_json', '筆試教室 JSON'],
@@ -42,6 +43,7 @@ const STUDENT_HEADERS = [
   'school',
   'preferred_session_id',
   'preferred_session_name',
+  'preferred_period_name',
   'conflict_time',
   'assigned_session_id',
   'assigned_session_name',
@@ -64,6 +66,7 @@ const SCHEDULE_HEADERS = [
   'birth_date',
   'school',
   'preferred_session',
+  'preferred_period_name',
   'assigned_session',
   'written_room',
   'written_time',
@@ -88,6 +91,7 @@ const SECURE_STUDENT_HEADERS = [
   'birth_mask',
   'school_mask',
   'preferred_session_name',
+  'preferred_period_name',
   'assigned_session_name',
   'written_room_name',
   'oral_room_name',
@@ -102,6 +106,8 @@ const SECURE_STUDENT_HEADERS = [
 const SECURE_SCHEDULE_HEADERS = [
   'student_token',
   'student_mask',
+  'preferred_session_name',
+  'preferred_period_name',
   'assigned_session_name',
   'written_room_name',
   'written_time',
@@ -258,6 +264,19 @@ function handleRemoteRequest_(payload) {
     return {
       connected: true,
       newlyConfigured: authState.newlyConfigured,
+      departments: [],
+      spreadsheetId: ss.getId(),
+      spreadsheetUrl: ss.getUrl(),
+      spreadsheetName: ss.getName(),
+      schemaVersion: APP_SCHEMA_VERSION,
+      secureMode: SECURE_STORAGE_MODE
+    };
+  }
+
+  if (action === 'load_secure_departments') {
+    verifyOrInitializeSecurePassphrase_(safe_(payload.passphrase));
+    return {
+      connected: true,
       departments: loadSecureDepartmentWorkspaces_(ss),
       spreadsheetId: ss.getId(),
       spreadsheetUrl: ss.getUrl(),
@@ -639,6 +658,7 @@ function buildSecureDepartmentFromBundle_(bundle, settingsMap) {
       cfgOralTeamGroupCount: safeNumber_(settingsMap.cfg_oral_team_group_count, 2),
       cfgTeamCapacity: safeNumber_(settingsMap.cfg_team_capacity, 30),
       cfgOralGroupCapacity: safeNumber_(settingsMap.cfg_oral_group_capacity, 5),
+      cfgOralTailMergeLimit: safeNumber_(settingsMap.cfg_oral_tail_merge_limit, 0),
       cfgSchedulerStrategy: safe_(settingsMap.cfg_scheduler_strategy) || 'preference_wave',
       cfgSchoolGrouping: safe_(settingsMap.cfg_school_grouping) || 'none',
       storageMode: SECURE_STORAGE_MODE
@@ -663,6 +683,7 @@ function buildDepartmentFromBundle_(bundle, settingsMap) {
       cfgOralTeamGroupCount: safeNumber_(settingsMap.cfg_oral_team_group_count, 2),
       cfgTeamCapacity: safeNumber_(settingsMap.cfg_team_capacity, 30),
       cfgOralGroupCapacity: safeNumber_(settingsMap.cfg_oral_group_capacity, 5),
+      cfgOralTailMergeLimit: safeNumber_(settingsMap.cfg_oral_tail_merge_limit, 0),
       cfgSchedulerStrategy: safe_(settingsMap.cfg_scheduler_strategy) || 'preference_wave',
       cfgSchoolGrouping: safe_(settingsMap.cfg_school_grouping) || 'none',
       students: []
@@ -688,6 +709,7 @@ function buildDepartmentFromBundle_(bundle, settingsMap) {
     cfgOralTeamGroupCount: safeNumber_(settingsMap.cfg_oral_team_group_count, 2),
     cfgTeamCapacity: safeNumber_(settingsMap.cfg_team_capacity, 30),
     cfgOralGroupCapacity: safeNumber_(settingsMap.cfg_oral_group_capacity, 5),
+    cfgOralTailMergeLimit: safeNumber_(settingsMap.cfg_oral_tail_merge_limit, 0),
     cfgSchedulerStrategy: safe_(settingsMap.cfg_scheduler_strategy) || 'preference_wave',
     cfgSchoolGrouping: safe_(settingsMap.cfg_school_grouping) || 'none',
     students: students
@@ -713,6 +735,7 @@ function writeSettingsSheet_(sheet, dept) {
     cfg_oral_team_group_count: String(dept.cfgOralTeamGroupCount),
     cfg_team_capacity: String(dept.cfgTeamCapacity),
     cfg_oral_group_capacity: String(dept.cfgOralGroupCapacity),
+    cfg_oral_tail_merge_limit: String(safeNumber_(dept.cfgOralTailMergeLimit, 0)),
     cfg_scheduler_strategy: dept.cfgSchedulerStrategy || 'preference_wave',
     cfg_school_grouping: dept.cfgSchoolGrouping || 'none',
     written_rooms_json: JSON.stringify(dept.writtenRooms || []),
@@ -762,6 +785,7 @@ function writeStudentsSheet_(sheet, dept) {
       safe_(student.school),
       safe_(student.pref),
       preferredSession ? preferredSession.name : '',
+      preferencePeriodName_(student.prefPeriod),
       safe_(student.conflict),
       safe_(student.assignedSessionId),
       assignedSession ? assignedSession.name : '',
@@ -810,15 +834,16 @@ function writeScheduleSheet_(sheet, dept) {
         ? oralRooms[student.assignedOralRoomIdx]
         : '';
 
-      return [
-        student.id,
-        student.name,
-        normalizeBirthDate_(student.birthDate),
-        safe_(student.school),
-        preferredSession ? preferredSession.name : '',
-        assignedSession ? assignedSession.name : '',
-        writtenRoomName,
-        [safe_(student.writtenStart), safe_(student.writtenEnd)].filter(Boolean).join(' ~ '),
+    return [
+      student.id,
+      student.name,
+      normalizeBirthDate_(student.birthDate),
+      safe_(student.school),
+      preferredSession ? preferredSession.name : '',
+      preferencePeriodName_(student.prefPeriod),
+      assignedSession ? assignedSession.name : '',
+      writtenRoomName,
+      [safe_(student.writtenStart), safe_(student.writtenEnd)].filter(Boolean).join(' ~ '),
         oralRoomName,
         student.assignedOralGroupIdx === null ? '' : ('第 ' + (parseInt(student.assignedOralGroupIdx, 10) + 1) + ' 組'),
         [safe_(student.oralStart), safe_(student.oralEnd)].filter(Boolean).join(' ~ '),
@@ -853,6 +878,7 @@ function writeSecureSettingsSheet_(sheet, settings, studentRows) {
     cfg_oral_team_group_count: String(normalized.cfgOralTeamGroupCount),
     cfg_team_capacity: String(normalized.cfgTeamCapacity),
     cfg_oral_group_capacity: String(normalized.cfgOralGroupCapacity),
+    cfg_oral_tail_merge_limit: String(safeNumber_(normalized.cfgOralTailMergeLimit, 0)),
     cfg_scheduler_strategy: normalized.cfgSchedulerStrategy || 'preference_wave',
     cfg_school_grouping: normalized.cfgSchoolGrouping || 'none',
     written_rooms_json: JSON.stringify(normalized.writtenRooms || []),
@@ -881,13 +907,14 @@ function writeSecureStudentsSheet_(sheet, studentRows) {
   const outputRows = rows.map(function (row) {
     return [
       row.studentToken,
-      row.studentMask,
-      row.birthMask,
-      row.schoolMask,
-      row.preferredSessionName,
-      row.assignedSessionName,
-      row.writtenRoomName,
-      row.oralRoomName,
+    row.studentMask,
+    row.birthMask,
+    row.schoolMask,
+    row.preferredSessionName,
+    row.preferredPeriodName,
+    row.assignedSessionName,
+    row.writtenRoomName,
+    row.oralRoomName,
       row.oralGroupLabel,
       row.writtenTime,
       row.oralTime,
@@ -910,12 +937,14 @@ function writeSecureScheduleSheet_(sheet, studentRows) {
       return !!safe_(row.assignedSessionName);
     })
     .map(function (row) {
-      return [
-        row.studentToken,
-        row.studentMask,
-        row.assignedSessionName,
-        row.writtenRoomName,
-        row.writtenTime,
+    return [
+      row.studentToken,
+      row.studentMask,
+      row.preferredSessionName,
+      row.preferredPeriodName,
+      row.assignedSessionName,
+      row.writtenRoomName,
+      row.writtenTime,
         row.oralRoomName,
         row.oralGroupLabel,
         row.oralTime,
@@ -952,13 +981,11 @@ function readStudentsSheet_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const values = sheet.getRange(2, 1, lastRow - 1, STUDENT_HEADERS.length).getValues();
+  const table = readSheetRowsByHeader_(sheet);
+  const values = table.rows;
   return values
     .map(function (row) {
-      const item = {};
-      STUDENT_HEADERS.forEach(function (header, idx) {
-        item[header] = row[idx];
-      });
+      const item = row || {};
 
       return normalizeStudent_({
         id: safe_(item.student_id),
@@ -966,6 +993,7 @@ function readStudentsSheet_(sheet) {
         birthDate: normalizeBirthDate_(item.birth_date),
         school: safe_(item.school),
         pref: safe_(item.preferred_session_id),
+        prefPeriod: normalizePreferencePeriod_(item.preferred_period_name || item.preferred_period || item.preferred_period_label),
         conflict: safe_(item.conflict_time),
         assignedSessionId: safe_(item.assigned_session_id),
         assignedWrittenRoomIdx: parseNullableNumber_(item.assigned_written_room_idx),
@@ -988,17 +1016,33 @@ function readSecureStudentsSheet_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const headerWidth = SECURE_STUDENT_HEADERS.length;
-  const values = sheet.getRange(2, 1, lastRow - 1, headerWidth).getValues();
-  return values.map(function (row) {
-    const item = {};
-    SECURE_STUDENT_HEADERS.forEach(function (header, idx) {
-      item[header] = row[idx];
-    });
+  const table = readSheetRowsByHeader_(sheet);
+  return table.rows.map(function (item) {
     return normalizeSecureStudentRow_(item);
   }).filter(function (row) {
     return !!row.encryptedPayload;
   });
+}
+
+function readSheetRowsByHeader_(sheet) {
+  if (!sheet) return { headers: [], rows: [] };
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return { headers: [], rows: [] };
+
+  const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (header) {
+    return normalizeSheetHeaderKey_(header);
+  });
+  const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  const rows = values.map(function (row) {
+    const item = {};
+    headers.forEach(function (header, idx) {
+      if (!header) return;
+      item[header] = row[idx];
+    });
+    return item;
+  });
+  return { headers: headers, rows: rows };
 }
 
 function appendBackupSnapshot_(ss, source, departments) {
@@ -1118,10 +1162,30 @@ function normalizeDepartmentWorkspace_(dept) {
     cfgOralTeamGroupCount: safeNumber_(safeDept.cfgOralTeamGroupCount, 2),
     cfgTeamCapacity: safeNumber_(safeDept.cfgTeamCapacity, 30),
     cfgOralGroupCapacity: safeNumber_(safeDept.cfgOralGroupCapacity, 5),
+    cfgOralTailMergeLimit: safeNumber_(safeDept.cfgOralTailMergeLimit, 0),
     cfgSchedulerStrategy: safe_(safeDept.cfgSchedulerStrategy) || 'preference_wave',
     cfgSchoolGrouping: safe_(safeDept.cfgSchoolGrouping) || 'none',
     students: Array.isArray(safeDept.students) ? safeDept.students.map(normalizeStudent_) : []
   };
+}
+
+function normalizePreferencePeriod_(value) {
+  const raw = safe_(value).trim().toLowerCase();
+  if (!raw) return '';
+  if (raw === 'am' || raw === 'morning' || raw === '上午' || raw === '早上' || raw === '早晨' || raw.includes('上午') || raw.includes('早上') || raw.includes('早晨')) {
+    return 'am';
+  }
+  if (raw === 'pm' || raw === 'afternoon' || raw === '下午' || raw === '午後' || raw === '午后' || raw.includes('下午') || raw.includes('午後') || raw.includes('午后')) {
+    return 'pm';
+  }
+  return '';
+}
+
+function preferencePeriodName_(value) {
+  const normalized = normalizePreferencePeriod_(value);
+  if (normalized === 'am') return '上午';
+  if (normalized === 'pm') return '下午';
+  return '';
 }
 
 function normalizeSecureDepartmentPayload_(departmentPayload) {
@@ -1148,6 +1212,7 @@ function normalizeSecureDepartmentSettings_(settings) {
     cfgOralTeamGroupCount: normalized.cfgOralTeamGroupCount,
     cfgTeamCapacity: normalized.cfgTeamCapacity,
     cfgOralGroupCapacity: normalized.cfgOralGroupCapacity,
+    cfgOralTailMergeLimit: normalized.cfgOralTailMergeLimit,
     cfgSchedulerStrategy: normalized.cfgSchedulerStrategy,
     cfgSchoolGrouping: normalized.cfgSchoolGrouping,
     storageMode: SECURE_STORAGE_MODE
@@ -1166,6 +1231,7 @@ function normalizeSecureStudentRow_(row) {
     birthMask: safe_(safeRow.birthMask || safeRow.birth_mask),
     schoolMask: safe_(safeRow.schoolMask || safeRow.school_mask),
     preferredSessionName: safe_(safeRow.preferredSessionName || safeRow.preferred_session_name),
+    preferredPeriodName: safe_(safeRow.preferredPeriodName || safeRow.preferred_period_name),
     assignedSessionName: safe_(safeRow.assignedSessionName || safeRow.assigned_session_name),
     writtenRoomName: safe_(safeRow.writtenRoomName || safeRow.written_room_name),
     oralRoomName: safe_(safeRow.oralRoomName || safeRow.oral_room_name),
@@ -1201,6 +1267,7 @@ function normalizeStudent_(student) {
     birthDate: normalizeBirthDate_(safeStudent.birthDate || safeStudent.birth_date || safeStudent.birthday || safeStudent.dob),
     school: safe_(safeStudent.school),
     pref: safe_(safeStudent.pref || safeStudent.preferred_session_id),
+    prefPeriod: normalizePreferencePeriod_(safeStudent.prefPeriod || safeStudent.pref_period || safeStudent.preferredPeriod || safeStudent.preferred_period || safeStudent.preferred_period_name),
     conflict: safe_(safeStudent.conflict || safeStudent.conflict_time),
     assignedSessionId: safe_(safeStudent.assignedSessionId || safeStudent.assigned_session_id),
     assignedWrittenRoomIdx: parseNullableNumber_(safeStudent.assignedWrittenRoomIdx),
@@ -1260,6 +1327,10 @@ function safeNumber_(value, fallback) {
 function safe_(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
+}
+
+function normalizeSheetHeaderKey_(value) {
+  return safe_(value).toLowerCase().replace(/\s+/g, '_');
 }
 
 function endsWith_(value, suffix) {

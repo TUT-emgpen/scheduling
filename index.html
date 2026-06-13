@@ -568,6 +568,55 @@
             min-width: 5.25rem;
             text-align: center;
         }
+        #workspace-screen.workspace-readable .text-\[8px\] {
+            font-size: 0.5625rem !important;
+            line-height: 1rem !important;
+        }
+        #workspace-screen.workspace-readable .text-\[9px\] {
+            font-size: 0.625rem !important;
+            line-height: 1rem !important;
+        }
+        #workspace-screen.workspace-readable .text-\[10px\] {
+            font-size: 0.6875rem !important;
+            line-height: 1.125rem !important;
+        }
+        #workspace-screen.workspace-readable .text-\[11px\] {
+            font-size: 0.75rem !important;
+            line-height: 1.25rem !important;
+        }
+        .timeline-search-hit-card {
+            border-color: rgba(239, 68, 68, 0.58) !important;
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.22), 0 0 0 4px rgba(239, 68, 68, 0.08), 0 22px 40px rgba(15, 23, 42, 0.09) !important;
+            animation: timelineRedBreath 1.8s ease-in-out infinite;
+        }
+        .timeline-search-hit-chip {
+            border-color: rgba(239, 68, 68, 0.62) !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.14) !important;
+            transform: translateY(-1px);
+            animation: timelineRedBreathChip 1.8s ease-in-out infinite;
+        }
+        .student-search-hit-row {
+            background: linear-gradient(180deg, rgba(254, 242, 242, 0.96), rgba(255, 255, 255, 0.98)) !important;
+            outline: 2px solid rgba(239, 68, 68, 0.2);
+            outline-offset: -2px;
+            animation: timelineRedBreathRow 1.8s ease-in-out infinite;
+        }
+        .manual-save-focus-card {
+            border-color: rgba(16, 185, 129, 0.62) !important;
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.18), 0 0 0 4px rgba(16, 185, 129, 0.08), 0 18px 38px rgba(15, 23, 42, 0.08) !important;
+            animation: manualSavePulse 1.35s ease-in-out 2;
+        }
+        .manual-save-focus-chip {
+            border-color: rgba(16, 185, 129, 0.64) !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12) !important;
+            animation: manualSaveChipPulse 1.35s ease-in-out 2;
+        }
+        .manual-save-focus-row {
+            background: linear-gradient(180deg, rgba(236, 253, 245, 0.98), rgba(255, 255, 255, 0.99)) !important;
+            outline: 2px solid rgba(16, 185, 129, 0.22);
+            outline-offset: -2px;
+            animation: manualSaveRowPulse 1.35s ease-in-out 2;
+        }
         #workspace-column-setup .setup-hero {
             position: relative;
             overflow: hidden;
@@ -1283,6 +1332,70 @@
             50% { left: calc(100% - 1rem); opacity: 0.95; }
             100% { left: calc(100% - 1rem); opacity: 0; }
         }
+        @keyframes timelineRedBreath {
+            0%, 100% {
+                box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.18), 0 0 0 0 rgba(239, 68, 68, 0), 0 22px 40px rgba(15, 23, 42, 0.09);
+                border-color: rgba(239, 68, 68, 0.48);
+                filter: saturate(1);
+            }
+            50% {
+                box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28), 0 0 0 6px rgba(239, 68, 68, 0.12), 0 0 22px rgba(239, 68, 68, 0.2), 0 22px 40px rgba(15, 23, 42, 0.09);
+                border-color: rgba(239, 68, 68, 0.78);
+                filter: saturate(1.08);
+            }
+        }
+        @keyframes timelineRedBreathChip {
+            0%, 100% {
+                box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12);
+                border-color: rgba(239, 68, 68, 0.52);
+            }
+            50% {
+                box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 0 16px rgba(239, 68, 68, 0.18);
+                border-color: rgba(239, 68, 68, 0.82);
+            }
+        }
+        @keyframes timelineRedBreathRow {
+            0%, 100% {
+                background: linear-gradient(180deg, rgba(254, 242, 242, 0.96), rgba(255, 255, 255, 0.98));
+                outline-color: rgba(239, 68, 68, 0.16);
+            }
+            50% {
+                background: linear-gradient(180deg, rgba(255, 228, 228, 0.98), rgba(255, 255, 255, 0.99));
+                outline-color: rgba(239, 68, 68, 0.36);
+            }
+        }
+        @keyframes manualSavePulse {
+            0%, 100% {
+                box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.18), 0 0 0 0 rgba(16, 185, 129, 0), 0 18px 38px rgba(15, 23, 42, 0.08);
+                border-color: rgba(16, 185, 129, 0.58);
+                filter: saturate(1);
+            }
+            50% {
+                box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.28), 0 0 0 6px rgba(16, 185, 129, 0.12), 0 0 22px rgba(16, 185, 129, 0.18), 0 18px 38px rgba(15, 23, 42, 0.08);
+                border-color: rgba(16, 185, 129, 0.84);
+                filter: saturate(1.08);
+            }
+        }
+        @keyframes manualSaveChipPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+                border-color: rgba(16, 185, 129, 0.56);
+            }
+            50% {
+                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18), 0 0 16px rgba(16, 185, 129, 0.14);
+                border-color: rgba(16, 185, 129, 0.82);
+            }
+        }
+        @keyframes manualSaveRowPulse {
+            0%, 100% {
+                background: linear-gradient(180deg, rgba(236, 253, 245, 0.98), rgba(255, 255, 255, 0.99));
+                outline-color: rgba(16, 185, 129, 0.16);
+            }
+            50% {
+                background: linear-gradient(180deg, rgba(220, 252, 231, 0.98), rgba(255, 255, 255, 0.99));
+                outline-color: rgba(16, 185, 129, 0.34);
+            }
+        }
         @media (max-width: 1024px) {
             #workspace-column-setup .setup-import-grid,
             #workspace-column-setup .setup-engine-grid {
@@ -1404,7 +1517,7 @@
     </div>
 
     <!-- Main Administrative Workspace -->
-    <div id="workspace-screen" class="hidden flex-col flex-grow">
+    <div id="workspace-screen" class="hidden flex-col flex-grow workspace-readable">
         <!-- Workspace Header -->
         <header>
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1461,7 +1574,7 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
                     <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="help-circle" class="w-5 h-5"></i></div>
                     <div>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">登記預約偏好者</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">登記偏好者</p>
                         <p id="stat-prefer-students" class="text-xl font-bold text-indigo-600">0</p>
                     </div>
                 </div>
@@ -1588,6 +1701,10 @@
                                     <label class="setup-field-label">面試每組進場人數 (人)</label>
                                     <input type="number" id="cfg-oral-group-capacity" min="1" max="20" class="setup-soft-input" value="5">
                                 </div>
+                                <div class="setup-subcard">
+                                    <label class="setup-field-label" title="0 代表完全依照每組人數，不自動把尾數併入最後一組；若要把尾數併入最後一組，可改成 1 或 2。">尾組可超收 (人)</label>
+                                    <input type="number" id="cfg-oral-tail-merge-limit" min="0" max="5" class="setup-soft-input" value="0">
+                                </div>
                             </div>
 
                             <div class="setup-subcard flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -1661,12 +1778,12 @@
                                         </div>
                                         <div>
                                             <p class="setup-dropzone-title">點擊或拖曳 Excel / CSV 名單</p>
-                                            <p class="setup-dropzone-sub">匯入後會自動整理姓名、出生年月日、就讀學校與預約時段。</p>
+                                            <p class="setup-dropzone-sub">匯入後會自動整理姓名、出生年月日、就讀學校、精確時段與上下午偏好。</p>
                                         </div>
                                         <div class="flex flex-wrap justify-center gap-2 text-[10px] font-bold text-slate-500">
                                             <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">官方 Excel</span>
                                             <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">姓名 + 生日</span>
-                                            <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">自動解析時段</span>
+                                            <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">精確時段 + 上下午</span>
                                             <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">保留就讀學校</span>
                                         </div>
                                     </div>
@@ -1698,10 +1815,18 @@
                                             <input type="text" id="add-stu-school" placeholder="如：臺南高商" class="setup-soft-input">
                                         </div>
                                         <div>
-                                            <label class="setup-field-label">學生登記偏好</label>
+                                            <label class="setup-field-label">學生登記時段</label>
                                             <select id="add-stu-pref" class="setup-soft-input">
-                                                <option value="">-- 學生登記偏好 --</option>
+                                                <option value="">-- 學生登記時段 --</option>
                                                 <!-- Will be filled dynamically -->
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="setup-field-label">上下午偏好</label>
+                                            <select id="add-stu-pref-period" class="setup-soft-input">
+                                                <option value="">-- 上下午偏好 --</option>
+                                                <option value="am">上午</option>
+                                                <option value="pm">下午</option>
                                             </select>
                                         </div>
                                     </div>
@@ -1720,13 +1845,13 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
                                         <h4 class="text-sm font-bold text-slate-900">大量批次貼上</h4>
-                                        <p class="setup-help">可直接貼上 Excel 複製資料，一次帶入姓名、報名序號、生日、預約時段、衝突時間與就讀學校。</p>
+                                        <p class="setup-help">可直接貼上 Excel 複製資料，一次帶入姓名、報名序號、生日、預約時段、上下午偏好、衝突時間與就讀學校。</p>
                                     </div>
                                     <button class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 transition" onclick="showImportTip()">
                                         <span>格式與範例說明</span>
                                     </button>
                                 </div>
-                                <textarea id="import-batch-textarea" rows="4" placeholder="張凱晴, 11500101, 2007/05/12, 時段一, 14:00-15:30, 臺南高商&#10;陳阿明, 11500102, 0960512, 時段二, , 新化高中&#10;簡文秀, 11500103, , 時段三, 09:00-10:30, 家齊高中" class="setup-soft-textarea font-mono text-xs"></textarea>
+                                <textarea id="import-batch-textarea" rows="4" placeholder="張凱晴, 11500101, 2007/05/12, 時段一, 上午, 14:00-15:30, 臺南高商&#10;陳阿明, 11500102, 0960512, 時段二, , , 新化高中&#10;簡文秀, 11500103, , 時段三, 下午, 09:00-10:30, 家齊高中" class="setup-soft-textarea font-mono text-xs"></textarea>
                                 <button id="import-batch-btn" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700">
                                     <i data-lucide="clipboard-list" class="w-4 h-4"></i>
                                     <span>智慧解析手動剪貼名單</span>
@@ -1833,7 +1958,11 @@
                                 </span>
                             </button>
                         </div>
-                        <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button id="export-day-flow-report" class="flex items-center space-x-1 px-3 py-1.5 border border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg text-xs font-semibold transition">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                <span>輸出當天流程表</span>
+                            </button>
                             <button id="export-excel-tsv" class="flex items-center space-x-1 px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
                                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
                                 <span>複製至 Excel 貼上</span>
@@ -1875,8 +2004,37 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="timeline-cards-container" class="space-y-4">
-                            <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
+                        <div class="bg-white/85 border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div class="flex-1">
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">快速搜尋學生</div>
+                                    <div class="mt-1 relative">
+                                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                                        <input id="timeline-search-input" type="text" placeholder="搜尋姓名 / 報名序號 / 生日 / 學校，按 Enter 跳到時序卡" class="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-20 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100">
+                                        <button id="timeline-search-clear" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-100">清除</button>
+                                    </div>
+                                </div>
+                                <div class="text-[11px] text-slate-500 lg:text-right">
+                                    找到學生後可直接跳到對應時序卡，若尚未排定則會帶你到學生名冊。
+                                </div>
+                            </div>
+                            <div id="timeline-search-results" class="mt-3 hidden"></div>
+                            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">呈現方式</div>
+                                <div class="inline-flex w-full sm:w-auto items-stretch rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
+                                    <button type="button" data-timeline-layout-mode="single" class="timeline-layout-toggle inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-bold transition whitespace-nowrap">
+                                        <i data-lucide="layout-list" class="w-3.5 h-3.5"></i>
+                                        <span>單欄整張</span>
+                                    </button>
+                                    <button type="button" data-timeline-layout-mode="dual" class="timeline-layout-toggle inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-bold transition whitespace-nowrap">
+                                        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                                        <span>左右並排</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="timeline-cards-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                            <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
                                 暫無排程資料。請先完成自動排程，再切到這個視角查看每一組的時間軸。
                             </div>
                         </div>
@@ -1890,10 +2048,10 @@
                                 <p class="text-[11px] text-slate-400 mt-0.5">顯示考生預約登記狀態與分配結果。支援手動強制調整梯次、考場與面試組別。</p>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <input type="text" id="search-student-input" placeholder="搜尋姓名/報名序號/生日..." class="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-40 bg-white">
+                                <input type="text" id="search-student-input" placeholder="搜尋姓名/報名序號/生日/偏好..." class="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-40 bg-white">
                                 <select id="filter-status-select" class="px-2 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-md text-slate-600">
                                     <option value="all">全部考生</option>
-                                    <option value="pref_registered">有自訂預約偏好者</option>
+                                    <option value="pref_registered">有自訂偏好者</option>
                                     <option value="pref_none">無登記偏好（由系統分配）</option>
                                     <option value="conflict">有外部跨校撞期者</option>
                                     <option value="cross_registered">疑似跨系重複報名者</option>
@@ -1910,7 +2068,7 @@
                                         <th class="p-3">出生年月日</th>
                                         <th class="p-3">報名序號</th>
                                         <th class="p-3">就讀學校</th>
-                                        <th class="p-3">學生登記偏好</th>
+                                        <th class="p-3">學生登記時段 / 偏好</th>
                                         <th class="p-3">分配時段</th>
                                         <th class="p-3">筆試教室 & 時間</th>
                                         <th class="p-3">面試教室 & 時間 (梯 / 隊 / 組)</th>
@@ -2047,11 +2205,11 @@
                 <span>如何自 Excel 批次複製匯入？</span>
             </h4>
             <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
-                <p>您只需在 Excel 軟體整理出 4 至 6 欄，整區複製直接貼至左方大框中：</p>
+                <p>您只需在 Excel 軟體整理出 4 至 7 欄，整區複製直接貼至左方大框中：</p>
                 <div class="bg-slate-50 p-3 rounded-lg font-mono text-[11px] text-slate-800 border border-slate-200">
-                    陳小華, 11500101, 2007/05/12, 時段一, 14:00-15:30, 臺南高商<br>
-                    李大同, 11500102, 0960512, 時段二, , 新化高中<br>
-                    林玉婷, 11500103, , 時段三, 09:30-11:00, 家齊高中<br>
+                    陳小華, 11500101, 2007/05/12, 時段一, 上午, 14:00-15:30, 臺南高商<br>
+                    李大同, 11500102, 0960512, 時段二, , , 新化高中<br>
+                    林玉婷, 11500103, , 時段三, 下午, 09:30-11:00, 家齊高中<br>
                     簡美玲, 11500104, 2007-08-01
                 </div>
                 <p><b>資料格解析規則：</b></p>
@@ -2060,11 +2218,12 @@
                     <li>第二欄：報名序號</li>
                     <li>第三欄：出生年月日（支援西元、民國年，例如 <code>2007/05/12</code> 或 <code>0960512</code>）</li>
                     <li>第四欄：預約登記時段（可填<b>「時段一」</b>、<b>「時段二」</b>等，或填編號<b>「1」</b>, <b>「2」</b>或起跑時間 <b>「09:00」</b>）</li>
-                    <li>第五欄：外部撞期段（如他校面試撞期 <code>14:00-15:30</code>，排程演算法會完全避開）</li>
-                    <li>第六欄：就讀學校（選用；可搭配排程設定讓同校考生盡量同組）</li>
+                    <li>第五欄：上下午偏好（可填 <b>上午</b> 或 <b>下午</b>；若沒有可留白）</li>
+                    <li>第六欄：外部撞期段（如他校面試撞期 <code>14:00-15:30</code>，排程演算法會完全避開）</li>
+                    <li>第七欄：就讀學校（選用；可搭配排程設定讓同校考生盡量同組）</li>
                 </ul>
                 <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2">
-                    小提醒：跨系重複報名會以「姓名＋出生年月日」比對；若其他科系也有匯入生日，系統會自動標注並檢查排程撞期。
+                    小提醒：跨系重複報名會以「姓名＋出生年月日」比對；若其他科系也有匯入生日，系統會自動標注並檢查排程撞期。若你只有上午／下午需求，也可以直接填在第 4 欄，系統會自動辨識。
                 </p>
             </div>
             <button onclick="closeImportTip()" class="w-full mt-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition">
@@ -2260,6 +2419,83 @@
         </div>
     </div>
 
+    <!-- Modal: Manual Oral Group Move Choice -->
+    <div id="modal-manual-move-choice" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto px-4 py-6 hidden" style="z-index:60;">
+        <div class="bg-white rounded-2xl w-full max-w-[980px] max-h-[calc(100vh-3rem)] overflow-y-auto p-5 sm:p-6 shadow-2xl relative border border-slate-100 space-y-3">
+            <div class="flex items-start space-x-3">
+                <div class="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+                    <i data-lucide="arrow-left-right" class="w-6 h-6"></i>
+                </div>
+                <div class="space-y-1.5 flex-grow">
+                    <h4 class="font-bold text-slate-950 text-base">變換面試組別時，請先選擇處理方式</h4>
+                    <p id="manual-move-choice-desc" class="text-xs text-slate-500 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-xs space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-white px-2.5 py-1 font-bold text-slate-700">目前：<span id="manual-move-current-label"></span></span>
+                    <span class="rounded-full bg-white px-2.5 py-1 font-bold text-slate-700">目標：<span id="manual-move-target-label"></span></span>
+                </div>
+                <p id="manual-move-note" class="text-[11px] leading-relaxed text-slate-500"></p>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                    <div>
+                        <p class="text-[11px] font-black text-slate-500">原組別 → 目標組別</p>
+                        <p id="manual-move-preview-mode" class="mt-0.5 text-[10px] text-slate-400">交換時會顯示目前考生與互換對象，直接插入時會顯示目標組別。</p>
+                    </div>
+                    <span id="manual-move-preview-badge" class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-700">預覽中</span>
+                </div>
+                <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch">
+                    <div id="manual-move-preview-left"></div>
+                    <div class="flex items-center justify-center">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-400 shadow-sm">
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div id="manual-move-preview-right"></div>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <button id="manual-move-insert-btn" class="w-full text-left p-4 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/30 transition flex items-start space-x-3 group">
+                    <div class="p-2 bg-slate-100 group-hover:bg-indigo-100 text-slate-600 group-hover:text-indigo-700 rounded-xl shrink-0">
+                        <i data-lucide="move-right" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900 group-hover:text-indigo-950">直接插入</p>
+                        <p class="text-slate-400 text-[10px] mt-0.5">把這位考生直接放進目標組別，系統會重新計算後續時間。</p>
+                    </div>
+                </button>
+
+                <div id="manual-move-swap-panel" class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <p class="font-bold text-slate-900">互相交換</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">從目標組別挑一位考生，與目前這位考生交換位置。</p>
+                        </div>
+                        <span id="manual-move-swap-count" class="rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-black text-rose-600">0 人可選</span>
+                    </div>
+                    <select id="manual-move-swap-select" class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        <!-- Dynamic -->
+                    </select>
+                    <button id="manual-move-swap-btn" class="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow transition hover:bg-rose-700">
+                        與所選考生互換
+                    </button>
+                    <p id="manual-move-swap-note" class="mt-2 text-[10px] leading-relaxed text-slate-500"></p>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeManualMoveChoiceModal()" class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Custom Confirmation Dialog (Replaces native browser confirm to bypass Iframe Block) -->
     <div id="modal-custom-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100">
@@ -2342,7 +2578,9 @@
         let activeWorkspacePage = 'dashboard';
         let activeBoardTab = 'dashboard';
         let currentlyEditingStudentId = null;
+        let pendingManualMoveChoice = null;
         let pendingImportData = null; // Temp holder for uploader files during merge dialogs
+        let pendingImportMeta = null;
         const PLATFORM_STORAGE_KEY = 'multi_dept_workspaces_v6_1';
         const PRESET_REMOTE_SYNC_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzLiQWA9yFDrBYQ035OQiIeqy7HkAUAAswfopcLpJ0CD36jGEFOXGi6BuKGXqHw6pg/exec';
         const REMOTE_SYNC_CONFIG_KEY = 'secure_remote_sync_config_v1';
@@ -2350,6 +2588,7 @@
         const REMOTE_SYNC_REMEMBERED_PASSPHRASE_KEY = 'secure_remote_sync_remembered_unlock_v1';
         const REMOTE_SYNC_REMEMBER_TTL_MS = 30 * 24 * 60 * 60 * 1000;
         const CLOUD_SAVE_DEBOUNCE_MS = 900;
+        const TIMELINE_LAYOUT_MODE_KEY = 'timeline_cards_layout_mode_v1';
         const REMOTE_SECURE_STORAGE_MODE = 'encrypted_v1';
         const cloudSyncState = {
             enabled: false,
@@ -2368,8 +2607,9 @@
             bootstrapSeed: null
         };
 
-        const ORAL_GROUP_TAIL_MERGE_LIMIT = 2;
+        const ORAL_GROUP_TAIL_MERGE_LIMIT = 0;
         const DEFAULT_SCHEDULER_STRATEGY = 'preference_wave';
+        const DEFAULT_TIMELINE_LAYOUT_MODE = 'dual';
         const schedulerStrategies = {
             preference_wave: {
                 id: 'preference_wave',
@@ -2455,6 +2695,7 @@
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
                 cfgOralGroupCapacity: 5, 
+                cfgOralTailMergeLimit: 0,
                 cfgSchedulerStrategy: DEFAULT_SCHEDULER_STRATEGY,
                 cfgSchoolGrouping: 'none',
                 students: [] 
@@ -2478,6 +2719,7 @@
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
                 cfgOralGroupCapacity: 5, 
+                cfgOralTailMergeLimit: 0,
                 cfgSchedulerStrategy: DEFAULT_SCHEDULER_STRATEGY,
                 cfgSchoolGrouping: 'none',
                 students: [] 
@@ -2500,6 +2742,7 @@
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 40,
                 cfgOralGroupCapacity: 5, 
+                cfgOralTailMergeLimit: 0,
                 cfgSchedulerStrategy: DEFAULT_SCHEDULER_STRATEGY,
                 cfgSchoolGrouping: 'none',
                 students: []
@@ -2727,6 +2970,24 @@
             return JSON.parse(decoder.decode(plainBuffer));
         }
 
+        function parseSecureEncryptedBundle(row) {
+            const raw = row?.encryptedPayload;
+            if (!raw) {
+                throw new Error('雲端資料缺少加密內容。');
+            }
+            if (typeof raw === 'object') {
+                return raw;
+            }
+            if (typeof raw !== 'string') {
+                throw new Error('雲端資料加密內容格式不正確。');
+            }
+            try {
+                return JSON.parse(raw);
+            } catch (error) {
+                throw new Error('雲端資料加密區塊 JSON 格式錯誤。');
+            }
+        }
+
         function maskStudentName(value) {
             const raw = String(value || '').trim();
             if (!raw) return '未命名';
@@ -2796,12 +3057,14 @@
 
         async function buildSecureStudentRow(dept, student) {
             const encryptedPayload = await encryptJsonWithPassphrase(student, cloudSyncState.passphrase);
+            const prefDetails = getStudentPreferenceDetails(student, dept);
             return {
                 studentToken: createStableStudentToken(dept.id, student),
                 studentMask: maskStudentName(student.name),
                 birthMask: maskBirthDate(student.birthDate),
                 schoolMask: maskSchoolName(student.school),
                 preferredSessionName: student.pref ? (dept.sessions.find(session => session.id === student.pref)?.name || '') : '',
+                preferredPeriodName: prefDetails.prefPeriodLabel || '',
                 assignedSessionName: student.assignedSessionId ? (dept.sessions.find(session => session.id === student.assignedSessionId)?.name || '') : '',
                 writtenRoomName: student.assignedWrittenRoomIdx !== null && student.assignedWrittenRoomIdx !== undefined ? (dept.writtenRooms[student.assignedWrittenRoomIdx] || '') : '',
                 oralRoomName: student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? (dept.oralRooms[student.assignedOralRoomIdx] || '') : '',
@@ -2834,22 +3097,38 @@
         }
 
         async function hydrateRemoteDepartments(remoteDepartments, passphrase) {
-            const restored = [];
-            for (const deptPayload of remoteDepartments || []) {
+            const warnings = [];
+            const departments = [];
+            for (const deptPayload of (remoteDepartments || [])) {
                 const settings = deptPayload?.settings || {};
+                const rawStudents = Array.isArray(deptPayload?.students) ? deptPayload.students : [];
                 const students = [];
-                for (const row of deptPayload?.students || []) {
-                    const encryptedBundle = typeof row.encryptedPayload === 'string'
-                        ? JSON.parse(row.encryptedPayload)
-                        : row.encryptedPayload;
-                    students.push(await decryptJsonWithPassphrase(encryptedBundle, passphrase));
+                for (let index = 0; index < rawStudents.length; index++) {
+                    const row = rawStudents[index];
+                    try {
+                        const encryptedBundle = parseSecureEncryptedBundle(row);
+                        const decryptedStudent = await decryptJsonWithPassphrase(encryptedBundle, passphrase);
+                        students.push(decryptedStudent);
+                    } catch (error) {
+                        warnings.push({
+                            deptName: String(settings.name || settings.id || '未命名科系'),
+                            rowIndex: index + 1,
+                            message: error.message || String(error)
+                        });
+                        console.warn('Skipping malformed secure row', {
+                            deptName: settings.name || settings.id || '未命名科系',
+                            rowIndex: index + 1,
+                            error,
+                            row
+                        });
+                    }
                 }
-                restored.push({
+                departments.push({
                     ...buildSecureDepartmentSettings(settings),
                     students
                 });
             }
-            return restored;
+            return { departments, warnings };
         }
 
         function sendRemoteBridgeRequest(action, data = {}) {
@@ -3007,6 +3286,7 @@
             const modalTitle = document.getElementById('cloud-sync-modal-title');
             const modalDesc = document.getElementById('cloud-sync-modal-desc');
             const presetMode = hasPresetRemoteSyncUrl();
+            const isUnlocking = isRemoteSecureMode() && cloudSyncState.loading;
 
             if (urlInput && !urlInput.value && cloudSyncState.webAppUrl) {
                 urlInput.value = cloudSyncState.webAppUrl;
@@ -3094,16 +3374,20 @@
             }
             if (statusPill) {
                 statusPill.className = `mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold ${
-                    isUnlocked
+                    isUnlocking
+                        ? 'border-sky-200 bg-sky-50 text-sky-700'
+                        : isUnlocked
                         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                         : 'border-amber-200 bg-amber-50 text-amber-700'
                 }`;
-                statusPill.innerHTML = `<span class="h-2 w-2 rounded-full ${isUnlocked ? 'bg-emerald-500' : 'bg-amber-500'}"></span>${isUnlocked ? '已解鎖並同步' : '已設定但未解鎖'}`;
+                statusPill.innerHTML = `<span class="h-2 w-2 rounded-full ${isUnlocking ? 'bg-sky-500 animate-pulse' : isUnlocked ? 'bg-emerald-500' : 'bg-amber-500'}"></span>${isUnlocking ? '解鎖同步中' : isUnlocked ? '已解鎖並同步' : '已設定但未解鎖'}`;
             }
             if (statusText) {
-                statusText.textContent = isUnlocked
-                    ? '目前由 GitHub 前端操作，資料會自動加密後寫入 Google 試算表。'
-                    : '已記住同步端點，但還需要輸入保護密碼才能載入和編輯考生資料。';
+                statusText.textContent = isUnlocking
+                    ? '正在自動解鎖與同步雲端資料，先以本機快取開啟畫面。'
+                    : isUnlocked
+                        ? '目前由 GitHub 前端操作，資料會自動加密後寫入 Google 試算表。'
+                        : '已記住同步端點，但還需要輸入保護密碼才能載入和編輯考生資料。';
             }
             if (sheetLink) {
                 if (cloudSyncState.sheetUrl) {
@@ -3180,7 +3464,6 @@
                 const result = await sendRemoteBridgeRequest('connect_secure', {
                     passphrase: String(passphrase).trim()
                 });
-                cloudSyncState.loading = false;
                 cloudSyncState.passphrase = String(passphrase).trim();
                 cloudSyncState.secureLocked = false;
                 cloudSyncState.sheetUrl = result.spreadsheetUrl || '';
@@ -3199,31 +3482,61 @@
                     clearRememberedRemoteSyncPassphrase();
                 }
 
-                const remoteDepartments = await hydrateRemoteDepartments(result.departments || [], cloudSyncState.passphrase);
-                if (remoteDepartments.length > 0) {
-                    refreshPlatformData(remoteDepartments, { allowEmpty: true, skipLocalCache: true });
-                    cloudSyncState.lastSavedFingerprint = JSON.stringify(remoteDepartments);
-                } else {
-                    const seedDepartments = Array.isArray(options.seedDepartments) ? options.seedDepartments : [];
-                    refreshPlatformData([], { allowEmpty: true, skipLocalCache: true });
-                    if (seedDepartments.length > 0) {
-                        window.customConfirm(
-                            '雲端資料是空的',
-                            '目前這個 GitHub 同步工作區還沒有任何科系資料。是否要把你目前本機的工作區內容上傳成第一份雲端資料？',
-                            async () => {
-                                departments = deepCloneData(seedDepartments);
-                                normalizeAllDepartmentStudentData();
-                                await flushCloudSave(true);
-                                showToast('已把目前工作區上傳成第一份 GitHub 雲端資料。', 'success');
-                            },
-                            () => {
-                                showToast('已完成解鎖，雲端目前仍是空白工作區。', 'info');
-                            }
-                        );
+                updateCloudSyncStatusUI();
+                renderDepartmentPortal();
+
+                const seedDepartments = Array.isArray(options.seedDepartments) ? options.seedDepartments : [];
+                const handleHydrateFailure = error => {
+                    cloudSyncState.loading = false;
+                    cloudSyncState.secureLocked = true;
+                    cloudSyncState.passphrase = '';
+                    updateCloudSyncStatusUI();
+                    lockRemoteSecureSession({ keepData: false });
+                    showToast(`自動解鎖失敗：${error.message || error}`, 'error');
+                };
+
+                const applyRemoteDepartments = async (encryptedDepartments) => {
+                    const { departments: remoteDepartments, warnings } = await hydrateRemoteDepartments(encryptedDepartments, cloudSyncState.passphrase);
+                    cloudSyncState.loading = false;
+                    if (remoteDepartments.length > 0) {
+                        refreshPlatformData(remoteDepartments, { allowEmpty: true, skipLocalCache: true });
+                        cloudSyncState.lastSavedFingerprint = JSON.stringify(remoteDepartments);
+                        if (warnings.length > 0) {
+                            showToast(`雲端已解鎖，但有 ${warnings.length} 筆資料格式異常，已先略過。`, 'info');
+                        }
+                    } else {
+                        refreshPlatformData([], { allowEmpty: true, skipLocalCache: true });
+                        if (seedDepartments.length > 0) {
+                            window.customConfirm(
+                                '雲端資料是空的',
+                                '目前這個 GitHub 同步工作區還沒有任何科系資料。是否要把你目前本機的工作區內容上傳成第一份雲端資料？',
+                                async () => {
+                                    departments = deepCloneData(seedDepartments);
+                                    normalizeAllDepartmentStudentData();
+                                    await flushCloudSave(true);
+                                    showToast('已把目前工作區上傳成第一份 GitHub 雲端資料。', 'success');
+                                },
+                                () => {
+                                    showToast('已完成解鎖，雲端目前仍是空白工作區。', 'info');
+                                }
+                            );
+                        }
                     }
+                    updateCloudSyncStatusUI();
+                    return remoteDepartments;
+                };
+
+                const encryptedDepartments = Array.isArray(result.departments) ? result.departments : [];
+                if (encryptedDepartments.length > 0) {
+                    void applyRemoteDepartments(encryptedDepartments).catch(handleHydrateFailure);
+                    return result;
                 }
 
-                updateCloudSyncStatusUI();
+                void sendRemoteBridgeRequest('load_secure_departments', {
+                    passphrase: cloudSyncState.passphrase
+                })
+                    .then(loadResult => applyRemoteDepartments(Array.isArray(loadResult.departments) ? loadResult.departments : []))
+                    .catch(handleHydrateFailure);
                 return result;
             } catch (error) {
                 cloudSyncState.loading = false;
@@ -3397,7 +3710,7 @@
                 });
                 document.getElementById('cloud-sync-passphrase').value = '';
                 closeCloudSyncModal();
-                showToast(rememberDevice ? 'GitHub 雲端已解鎖，這台電腦會記住登入 30 天。' : 'GitHub 雲端同步已解鎖，後續會自動加密備份。', 'success');
+                showToast(rememberDevice ? 'GitHub 雲端已完成驗證，資料載入中，這台電腦會記住登入 30 天。' : 'GitHub 雲端已完成驗證，資料載入中，後續會自動加密備份。', 'success');
             } catch (error) {
                 console.error(error);
                 showToast(`雲端連線失敗：${error.message || error}`, 'error');
@@ -3488,6 +3801,32 @@
             document.getElementById('tab-btn-list').addEventListener('click', () => switchTab('list'));
             document.getElementById('workspace-page-btn-dashboard').addEventListener('click', () => switchWorkspacePage('dashboard'));
             document.getElementById('workspace-page-btn-setup').addEventListener('click', () => switchWorkspacePage('setup'));
+            const timelineSearchInput = document.getElementById('timeline-search-input');
+            if (timelineSearchInput) {
+                timelineSearchInput.addEventListener('input', updateTimelineSearchResults);
+                timelineSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        jumpToFirstTimelineSearchResult();
+                    }
+                });
+            }
+            const timelineSearchClearBtn = document.getElementById('timeline-search-clear');
+            if (timelineSearchClearBtn) {
+                timelineSearchClearBtn.addEventListener('click', clearTimelineSearch);
+            }
+            const timelineSearchResults = document.getElementById('timeline-search-results');
+            if (timelineSearchResults) {
+                timelineSearchResults.addEventListener('click', (event) => {
+                    const btn = event.target.closest('[data-timeline-search-student-id]');
+                    if (!btn) return;
+                    jumpToTimelineSearchResult(btn.getAttribute('data-timeline-search-student-id'));
+                });
+            }
+            document.querySelectorAll('[data-timeline-layout-mode]').forEach(btn => {
+                btn.addEventListener('click', () => setTimelineLayoutMode(btn.getAttribute('data-timeline-layout-mode')));
+            });
+            syncTimelineLayoutControls();
 
             // Core Config Event Hooks for instant state updating
             document.getElementById('cfg-written-duration').addEventListener('input', syncCurrentDeptConfigsToState);
@@ -3497,6 +3836,7 @@
             document.getElementById('cfg-oral-team-group-count').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-team-capacity').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-oral-group-capacity').addEventListener('input', syncCurrentDeptConfigsToState);
+            document.getElementById('cfg-oral-tail-merge-limit').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('scheduler-options-strategy-select').addEventListener('change', updateSchedulerOptionsPreview);
             document.getElementById('scheduler-options-school-grouping').addEventListener('change', updateSchedulerOptionsPreview);
 
@@ -3512,6 +3852,7 @@
             document.getElementById('filter-status-select').addEventListener('change', renderStudentsTable);
             document.getElementById('create-dept-form').addEventListener('submit', handleCreateDepartment);
             document.getElementById('new-dept-icon').addEventListener('change', () => applyNewDeptTemplateSelection(true));
+            document.getElementById('export-day-flow-report').addEventListener('click', exportDayFlowReport);
             document.getElementById('export-excel-tsv').addEventListener('click', exportToExcelTsvClipboard);
             document.getElementById('cloud-sync-connect-btn').addEventListener('click', handleCloudSyncConnect);
             document.getElementById('cloud-sync-lock-btn').addEventListener('click', () => {
@@ -3546,7 +3887,7 @@
                 if (remotePassphrase) {
                     connectRemoteSecureWorkspace(remotePassphrase, { seedDepartments: localDepartments || [] })
                         .then(() => {
-                            showToast('已自動解鎖 GitHub 雲端工作區。', 'success');
+                            showToast('已完成密碼驗證，雲端資料載入中。', 'success');
                         })
                         .catch(error => {
                             console.error(error);
@@ -3608,6 +3949,10 @@
                     dept.cfgOralGroupCapacity = 5;
                     changed = true;
                 }
+                if (dept.cfgOralTailMergeLimit === undefined) {
+                    dept.cfgOralTailMergeLimit = 0;
+                    changed = true;
+                }
                 if (dept.cfgTeamCapacity === undefined) {
                     dept.cfgTeamCapacity = 30;
                     changed = true;
@@ -3633,7 +3978,13 @@
             if (!departments.length) {
                 const emptyState = document.createElement('div');
                 emptyState.className = 'md:col-span-3 rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-10 text-center';
-                emptyState.innerHTML = isRemoteSecureMode() && !isCloudUnlocked()
+                emptyState.innerHTML = isRemoteSecureMode() && cloudSyncState.loading
+                    ? `
+                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border-4 border-sky-100 border-t-sky-500 animate-spin"></div>
+                        <h3 class="mt-4 text-sm font-bold text-slate-900">雲端資料同步中</h3>
+                        <p class="mt-2 text-xs leading-relaxed text-slate-500">系統正在解鎖並讀取雲端考生資料，請稍候一下。</p>
+                    `
+                    : isRemoteSecureMode() && !isCloudUnlocked()
                     ? `
                         <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                             <i data-lucide="lock" class="w-6 h-6"></i>
@@ -3720,6 +4071,7 @@
             });
 
             lucide.createIcons();
+            updateTimelineSearchResults();
         }
 
         // Enter Workspace logic
@@ -3765,6 +4117,10 @@
                 dept.cfgOralGroupCapacity = 5;
                 needsSave = true;
             }
+            if (dept.cfgOralTailMergeLimit === undefined) {
+                dept.cfgOralTailMergeLimit = 0;
+                needsSave = true;
+            }
             if (dept.cfgTeamCapacity === undefined) {
                 dept.cfgTeamCapacity = 30; // High default capacity to enable greedy room saving
                 needsSave = true;
@@ -3798,6 +4154,7 @@
             document.getElementById('cfg-oral-team-group-count').value = dept.cfgOralTeamGroupCount || 2;
             document.getElementById('cfg-team-capacity').value = dept.cfgTeamCapacity || 30;
             document.getElementById('cfg-oral-group-capacity').value = dept.cfgOralGroupCapacity || 5;
+            document.getElementById('cfg-oral-tail-merge-limit').value = dept.cfgOralTailMergeLimit ?? 0;
             document.getElementById('scheduler-options-strategy-select').value = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
             document.getElementById('scheduler-options-school-grouping').value = dept.cfgSchoolGrouping || 'none';
             updateSchedulerStrategyDescription(dept.cfgSchedulerStrategy);
@@ -3820,7 +4177,7 @@
 
         function repopulateStudentPrefDropdown(dept) {
             const select = document.getElementById('add-stu-pref');
-            select.innerHTML = '<option value="">-- 學生登記偏好 --</option>';
+            select.innerHTML = '<option value="">-- 學生登記時段 --</option>';
             dept.sessions.forEach(s => {
                 select.innerHTML += `<option value="${s.id}">預約：${s.name} (${s.startTime})</option>`;
             });
@@ -4009,14 +4366,11 @@
 
             // Render stats indicators
             updateStatsIndicators();
-            if (activeBoardTab === 'timeline') {
-                renderTimelineCards();
-            } else if (activeBoardTab === 'list') {
-                renderStudentsTable();
-            } else {
-                renderDashboardBoards();
-            }
+            renderDashboardBoards();
+            renderTimelineCards();
+            renderStudentsTable();
             lucide.createIcons();
+            updateTimelineSearchResults();
         }
 
         // Render Sessions list on settings card
@@ -4042,6 +4396,7 @@
                 container.appendChild(div);
             });
             lucide.createIcons();
+            updateTimelineSearchResults();
         }
 
         window.updateSessionName = function(sessionId, name) {
@@ -4052,6 +4407,7 @@
                 s.name = name;
                 savePlatformStateToStorage();
                 repopulateStudentPrefDropdown(dept);
+                syncWorkspaceUI();
             }
         };
 
@@ -4062,6 +4418,7 @@
             if (s) {
                 s.startTime = time;
                 savePlatformStateToStorage();
+                syncWorkspaceUI();
             }
         };
 
@@ -4257,6 +4614,15 @@
             return matches;
         }
 
+        function getCrossDeptNames(student, currentDeptId) {
+            return [...new Set(getCrossDeptMatches(student, currentDeptId).map(match => match.dept?.name).filter(Boolean))];
+        }
+
+        function getCrossDeptLabelText(student, currentDeptId) {
+            const names = getCrossDeptNames(student, currentDeptId);
+            return names.length > 0 ? `跨系：${names.join('、')}` : '';
+        }
+
         function getCrossDeptRosterOverlap(parsedList, currentDeptId) {
             if (!Array.isArray(parsedList) || parsedList.length === 0) return [];
 
@@ -4423,6 +4789,17 @@
             return `時段辨識 ${totalMatched}/${parsedList.length} 筆（${parts.join('、')}）${unmatchedSuffix}`;
         }
 
+        function formatPeriodPreferenceSummary(parsedList) {
+            if (!Array.isArray(parsedList) || parsedList.length === 0) return '';
+
+            const amCount = parsedList.filter(student => getStudentPreferencePeriod(student) === 'am').length;
+            const pmCount = parsedList.filter(student => getStudentPreferencePeriod(student) === 'pm').length;
+            const total = amCount + pmCount;
+            if (total === 0) return '';
+
+            return `上下午辨識 ${total}/${parsedList.length} 筆（上午=${amCount}、下午=${pmCount}）`;
+        }
+
         function formatSchoolImportSummary(parsedList) {
             if (!Array.isArray(parsedList) || parsedList.length === 0) return '';
             const withSchool = parsedList.filter(student => student.school && String(student.school).trim()).length;
@@ -4458,6 +4835,7 @@
         window.closeMergeModal = function() {
             document.getElementById('modal-merge-choice').classList.add('hidden');
             pendingImportData = null;
+            pendingImportMeta = null;
         };
 
         // SMART EXCEL/CSV IMPORT ENGINE using SheetJS (Upgraded with ArrayBuffer + Custom Confirm & Merge Modal)
@@ -4525,62 +4903,104 @@
                     
                     // Time slot preference column detection ("時段" column detected in official select table)
                     const idxPref = headers.findIndex(h => h === "時段" || h.includes("時段") || h.includes("梯次") || h.includes("選填") || h.includes("偏好") || h.includes("preference") || h.includes("slot"));
+                    const idxPrefPeriod = headers.findIndex(h =>
+                        h === "上午" ||
+                        h === "下午" ||
+                        h === "上/下午" ||
+                        h.includes("上午偏好") ||
+                        h.includes("下午偏好") ||
+                        h.includes("上下午") ||
+                        h.includes("上/下午") ||
+                        h.includes("半日") ||
+                        h.includes("半天") ||
+                        h.includes("morning") ||
+                        h.includes("afternoon") ||
+                        h === "am" ||
+                        h === "pm"
+                    );
 
-                    if (idxName === -1) {
-                        showToast("無法在 Excel 標頭中找到『姓名』欄位！請確認格式。", "error");
+                    const canUseIdOnlyPreferenceImport = idxName === -1 && idxId !== -1 && (idxPref !== -1 || idxPrefPeriod !== -1);
+                    if (idxName === -1 && !canUseIdOnlyPreferenceImport) {
+                        showToast("無法在 Excel 標頭中找到『姓名』欄位；若此檔案是偏好回填檔，請至少包含『報名序號』與『時段 / 上下午偏好』欄位。", "error");
+                        return;
+                    }
+
+                    if (canUseIdOnlyPreferenceImport && (!Array.isArray(dept.students) || dept.students.length === 0)) {
+                        showToast("這份檔案沒有姓名欄位，因此需要先有既有考生名單，才能依『報名序號』回填學生登記時段與上下午偏好。", "error");
                         return;
                     }
 
                     let parsedList = [];
                     let otherDeptCount = 0;
+                    let unmatchedIdOnlyCount = 0;
                     const currentDeptClean = cleanStandardValue(dept.name); // e.g. "漫畫系" -> "漫畫系"
+                    const existingStudentsById = new Map((dept.students || [])
+                        .filter(student => cleanStandardValue(student?.id))
+                        .map(student => [cleanStandardValue(student.id), student]));
 
-                    for (let i = 1; i < rows.length; i++) {
-                        const row = rows[i];
-                        if (!row || row.length === 0 || !row[idxName]) continue;
+                    function parseImportedRow(row, options = {}) {
+                        const ignoreDeptFilter = !!options.ignoreDeptFilter;
+                        if (!row || row.length === 0) return null;
 
-                        const candidateName = String(row[idxName]).trim();
-                        if (!candidateName) continue;
-
-                        // Retrieve student ID cleanly
                         let candidateId = '';
                         if (idxId !== -1 && row[idxId]) {
                             candidateId = String(row[idxId]).trim();
                         } else if (idxIdCard !== -1 && row[idxIdCard]) {
                             candidateId = String(row[idxIdCard]).trim();
-                        } else {
-                            candidateId = "115" + String(1000 + i);
+                        } else if (idxName !== -1 && row[idxName]) {
+                            candidateId = "115" + String(1000 + options.rowIndex);
+                        }
+
+                        const existingMatchedStudent = candidateId
+                            ? existingStudentsById.get(cleanStandardValue(candidateId))
+                            : null;
+
+                        let candidateName = idxName !== -1 && row[idxName] ? String(row[idxName]).trim() : '';
+                        if (!candidateName && existingMatchedStudent) {
+                            candidateName = String(existingMatchedStudent.name || '').trim();
+                        }
+
+                        if (!candidateName && !candidateId) return null;
+                        if (canUseIdOnlyPreferenceImport && !existingMatchedStudent) {
+                            unmatchedIdOnlyCount++;
+                            return null;
                         }
 
                         const candidateDeptRaw = idxDept !== -1 && row[idxDept] ? String(row[idxDept]).trim() : '';
                         const candidateDeptClean = cleanStandardValue(candidateDeptRaw);
-                        
-                        const candidatePhone = idxPhone !== -1 && row[idxPhone] ? String(row[idxPhone]).trim() : '';
-                        const candidateEmail = idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : '';
-                        const candidateBirthDate = idxBirth !== -1 && row[idxBirth] ? normalizeBirthDate(row[idxBirth]) : '';
-                        const candidateSchool = idxSchool !== -1 && row[idxSchool] ? String(row[idxSchool]).trim() : '';
-                        
-                        // Parse preference時段 value
+                        if (!ignoreDeptFilter && candidateDeptClean && !candidateDeptClean.includes(currentDeptClean) && !currentDeptClean.includes(candidateDeptClean)) {
+                            otherDeptCount++;
+                            return null;
+                        }
+
+                        const candidatePhone = idxPhone !== -1 && row[idxPhone] ? String(row[idxPhone]).trim() : (existingMatchedStudent?.phone || '');
+                        const candidateEmail = idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : (existingMatchedStudent?.email || '');
+                        const candidateBirthDate = idxBirth !== -1 && row[idxBirth]
+                            ? normalizeBirthDate(row[idxBirth])
+                            : (existingMatchedStudent?.birthDate || '');
+                        const candidateSchool = idxSchool !== -1 && row[idxSchool]
+                            ? String(row[idxSchool]).trim()
+                            : (existingMatchedStudent?.school || '');
+
                         let candidatePrefRaw = idxPref !== -1 && row[idxPref] ? String(row[idxPref]).trim() : '';
                         let candidatePref = '';
+                        let candidatePrefPeriod = '';
                         if (candidatePrefRaw) {
-                            // Map numeric preferences ("1", "2" etc.) or custom string preferences directly
                             candidatePref = matchSession(candidatePrefRaw, dept.sessions);
+                            candidatePrefPeriod = normalizePreferencePeriodToken(candidatePrefRaw);
+                        }
+                        if (idxPrefPeriod !== -1 && row[idxPrefPeriod]) {
+                            candidatePrefPeriod = normalizePreferencePeriodToken(row[idxPrefPeriod]) || candidatePrefPeriod;
                         }
 
-                        // Cross-Department Verification logic (Cleaned strings prevent whitespace mismatches)
-                        if (candidateDeptClean && !candidateDeptClean.includes(currentDeptClean) && !currentDeptClean.includes(candidateDeptClean)) {
-                            otherDeptCount++;
-                            continue; // Skip candidates from other departments
-                        }
-
-                        parsedList.push({
+                        return {
                             id: candidateId,
                             name: candidateName,
                             birthDate: candidateBirthDate,
                             school: candidateSchool,
-                            pref: candidatePref, // Saved preference ID mapped
-                            conflict: '', 
+                            pref: candidatePref,
+                            prefPeriod: candidatePrefPeriod,
+                            conflict: '',
                             assignedSessionId: null,
                             assignedWrittenRoomIdx: null,
                             assignedOralRoomIdx: null,
@@ -4592,7 +5012,14 @@
                             oralEnd: '',
                             phone: candidatePhone,
                             email: candidateEmail
-                        });
+                        };
+                    }
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const parsedStudent = parseImportedRow(rows[i], { rowIndex: i });
+                        if (parsedStudent) {
+                            parsedList.push(parsedStudent);
+                        }
                     }
 
                     // Handles fallback when file matches zero candidates for active department (USING CUSTOM CONFIRM DIALOG)
@@ -4604,49 +5031,20 @@
                                 // Re-run loop without department filtering
                                 parsedList = [];
                                 for (let i = 1; i < rows.length; i++) {
-                                    const row = rows[i];
-                                    if (!row || !row[idxName]) continue;
-                                    
-                                    let candidateId = '';
-                                    if (idxId !== -1 && row[idxId]) {
-                                        candidateId = String(row[idxId]).trim();
-                                    } else if (idxIdCard !== -1 && row[idxIdCard]) {
-                                        candidateId = String(row[idxIdCard]).trim();
-                                    } else {
-                                        candidateId = "115" + String(1000 + i);
+                                    const parsedStudent = parseImportedRow(rows[i], { rowIndex: i, ignoreDeptFilter: true });
+                                    if (parsedStudent) {
+                                        parsedList.push(parsedStudent);
                                     }
-
-                                    let candidatePrefRaw = idxPref !== -1 && row[idxPref] ? String(row[idxPref]).trim() : '';
-                                    let candidatePref = candidatePrefRaw ? matchSession(candidatePrefRaw, dept.sessions) : '';
-                                    let candidateBirthDate = idxBirth !== -1 && row[idxBirth] ? normalizeBirthDate(row[idxBirth]) : '';
-                                    let candidateSchool = idxSchool !== -1 && row[idxSchool] ? String(row[idxSchool]).trim() : '';
-
-                                    parsedList.push({
-                                        id: candidateId,
-                                        name: String(row[idxName]).trim(),
-                                        birthDate: candidateBirthDate,
-                                        school: candidateSchool,
-                                        pref: candidatePref,
-                                        conflict: '',
-                                        assignedSessionId: null,
-                                        assignedWrittenRoomIdx: null,
-                                        assignedOralRoomIdx: null,
-                                        assignedOrder: null,
-                                        assignedOralGroupIdx: null,
-                                        writtenStart: '',
-                                        writtenEnd: '',
-                                        oralStart: '',
-                                        oralEnd: '',
-                                        phone: idxPhone !== -1 && row[idxPhone] ? String(row[idxPhone]).trim() : '',
-                                        email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : ''
-                                    });
                                 }
 	                                triggerPostParsingImport(parsedList, {
-	                                    hasPrefCol: idxPref !== -1,
+	                                    hasPrefCol: idxPref !== -1 || idxPrefPeriod !== -1,
+	                                    forceMergeByIdOnly: canUseIdOnlyPreferenceImport,
 	                                    prefSummary: formatSessionPreferenceSummary(parsedList, dept.sessions),
+	                                    periodSummary: formatPeriodPreferenceSummary(parsedList),
 	                                    schoolSummary: formatSchoolImportSummary(parsedList),
 	                                    overlapCount: countRosterOverlap(parsedList, dept.students),
-	                                    crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id)
+	                                    crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id),
+	                                    unmatchedIdOnlyCount: unmatchedIdOnlyCount
 	                                });
                             },
                             () => {
@@ -4663,11 +5061,14 @@
 
                     // Direct routing based on whether a merge decision is required
 	                    triggerPostParsingImport(parsedList, {
-	                        hasPrefCol: idxPref !== -1,
+	                        hasPrefCol: idxPref !== -1 || idxPrefPeriod !== -1,
+	                        forceMergeByIdOnly: canUseIdOnlyPreferenceImport,
 	                        prefSummary: formatSessionPreferenceSummary(parsedList, dept.sessions),
+	                        periodSummary: formatPeriodPreferenceSummary(parsedList),
 	                        schoolSummary: formatSchoolImportSummary(parsedList),
 	                        overlapCount: countRosterOverlap(parsedList, dept.students),
-	                        crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id)
+	                        crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id),
+	                        unmatchedIdOnlyCount: unmatchedIdOnlyCount
 	                    });
 
                 } catch (error) {
@@ -4690,23 +5091,40 @@
 
 	            const hasPrefCol = !!importMeta.hasPrefCol;
 	            const prefSummary = importMeta.prefSummary || '';
+	            const periodSummary = importMeta.periodSummary || '';
 	            const schoolSummary = importMeta.schoolSummary || '';
 	            const overlapCount = importMeta.overlapCount || 0;
 	            const crossDeptOverlapCount = importMeta.crossDeptOverlapCount || 0;
+                const unmatchedIdOnlyCount = importMeta.unmatchedIdOnlyCount || 0;
+                const forceMergeByIdOnly = !!importMeta.forceMergeByIdOnly;
             const overlapRatio = dept.students.length > 0 ? overlapCount / dept.students.length : 0;
             const looksLikeNewRoster = overlapCount === 0 || overlapRatio < 0.2;
+
+            if (forceMergeByIdOnly) {
+                pendingImportData = parsedList;
+                pendingImportMeta = importMeta;
+                executeMergeImport();
+                if (unmatchedIdOnlyCount > 0) {
+                    showToast(`另有 ${unmatchedIdOnlyCount} 筆因找不到對應的報名序號，這次沒有更新。`, "info");
+                }
+                return;
+            }
 
             // Decision Tree: If workspace already has candidates, AND the imported file contains a 'preference' column,
             // prompt the user to Overwrite or Merge & Update!
             if (dept.students.length > 0 && hasPrefCol && !looksLikeNewRoster) {
                 pendingImportData = parsedList;
+                pendingImportMeta = importMeta;
                 document.getElementById('modal-merge-choice').classList.remove('hidden');
             } else {
                 // Default path: clean overwrite
                 dept.students = parsedList;
                 savePlatformStateToStorage();
                 syncWorkspaceUI();
-	                const summaryParts = [prefSummary, schoolSummary].filter(Boolean);
+	                const summaryParts = [prefSummary, periodSummary, schoolSummary].filter(Boolean);
+                    if (unmatchedIdOnlyCount > 0) {
+                        summaryParts.push(`未對上報名序號 ${unmatchedIdOnlyCount} 筆`);
+                    }
 	                const summarySuffix = summaryParts.length > 0 ? `，${summaryParts.join('，')}` : '';
 	                const crossDeptSuffix = crossDeptOverlapCount > 0 ? `，其中 ${crossDeptOverlapCount} 筆已在其他科系出現` : '';
 	                showToast(`🎉 成功解析並篩選出 ${parsedList.length} 位『${dept.name}』官方考生名單${summarySuffix}${crossDeptSuffix}！`, "success");
@@ -4723,7 +5141,7 @@
             syncWorkspaceUI();
             
             closeMergeModal();
-            showToast(`🎉 已成功重新載入考生資料，覆蓋共 ${dept.students.length} 位考生的時段偏好！`, "success");
+            showToast(`🎉 已成功重新載入考生資料，覆蓋共 ${dept.students.length} 位考生的時段偏好與上下午偏好！`, "success");
         };
 
         // Decision Option B: SMART Merge and Update Execution
@@ -4732,6 +5150,7 @@
             if (!dept || !pendingImportData) return;
 
             let updatedCount = 0;
+            const unmatchedIdOnlyCount = pendingImportMeta?.unmatchedIdOnlyCount || 0;
 
             // Merge Loop: Match on candidate ID (or Name fallback) to update preference values
             dept.students.forEach(existingStudent => {
@@ -4747,6 +5166,7 @@
                 if (matchedSource) {
                     // Update only preference value
                     existingStudent.pref = matchedSource.pref;
+                    existingStudent.prefPeriod = matchedSource.prefPeriod || '';
                     if (matchedSource.birthDate) existingStudent.birthDate = matchedSource.birthDate;
                     if (matchedSource.school) existingStudent.school = matchedSource.school;
                     if (matchedSource.phone) existingStudent.phone = matchedSource.phone;
@@ -4759,7 +5179,8 @@
             syncWorkspaceUI();
             
             closeMergeModal();
-	            showToast(`✨ 合併更新成功！已對齊更新共 ${updatedCount} 位現有考生的選填時段、生日與學校資料。`, "success");
+            const unmatchedSuffix = unmatchedIdOnlyCount > 0 ? `，另有 ${unmatchedIdOnlyCount} 筆因找不到對應的報名序號未更新` : '';
+	            showToast(`✨ 合併更新成功！已對齊更新共 ${updatedCount} 位現有考生的選填時段、上下午偏好、生日與學校資料${unmatchedSuffix}。`, "success");
         };
 
         // Sync visual stats panels
@@ -4770,7 +5191,7 @@
             document.getElementById('stat-total-students').textContent = dept.students.length;
             document.getElementById('badge-imported-count').textContent = `${dept.students.length} 人`;
 
-            const prefers = dept.students.filter(s => s.pref && s.pref !== '').length;
+            const prefers = dept.students.filter(s => (s.pref && s.pref !== '') || getStudentPreferencePeriod(s)).length;
             document.getElementById('stat-prefer-students').textContent = prefers;
 
             const scheduled = dept.students.filter(s => s.assignedSessionId).length;
@@ -4926,6 +5347,7 @@
             dept.cfgOralTeamGroupCount = parseInt(document.getElementById('cfg-oral-team-group-count').value) || 2;
             dept.cfgTeamCapacity = parseInt(document.getElementById('cfg-team-capacity').value) || 30;
             dept.cfgOralGroupCapacity = parseInt(document.getElementById('cfg-oral-group-capacity').value) || 5;
+            dept.cfgOralTailMergeLimit = parseInt(document.getElementById('cfg-oral-tail-merge-limit').value) || 0;
             const strategySelect = document.getElementById('scheduler-options-strategy-select');
             if (strategySelect) {
                 dept.cfgSchedulerStrategy = schedulerStrategies[strategySelect.value] ? strategySelect.value : DEFAULT_SCHEDULER_STRATEGY;
@@ -5046,6 +5468,7 @@
                     birthDate: birthDate,
                     school: sampleSchools[idx % sampleSchools.length],
                     pref: pref, // references session.id
+                    prefPeriod: '',
                     conflict: conflictTime,
                     assignedSessionId: null, // references session.id
                     assignedWrittenRoomIdx: null,
@@ -5091,6 +5514,7 @@
             const birthDate = normalizeBirthDate(document.getElementById('add-stu-birthdate').value.trim());
             const school = document.getElementById('add-stu-school').value.trim();
             const pref = document.getElementById('add-stu-pref').value;
+            const prefPeriod = document.getElementById('add-stu-pref-period').value;
             const conflict = document.getElementById('add-stu-conflict').value.trim();
 
             if(!name || !id) {
@@ -5104,6 +5528,7 @@
                 birthDate: birthDate,
                 school: school,
                 pref: pref,
+                prefPeriod: prefPeriod,
                 conflict: conflict,
                 assignedSessionId: null,
                 assignedWrittenRoomIdx: null,
@@ -5161,6 +5586,70 @@
             return '';
         }
 
+        function normalizePreferencePeriodToken(inputStr) {
+            const token = normalizeSessionToken(inputStr).replace(/[.．。:：]/g, '');
+            if (!token) return '';
+            if (token.includes('上午') || token.includes('早上') || token.includes('早晨') || token === 'am' || token === 'morning') {
+                return 'am';
+            }
+            if (token.includes('下午') || token.includes('午后') || token.includes('午後') || token === 'pm' || token === 'afternoon') {
+                return 'pm';
+            }
+            return '';
+        }
+
+        function getPreferencePeriodLabel(period) {
+            if (period === 'am') return '上午';
+            if (period === 'pm') return '下午';
+            return '';
+        }
+
+        function getStudentPreferencePeriod(student) {
+            return normalizePreferencePeriodToken(student?.prefPeriod || student?.prefHalfDay || student?.preferredPeriod || '');
+        }
+
+        function getSessionHalfDay(session) {
+            const startMins = timeToMins(session?.startTime || '');
+            if (!Number.isFinite(startMins)) return '';
+            return startMins < 12 * 60 ? 'am' : 'pm';
+        }
+
+        function sessionMatchesPreferencePeriod(session, prefPeriod) {
+            if (!prefPeriod) return true;
+            return getSessionHalfDay(session) === prefPeriod;
+        }
+
+        function getStudentPreferenceDetails(student, dept) {
+            const prefSession = Array.isArray(dept?.sessions)
+                ? dept.sessions.find(session => session.id === student?.pref)
+                : null;
+            const prefPeriod = getStudentPreferencePeriod(student);
+            const prefPeriodLabel = getPreferencePeriodLabel(prefPeriod);
+            return {
+                prefSession,
+                prefPeriod,
+                prefPeriodLabel,
+                sessionText: prefSession ? `預約：${prefSession.name}` : '',
+                exactSessionText: prefSession ? `${prefSession.name} (${prefSession.startTime})` : '',
+                periodText: prefPeriodLabel ? `上下午偏好：${prefPeriodLabel}` : '',
+                summaryText: [
+                    prefSession ? `預約：${prefSession.name}` : '',
+                    prefPeriodLabel ? `上下午偏好：${prefPeriodLabel}` : ''
+                ].filter(Boolean).join('｜'),
+                searchText: [
+                    prefSession ? prefSession.name : '',
+                    prefSession ? prefSession.startTime : '',
+                    prefPeriodLabel
+                ].filter(Boolean).join(' ')
+            };
+        }
+
+        function looksLikeConflictTimeToken(inputStr) {
+            const token = String(inputStr || '').trim();
+            if (!token) return false;
+            return /(\d{1,2}\s*[:：]\s*\d{1,2}\s*[-~－～至]\s*\d{1,2}\s*[:：]\s*\d{1,2})/.test(token);
+        }
+
         // Batch CSV/Tab parsing
         function handleBatchImport() {
             const dept = departments.find(d => d.id === activeDeptId);
@@ -5188,11 +5677,37 @@
                 const birthDate = thirdLooksLikeBirthDate ? parsedBirthDate : '';
 
                 // Parse preference
-                let prefInput = thirdLooksLikeBirthDate ? (parts[3] ? parts[3].trim() : '') : thirdValue;
+                const prefIndex = thirdLooksLikeBirthDate ? 3 : 2;
+                let prefInput = parts[prefIndex] ? parts[prefIndex].trim() : '';
                 let pref = matchSession(prefInput, dept.sessions);
+                let prefPeriod = normalizePreferencePeriodToken(prefInput);
+                let nextIndex = prefIndex + 1;
+                if (pref) {
+                    const maybePeriod = normalizePreferencePeriodToken(parts[nextIndex] ? parts[nextIndex].trim() : '');
+                    if (maybePeriod) {
+                        prefPeriod = maybePeriod;
+                        nextIndex++;
+                    }
+                } else if (!prefPeriod) {
+                    const maybePeriod = normalizePreferencePeriodToken(parts[nextIndex] ? parts[nextIndex].trim() : '');
+                    if (maybePeriod) {
+                        prefPeriod = maybePeriod;
+                        nextIndex++;
+                    }
+                }
 
-                let conflict = thirdLooksLikeBirthDate ? (parts[4] ? parts[4].trim() : '') : (parts[3] ? parts[3].trim() : '');
-                let school = thirdLooksLikeBirthDate ? (parts[5] ? parts[5].trim() : '') : (parts[4] ? parts[4].trim() : '');
+                const tailTokens = parts.slice(nextIndex).map(token => token ? token.trim() : '').filter(Boolean);
+                let conflict = '';
+                let school = '';
+                if (tailTokens.length > 0) {
+                    const conflictIdx = tailTokens.findIndex(looksLikeConflictTimeToken);
+                    if (conflictIdx !== -1) {
+                        conflict = tailTokens[conflictIdx];
+                        school = tailTokens.slice(conflictIdx + 1).find(Boolean) || '';
+                    } else {
+                        school = tailTokens[0] || '';
+                    }
+                }
 
                 if(name) {
                     dept.students.push({
@@ -5201,6 +5716,7 @@
                         birthDate: birthDate,
                         school: school,
                         pref: pref,
+                        prefPeriod: prefPeriod,
                         conflict: conflict,
                         assignedSessionId: null,
                         assignedWrittenRoomIdx: null,
@@ -5350,6 +5866,15 @@
                 teamsPerLadder,
                 groupsPerLadder: groupsPerTeam * teamsPerLadder
             };
+        }
+
+        function getOralTailMergeLimit(dept) {
+            return Math.max(0, parseInt(dept?.cfgOralTailMergeLimit, 10) || 0);
+        }
+
+        function getOralTailMergeLabel(dept) {
+            const tailMergeLimit = getOralTailMergeLimit(dept);
+            return tailMergeLimit > 0 ? `尾組可多收 ${tailMergeLimit} 人` : '尾組不超收';
         }
 
         function getMergedOralGroupSizes(totalStudents, oralGroupCapacity, tailMergeLimit = ORAL_GROUP_TAIL_MERGE_LIMIT) {
@@ -5537,7 +6062,7 @@
             return targets;
         }
 
-        function pickBalancedSessionId(sessionAssignments, sessionTargets, sessions, capacityPerSession) {
+        function pickBalancedSessionId(sessionAssignments, sessionTargets, sessions, capacityPerSession, student = null) {
             const ordered = sessions.map((session, idx) => {
                 const current = sessionAssignments[session.id].length;
                 const target = sessionTargets[session.id] || 0;
@@ -5551,7 +6076,14 @@
             });
 
             const available = ordered.filter(item => item.current < capacityPerSession);
-            const pool = available.length > 0 ? available : ordered;
+            let pool = available.length > 0 ? available : ordered;
+            const preferredPeriod = getStudentPreferencePeriod(student);
+            if (preferredPeriod) {
+                const preferredPool = pool.filter(item => sessionMatchesPreferencePeriod(sessions[item.idx], preferredPeriod));
+                if (preferredPool.length > 0) {
+                    pool = preferredPool;
+                }
+            }
 
             pool.sort((a, b) => {
                 const aNeedsHelp = a.remaining > 0;
@@ -5584,6 +6116,7 @@
             if (student?.conflict && student.conflict.trim()) score += 3;
             if (getCrossDeptMatches(student, dept?.id).length > 0) score += 2;
             if (student?.pref) score += 1;
+            if (getStudentPreferencePeriod(student)) score += 1;
             return score;
         }
 
@@ -5657,7 +6190,8 @@
         function assignStudentsWithinSession(list, sessionId, dept, numWritten, numOral, teamLimit) {
             const orderedList = reorderStudentsBySchoolPolicy(list, dept);
             const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
-            const schoolGroupingMode = getSchoolGroupingMode(dept);
+            const oralTailMergeLimit = getOralTailMergeLimit(dept);
+            const groupSizes = getMergedOralGroupSizes(orderedList.length, oralGroupCapacity, oralTailMergeLimit);
 
             orderedList.forEach((student, idx) => {
                 student.assignedSessionId = sessionId;
@@ -5665,29 +6199,16 @@
                 student.assignedWrittenRoomIdx = Math.min(writtenRoomIdx, numWritten - 1);
             });
 
-            if (schoolGroupingMode === 'same_group') {
-                const oralCounters = Array(numOral).fill(0);
-                const groupSizes = getMergedOralGroupSizes(orderedList.length, oralGroupCapacity);
-                let cursor = 0;
-                groupSizes.forEach((groupSize, groupIdx) => {
-                    const chunk = orderedList.slice(cursor, cursor + groupSize);
-                    const oralRoomIdx = groupIdx % numOral;
-                    chunk.forEach(student => {
-                        student.assignedOralRoomIdx = oralRoomIdx;
-                        student.assignedOrder = oralCounters[oralRoomIdx];
-                        oralCounters[oralRoomIdx]++;
-                    });
-                    cursor += groupSize;
+            let cursor = 0;
+            groupSizes.forEach((groupSize, groupIdx) => {
+                const chunk = orderedList.slice(cursor, cursor + groupSize);
+                const oralRoomIdx = groupIdx % numOral;
+                chunk.forEach((student, seqOrder) => {
+                    student.assignedOralRoomIdx = oralRoomIdx;
+                    student.assignedOralGroupIdx = groupIdx;
+                    student.assignedOrder = seqOrder;
                 });
-                return;
-            }
-
-            const oralCounters = Array(numOral).fill(0);
-            orderedList.forEach((student, idx) => {
-                const oralRoomIdx = idx % numOral;
-                student.assignedOralRoomIdx = oralRoomIdx;
-                student.assignedOrder = oralCounters[oralRoomIdx];
-                oralCounters[oralRoomIdx]++;
+                cursor += groupSize;
             });
         }
 
@@ -5707,7 +6228,7 @@
                     s.assignedSessionId === sessionId &&
                     s.assignedOralRoomIdx === oIdx
                 );
-                roomGroupCounts[oIdx] = getMergedOralGroupSizes(oralStudents.length, oralGroupCapacity).length;
+                roomGroupCounts[oIdx] = getMergedOralGroupSizes(oralStudents.length, oralGroupCapacity, getOralTailMergeLimit(dept)).length;
             }
             roomGroupCounts[oralRoomIdx] = Math.max(roomGroupCounts[oralRoomIdx] || 0, groupIdx + 1);
 
@@ -5727,21 +6248,33 @@
 
                 for (let oIdx = 0; oIdx < numOral; oIdx++) {
                     const oralStudents = dept.students.filter(s => s.assignedSessionId === session.id && s.assignedOralRoomIdx === oIdx);
-                    roomGroupCounts[oIdx] = getMergedOralGroupSizes(oralStudents.length, oralGroupCapacity).length;
+                    const groupIndices = oralStudents
+                        .map(student => Math.max(0, parseInt(student.assignedOralGroupIdx, 10) || 0))
+                        .filter((value, index, arr) => arr.indexOf(value) === index)
+                        .sort((a, b) => a - b);
+                    roomGroupCounts[oIdx] = groupIndices.length;
                 }
 
                 for (let oIdx = 0; oIdx < numOral; oIdx++) {
                     // Get all students scheduled for this session and oral room
                     const oralStudents = dept.students.filter(s => s.assignedSessionId === session.id && s.assignedOralRoomIdx === oIdx);
-                    
-                    // Sort them by assignedOrder to preserve custom sequences
-                    oralStudents.sort((a, b) => a.assignedOrder - b.assignedOrder);
+                    const groupedStudents = new Map();
 
-                    const groupSizes = getMergedOralGroupSizes(oralStudents.length, oralGroupCapacity);
-                    let cursor = 0;
+                    oralStudents.forEach(student => {
+                        const groupIdx = Math.max(0, parseInt(student.assignedOralGroupIdx, 10) || 0);
+                        if (!groupedStudents.has(groupIdx)) groupedStudents.set(groupIdx, []);
+                        groupedStudents.get(groupIdx).push(student);
+                    });
 
-                    groupSizes.forEach((groupSize, groupIdx) => {
-                        const chunk = oralStudents.slice(cursor, cursor + groupSize);
+                    const orderedGroupIndices = Array.from(groupedStudents.keys()).sort((a, b) => a - b);
+
+                    orderedGroupIndices.forEach(groupIdx => {
+                        const chunk = groupedStudents.get(groupIdx).sort((a, b) => {
+                            const orderA = Number.isFinite(parseFloat(a.assignedOrder)) ? parseFloat(a.assignedOrder) : Number.MAX_SAFE_INTEGER;
+                            const orderB = Number.isFinite(parseFloat(b.assignedOrder)) ? parseFloat(b.assignedOrder) : Number.MAX_SAFE_INTEGER;
+                            if (orderA !== orderB) return orderA - orderB;
+                            return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
+                        });
                         const timing = getGroupTimingPlan(dept, sessionStartMin, groupIdx, strategyId, roomGroupCounts);
 
                         chunk.forEach((student, seqOrder) => {
@@ -5749,12 +6282,9 @@
                             student.writtenEnd = timing.writtenEnd;
                             student.oralStart = timing.oralStart;
                             student.oralEnd = timing.oralEnd;
-
-                            student.assignedOrder = cursor + seqOrder; // Normalizing rank sequentially
-                            student.assignedOralGroupIdx = groupIdx; // Store assigned group index
+                            student.assignedOrder = seqOrder;
+                            student.assignedOralGroupIdx = groupIdx;
                         });
-
-                        cursor += groupSize;
                     });
                 }
             });
@@ -5823,13 +6353,23 @@
                 const sessionTargets = buildBalancedSessionTargets(dept.students.length, dept.sessions, capacityPerSession);
 
                 // 2. Separate students by specific session preferences
-                let hasPref = sortStudentsByStrategy(
+                let exactPrefStudents = sortStudentsByStrategy(
                     dept.students.filter(s => s.pref && dept.sessions.some(ses => ses.id === s.pref)),
                     dept,
                     strategyId
                 );
+                let morningPrefStudents = sortStudentsByStrategy(
+                    dept.students.filter(s => (!s.pref || !dept.sessions.some(ses => ses.id === s.pref)) && getStudentPreferencePeriod(s) === 'am'),
+                    dept,
+                    strategyId
+                );
+                let afternoonPrefStudents = sortStudentsByStrategy(
+                    dept.students.filter(s => (!s.pref || !dept.sessions.some(ses => ses.id === s.pref)) && getStudentPreferencePeriod(s) === 'pm'),
+                    dept,
+                    strategyId
+                );
                 let noPref = sortStudentsByStrategy(
-                    dept.students.filter(s => !s.pref || !dept.sessions.some(ses => ses.id === s.pref)),
+                    dept.students.filter(s => (!s.pref || !dept.sessions.some(ses => ses.id === s.pref)) && !getStudentPreferencePeriod(s)),
                     dept,
                     strategyId
                 );
@@ -5844,7 +6384,7 @@
                 // For even_load, student preference always wins over the average target;
                 // only actual room/session capacity can force an overflow fallback.
                 const overflowPrefStudents = [];
-                hasPref.forEach(student => {
+                exactPrefStudents.forEach(student => {
                     const prefId = student.pref;
                     const preferredLimit = capacityPerSession;
                     if (sessionAssignments[prefId].length < preferredLimit) {
@@ -5855,10 +6395,15 @@
                     }
                 });
 
-                // Second pass: Balance only overflowed preferred students and true no-preference students toward even targets
-                const balancingPool = sortStudentsByStrategy([...overflowPrefStudents, ...noPref], dept, strategyId);
+                // Second pass: Balance overflowed preferred students, then morning/afternoon-only preferences, then true no-preference students.
+                const balancingPool = [
+                    ...sortStudentsByStrategy(overflowPrefStudents, dept, strategyId),
+                    ...sortStudentsByStrategy(morningPrefStudents, dept, strategyId),
+                    ...sortStudentsByStrategy(afternoonPrefStudents, dept, strategyId),
+                    ...sortStudentsByStrategy(noPref, dept, strategyId)
+                ];
                 balancingPool.forEach(student => {
-                    const targetSessionId = pickBalancedSessionId(sessionAssignments, sessionTargets, dept.sessions, capacityPerSession);
+                    const targetSessionId = pickBalancedSessionId(sessionAssignments, sessionTargets, dept.sessions, capacityPerSession, student);
                     if (targetSessionId) {
                         sessionAssignments[targetSessionId].push(student);
                     }
@@ -5995,7 +6540,7 @@
             const scheduledStudents = dept.students.filter(s => s.assignedSessionId);
             if (scheduledStudents.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
+                    <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
                         暫無排程資料。請確認左側「甄試時段」配置後，點擊「一鍵智慧自動排程」按鈕。
                     </div>
                 `;
@@ -6005,7 +6550,7 @@
             const numWritten = dept.writtenRooms.length;
             const numOral = dept.oralRooms.length;
             const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
-            const oralTailMergeText = `尾組可多收 ${ORAL_GROUP_TAIL_MERGE_LIMIT} 人`;
+            const oralTailMergeText = getOralTailMergeLabel(dept);
 
             dept.sessions.forEach((session, sIdx) => {
                 const sessionStudents = dept.students.filter(s => s.assignedSessionId === session.id);
@@ -6183,19 +6728,24 @@
                                     <div class="flex flex-wrap gap-1">
                                         ${wave.students.map(s => {
                                             const crossMatches = getCrossDeptMatches(s, dept.id);
+                                            const crossDeptNames = getCrossDeptNames(s, dept.id);
                                             const crossConflicts = getCrossDeptScheduledConflicts(s, dept.id, s.writtenStart, s.writtenEnd, s.oralStart, s.oralEnd);
                                             const chipStateClass = crossConflicts.length > 0
                                                 ? 'border-rose-300 bg-rose-50 text-rose-800'
                                                 : (crossMatches.length > 0 ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700');
-	                                            const crossTitle = crossMatches.length > 0
-	                                                ? `｜跨系：${[...new Set(crossMatches.map(match => match.dept.name))].join('、')}`
+	                                            const crossTitle = crossDeptNames.length > 0
+	                                                ? `｜跨系：${crossDeptNames.join('、')}`
 	                                                : '';
 	                                            const schoolTitle = s.school ? `｜就讀學校：${s.school}` : '';
-	                                            const conflictTitle = crossConflicts.length > 0 ? '｜已有跨系時間重疊' : '';
+	                                            const conflictTitle = crossConflicts.length > 0 ? `｜已有跨系時間重疊：${crossDeptNames.join('、')}` : '';
 	                                            return `
 	                                                <span onclick="openEditStudentModal('${s.id}')" class="student-chip inline-flex items-center justify-center gap-1 hover:bg-slate-100 border ${chipStateClass} text-[10px] px-2.5 py-0.5 rounded-lg cursor-pointer transition font-medium" title="報名序號: ${s.id}｜${waveLabel}｜筆試 ${waveTimeText}${schoolTitle}${crossTitle}${conflictTitle}">
                                                     <span>${s.name}</span>
-                                                    ${crossConflicts.length > 0 ? '<span class="text-[8px] font-black">撞</span>' : (crossMatches.length > 0 ? '<span class="text-[8px] font-black">跨</span>' : '')}
+                                                    ${crossConflicts.length > 0
+                                                        ? `<span class="text-[8px] font-black">撞${crossDeptNames.length > 0 ? `：${escapeHtml(crossDeptNames.join('、'))}` : ''}</span>`
+                                                        : (crossMatches.length > 0
+                                                            ? `<span class="text-[8px] font-black">跨${crossDeptNames.length > 0 ? `：${escapeHtml(crossDeptNames.join('、'))}` : ''}</span>`
+                                                            : '')}
                                                 </span>
                                             `;
                                         }).join('')}
@@ -6296,6 +6846,7 @@
                         grpStudents.forEach((s, sOffset) => {
                             const hasConflict = s.conflict && s.conflict.trim() !== '';
                             const crossMatches = getCrossDeptMatches(s, dept.id);
+                            const crossDeptNames = getCrossDeptNames(s, dept.id);
                             const crossConflicts = getCrossDeptScheduledConflicts(s, dept.id, s.writtenStart, s.writtenEnd, s.oralStart, s.oralEnd);
                             const cardStateClass = crossConflicts.length > 0
                                 ? 'border-rose-300 hover:border-rose-400 bg-rose-50/60'
@@ -6309,7 +6860,11 @@
 	                                    </div>
                                     <div class="mt-1.5 flex justify-center space-x-1 text-[8px]">
                                         <span class="bg-indigo-50 text-indigo-700 border border-indigo-100 px-1 py-0.2 rounded font-medium">位置 ${sOffset+1}</span>
-                                        ${crossConflicts.length > 0 ? '<span class="bg-rose-50 text-rose-700 border border-rose-100 px-1 py-0.2 rounded font-black">跨系撞</span>' : (crossMatches.length > 0 ? '<span class="bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.2 rounded font-black">跨系</span>' : '')}
+                                        ${crossConflicts.length > 0
+                                            ? `<span class="bg-rose-50 text-rose-700 border border-rose-100 px-1 py-0.2 rounded font-black">跨系撞${crossDeptNames.length > 0 ? `：${escapeHtml(crossDeptNames.join('、'))}` : ''}</span>`
+                                            : (crossMatches.length > 0
+                                                ? `<span class="bg-amber-50 text-amber-700 border border-amber-100 px-1 py-0.2 rounded font-black">跨系${crossDeptNames.length > 0 ? `：${escapeHtml(crossDeptNames.join('、'))}` : ''}</span>`
+                                                : '')}
                                     </div>
                                     ${hasConflict ? `
                                         <div class="mt-1 text-[8px] bg-rose-50 border border-rose-100 text-rose-600 rounded px-1 truncate font-bold" title="衝突: ${s.conflict}">
@@ -6366,8 +6921,8 @@
                                 <span class="font-bold text-xs text-slate-800 flex items-center">
                                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 mr-2"></span>
                                     🗣️ ${roomName} 團體面試排班表 ${strategyId === 'even_load'
-                                        ? `(每梯 ${evenLoadStructure.teamsPerLadder} 隊 / 每隊 ${evenLoadStructure.groupsPerTeam} 組 / 每組 ${oralGroupCapacity} 人，尾組可多 ${ORAL_GROUP_TAIL_MERGE_LIMIT} 人)`
-                                        : `(每組 ${oralGroupCapacity} 人，尾組可多 ${ORAL_GROUP_TAIL_MERGE_LIMIT} 人)`}
+                                        ? `(每梯 ${evenLoadStructure.teamsPerLadder} 隊 / 每隊 ${evenLoadStructure.groupsPerTeam} 組 / 每組 ${oralGroupCapacity} 人，${oralTailMergeText})`
+                                        : `(每組 ${oralGroupCapacity} 人，${oralTailMergeText})`}
                                 </span>
                                 <span class="text-[10px] bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-indigo-600 font-bold font-mono">
                                     ${strategyId === 'even_load'
@@ -6437,23 +6992,712 @@
             lucide.createIcons();
         }
 
-        function renderTimelineCards() {
+        let timelineSearchHighlightTimer = null;
+        let manualSaveFocusTimer = null;
+
+        function makeSafeDomId(value) {
+            return String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function normalizeTimelineSearchText(value) {
+            return String(value ?? '')
+                .toLowerCase()
+                .normalize('NFKC')
+                .replace(/[\s\-_—–｜|·•/\\().,，。:：;；、]/g, '');
+        }
+
+        function getTimelineGroupCardIdForStudent(student) {
+            if (!student || student.assignedSessionId === null || student.assignedSessionId === undefined) return '';
+            const roomIdx = student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : 0;
+            const groupIdx = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : 0;
+            return `timeline-group-${makeSafeDomId(student.assignedSessionId)}-${roomIdx}-${groupIdx}`;
+        }
+
+        function getTimelineStudentGroupLabel(dept, student) {
+            if (!student || student.assignedSessionId === null || student.assignedSessionId === undefined) {
+                return '尚未排入時序';
+            }
+            const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
+            const groupIdx = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : 0;
+            if (strategyId === 'even_load') {
+                const groupPosition = getEvenLoadGroupPosition(dept, groupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`;
+            }
+            return `第 ${groupIdx + 1} 組`;
+        }
+
+        function buildTimelineSearchRecord(dept, student, sessionOrderMap) {
+            const birthText = normalizeBirthDate(student.birthDate || '');
+            const schoolText = student.school ? String(student.school).trim() : '';
+            const prefDetails = getStudentPreferenceDetails(student, dept);
+            const scheduled = student.assignedSessionId !== null && student.assignedSessionId !== undefined;
+            const groupLabel = getTimelineStudentGroupLabel(dept, student);
+            const groupCardId = scheduled ? getTimelineGroupCardIdForStudent(student) : '';
+            const sessionOrder = scheduled ? (sessionOrderMap.get(student.assignedSessionId) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+            const groupIdx = scheduled && student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : Number.MAX_SAFE_INTEGER;
+            const roomIdx = scheduled && student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : Number.MAX_SAFE_INTEGER;
+            const reportLeadMinutes = Number.isFinite(parseInt(dept.cfgReportLeadMinutes))
+                ? Math.max(0, parseInt(dept.cfgReportLeadMinutes))
+                : 10;
+            const oralStep = student.oralStart && student.oralEnd ? { label: '面試', start: student.oralStart, end: student.oralEnd } : null;
+            const writtenStep = student.writtenStart && student.writtenEnd ? { label: '筆試', start: student.writtenStart, end: student.writtenEnd } : null;
+            const sortedSteps = [oralStep, writtenStep].filter(Boolean).sort((a, b) => timeToMins(a.start) - timeToMins(b.start));
+            let previewText = scheduled ? '已排定' : '尚未排入時序';
+            if (sortedSteps.length > 0) {
+                const firstStep = sortedSteps[0];
+                const reportStart = minsToTimeStr(Math.max(0, timeToMins(firstStep.start) - reportLeadMinutes));
+                previewText = `${reportStart} 報到 / ${firstStep.label} ${firstStep.start} ~ ${firstStep.end}`;
+                if (sortedSteps[1]) {
+                    const secondStep = sortedSteps[1];
+                    previewText += ` / ${secondStep.label} ${secondStep.start} ~ ${secondStep.end}`;
+                }
+            }
+            const searchBlob = normalizeTimelineSearchText([
+                student.name || '',
+                student.id || '',
+                birthText || '',
+                schoolText || '',
+                prefDetails.searchText || '',
+                groupLabel || '',
+                previewText || ''
+            ].join(' '));
+
+            return {
+                student,
+                scheduled,
+                birthText,
+                schoolText,
+                groupLabel,
+                groupCardId,
+                previewText,
+                searchBlob,
+                sessionOrder,
+                groupIdx,
+                roomIdx
+            };
+        }
+
+        function clearTimelineSearchHighlights() {
+            document.querySelectorAll('.timeline-search-hit-card').forEach(el => el.classList.remove('timeline-search-hit-card'));
+            document.querySelectorAll('.timeline-search-hit-chip').forEach(el => el.classList.remove('timeline-search-hit-chip'));
+            document.querySelectorAll('.student-search-hit-row').forEach(el => el.classList.remove('student-search-hit-row'));
+            if (timelineSearchHighlightTimer) {
+                clearTimeout(timelineSearchHighlightTimer);
+                timelineSearchHighlightTimer = null;
+            }
+        }
+
+        function flashTimelineSearchTargets(groupCardId, studentChipId, studentRowId) {
+            clearTimelineSearchHighlights();
+            const card = groupCardId ? document.getElementById(groupCardId) : null;
+            const chip = studentChipId ? document.getElementById(studentChipId) : null;
+            const row = studentRowId ? document.getElementById(studentRowId) : null;
+            if (card) card.classList.add('timeline-search-hit-card');
+            if (chip) chip.classList.add('timeline-search-hit-chip');
+            if (row) row.classList.add('student-search-hit-row');
+            timelineSearchHighlightTimer = null;
+        }
+
+        function clearManualSaveFocusHighlights() {
+            document.querySelectorAll('.manual-save-focus-card').forEach(el => el.classList.remove('manual-save-focus-card'));
+            document.querySelectorAll('.manual-save-focus-chip').forEach(el => el.classList.remove('manual-save-focus-chip'));
+            document.querySelectorAll('.manual-save-focus-row').forEach(el => el.classList.remove('manual-save-focus-row'));
+            if (manualSaveFocusTimer) {
+                clearTimeout(manualSaveFocusTimer);
+                manualSaveFocusTimer = null;
+            }
+        }
+
+        function flashManualSaveFocusTargets(cardId, chipId, rowId) {
+            clearManualSaveFocusHighlights();
+            const card = cardId ? document.getElementById(cardId) : null;
+            const chip = chipId ? document.getElementById(chipId) : null;
+            const row = rowId ? document.getElementById(rowId) : null;
+            if (card) card.classList.add('manual-save-focus-card');
+            if (chip) chip.classList.add('manual-save-focus-chip');
+            if (row) row.classList.add('manual-save-focus-row');
+            manualSaveFocusTimer = setTimeout(() => {
+                if (card) card.classList.remove('manual-save-focus-card');
+                if (chip) chip.classList.remove('manual-save-focus-chip');
+                if (row) row.classList.remove('manual-save-focus-row');
+                manualSaveFocusTimer = null;
+            }, 2400);
+        }
+
+        function scrollToSavedStudentCard(student) {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept || !student) return;
+
+            const isScheduled = student.assignedSessionId !== null && student.assignedSessionId !== undefined;
+            const targetTab = activeBoardTab === 'dashboard' ? (isScheduled ? 'timeline' : 'list') : activeBoardTab;
+            if (activeBoardTab === 'dashboard') {
+                switchTab(targetTab);
+            }
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const cardId = isScheduled ? getTimelineGroupCardIdForStudent(student) : null;
+                    const chipId = isScheduled ? `timeline-student-${makeSafeDomId(student.id)}` : null;
+                    const rowId = `student-row-${makeSafeDomId(student.id)}`;
+                    if (targetTab === 'timeline') {
+                        const cardEl = cardId ? document.getElementById(cardId) : null;
+                        const chipEl = chipId ? document.getElementById(chipId) : null;
+                        if (cardEl) {
+                            flashManualSaveFocusTargets(cardId, chipId, null);
+                            cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            return;
+                        }
+                        if (chipEl) {
+                            flashManualSaveFocusTargets(null, chipId, null);
+                            chipEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            return;
+                        }
+                    }
+
+                    const rowEl = document.getElementById(rowId);
+                    if (rowEl) {
+                        flashManualSaveFocusTargets(null, null, rowId);
+                        rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
+        }
+
+        function getManualMoveGroupLabel(dept, groupIdx) {
+            const strategyId = getSchedulerStrategyForDept(dept).id;
+            if (strategyId === 'even_load') {
+                const groupPosition = getEvenLoadGroupPosition(dept, groupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`;
+            }
+            return `第 ${parseInt(groupIdx, 10) + 1} 組`;
+        }
+
+        function formatManualMovePlacementLabel(dept, sessionId, writtenIdx, oralIdx, groupIdx) {
+            const session = (dept.sessions || []).find(s => s.id === sessionId);
+            const writtenRoom = dept.writtenRooms?.[writtenIdx] || '未指定筆試室';
+            const oralRoom = dept.oralRooms?.[oralIdx] || '未指定面試室';
+            const sessionLabel = session ? `${session.name} (${session.startTime})` : '未指定時段';
+            const groupLabel = getManualMoveGroupLabel(dept, groupIdx);
+            return `${sessionLabel}｜${writtenRoom}｜${oralRoom}｜${groupLabel}`;
+        }
+
+        function getManualMoveInsertOrder(dept, sessionId, oralIdx, groupIdx, studentId) {
+            const sameSlotStudents = (dept.students || []).filter(s =>
+                s.id !== studentId &&
+                s.assignedSessionId === sessionId &&
+                s.assignedOralRoomIdx === oralIdx &&
+                s.assignedOralGroupIdx === groupIdx
+            );
+            if (sameSlotStudents.length > 0) {
+                return Math.max(...sameSlotStudents.map(s => Number.isFinite(parseFloat(s.assignedOrder)) ? parseFloat(s.assignedOrder) : 0)) + 0.5;
+            }
+            const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
+            return (parseInt(groupIdx, 10) || 0) * oralGroupCapacity + 0.5;
+        }
+
+        function getManualMoveSwapCandidates(dept, studentId, sessionId, oralIdx, groupIdx) {
+            return (dept.students || [])
+                .filter(s =>
+                    s.id !== studentId &&
+                    s.assignedSessionId === sessionId &&
+                    s.assignedOralRoomIdx === oralIdx &&
+                    s.assignedOralGroupIdx === groupIdx
+                )
+                .sort((a, b) => {
+                    const orderA = Number.isFinite(parseFloat(a.assignedOrder)) ? parseFloat(a.assignedOrder) : Number.MAX_SAFE_INTEGER;
+                    const orderB = Number.isFinite(parseFloat(b.assignedOrder)) ? parseFloat(b.assignedOrder) : Number.MAX_SAFE_INTEGER;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
+                });
+        }
+
+        function buildManualMovePreviewCardHtml({
+            tone = 'slate',
+            label = '',
+            title = '',
+            name = '',
+            id = '',
+            lines = [],
+            highlight = ''
+        }) {
+            const toneMap = {
+                slate: {
+                    shell: 'border-slate-200 bg-slate-50/80',
+                    label: 'bg-white text-slate-600',
+                    title: 'text-slate-950',
+                    detail: 'text-slate-500'
+                },
+                indigo: {
+                    shell: 'border-indigo-200 bg-indigo-50/70',
+                    label: 'bg-indigo-100 text-indigo-700',
+                    title: 'text-indigo-950',
+                    detail: 'text-indigo-700'
+                },
+                rose: {
+                    shell: 'border-rose-200 bg-rose-50/70',
+                    label: 'bg-rose-100 text-rose-700',
+                    title: 'text-rose-950',
+                    detail: 'text-rose-700'
+                },
+                emerald: {
+                    shell: 'border-emerald-200 bg-emerald-50/70',
+                    label: 'bg-emerald-100 text-emerald-700',
+                    title: 'text-emerald-950',
+                    detail: 'text-emerald-700'
+                }
+            };
+            const theme = toneMap[tone] || toneMap.slate;
+            const renderedLines = Array.isArray(lines)
+                ? lines.filter(Boolean).map(line => `<div>${escapeHtml(line)}</div>`).join('')
+                : '';
+
+            return `
+                <div class="h-full rounded-2xl border p-3.5 shadow-sm ${theme.shell}">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="rounded-full px-2.5 py-1 text-[10px] font-black ${theme.label}">${escapeHtml(label)}</span>
+                        ${highlight ? `<span class="text-[10px] font-bold ${theme.detail}">${escapeHtml(highlight)}</span>` : ''}
+                    </div>
+                    <div class="mt-2 space-y-1">
+                        <p class="text-sm font-black ${theme.title}">${escapeHtml(title)}</p>
+                        ${name ? `<p class="text-base font-bold text-slate-900">${escapeHtml(name)}</p>` : ''}
+                        ${id ? `<p class="text-[11px] font-semibold text-slate-600">報名序號：${escapeHtml(id)}</p>` : ''}
+                    </div>
+                    ${renderedLines ? `<div class="mt-2 space-y-1 text-[10px] leading-relaxed ${theme.detail}">${renderedLines}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function renderManualMoveChoicePreview() {
+            const leftEl = document.getElementById('manual-move-preview-left');
+            const rightEl = document.getElementById('manual-move-preview-right');
+            const modeEl = document.getElementById('manual-move-preview-mode');
+            const badgeEl = document.getElementById('manual-move-preview-badge');
+            if (!leftEl || !rightEl || !pendingManualMoveChoice) return;
+
             const dept = departments.find(d => d.id === activeDeptId);
             if (!dept) return;
 
-            const container = document.getElementById('timeline-cards-container');
-            if (!container) return;
+            const student = dept.students.find(s => s.id === pendingManualMoveChoice.studentId) || pendingManualMoveChoice.student;
+            const currentLabel = formatManualMovePlacementLabel(
+                dept,
+                pendingManualMoveChoice.original.sessionId,
+                pendingManualMoveChoice.original.writtenIdx,
+                pendingManualMoveChoice.original.oralIdx,
+                pendingManualMoveChoice.original.groupIdx
+            );
+            const targetLabel = formatManualMovePlacementLabel(
+                dept,
+                pendingManualMoveChoice.target.sessionId,
+                pendingManualMoveChoice.target.writtenIdx,
+                pendingManualMoveChoice.target.oralIdx,
+                pendingManualMoveChoice.target.groupIdx
+            );
+            const originalGroupLabel = getManualMoveGroupLabel(dept, pendingManualMoveChoice.original.groupIdx);
+            const studentBirth = normalizeBirthDate(student?.birthDate || '') || '未填';
+            const studentSchool = student?.school || '未填';
 
-            const scheduledStudents = dept.students.filter(s => s.assignedSessionId);
-            if (scheduledStudents.length === 0) {
+            leftEl.innerHTML = buildManualMovePreviewCardHtml({
+                tone: 'indigo',
+                label: '原考生',
+                title: student?.name || '未命名考生',
+                id: student?.id || '未填報名序號',
+                lines: [
+                    `目前位置：${currentLabel}`,
+                    `原組別：${originalGroupLabel}`,
+                    `出生年月日：${studentBirth}`,
+                    `就讀學校：${studentSchool}`
+                ],
+                highlight: '目前這位考生'
+            });
+
+            const candidates = pendingManualMoveChoice.candidates || [];
+            const swapSelect = document.getElementById('manual-move-swap-select');
+            const selectedCandidate = candidates.find(candidate => candidate.id === (swapSelect?.value || '')) || candidates[0] || null;
+            const useSwapPreview = Boolean(pendingManualMoveChoice.canSwap && selectedCandidate);
+
+            if (useSwapPreview) {
+                const candidateBirth = normalizeBirthDate(selectedCandidate.birthDate || '') || '未填';
+                const candidateSchool = selectedCandidate.school || '未填';
+                const candidatePlacementLabel = formatManualMovePlacementLabel(
+                    dept,
+                    selectedCandidate.assignedSessionId,
+                    selectedCandidate.assignedWrittenRoomIdx,
+                    selectedCandidate.assignedOralRoomIdx,
+                    selectedCandidate.assignedOralGroupIdx
+                );
+                const candidateGroupLabel = getManualMoveGroupLabel(dept, selectedCandidate.assignedOralGroupIdx);
+                rightEl.innerHTML = buildManualMovePreviewCardHtml({
+                    tone: 'rose',
+                    label: '互換對象',
+                    title: selectedCandidate.name || '未命名考生',
+                    id: selectedCandidate.id || '未填報名序號',
+                    lines: [
+                        `目前位置：${candidatePlacementLabel}`,
+                        `目前組別：${candidateGroupLabel}`,
+                        `出生年月日：${candidateBirth}`,
+                        `就讀學校：${candidateSchool}`
+                    ],
+                    highlight: '交換後會對調組別'
+                });
+                if (modeEl) {
+                    modeEl.textContent = '互換預覽：右側會跟著所選考生更新，兩位考生只交換面試組別。';
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = '互換預覽';
+                    badgeEl.className = 'rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-700';
+                }
+            } else {
+                rightEl.innerHTML = buildManualMovePreviewCardHtml({
+                    tone: 'emerald',
+                    label: '目標組別',
+                    title: '直接插入',
+                    name: targetLabel,
+                    lines: [
+                        '直接插入即使超過原本一組設定也會接受',
+                        '儲存後系統會重新計算整體時序'
+                    ],
+                    highlight: '可超量插入'
+                });
+                if (modeEl) {
+                    modeEl.textContent = '直接插入預覽：即使超過原本一組設定，系統仍會接受並重新計算。';
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = '直接插入';
+                    badgeEl.className = 'rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700';
+                }
+            }
+
+            lucide.createIcons();
+        }
+
+        function closeManualMoveChoiceModal() {
+            const modal = document.getElementById('modal-manual-move-choice');
+            if (modal) modal.classList.add('hidden');
+            pendingManualMoveChoice = null;
+        }
+
+        window.closeManualMoveChoiceModal = closeManualMoveChoiceModal;
+
+        function openManualMoveChoiceModal(payload) {
+            pendingManualMoveChoice = payload;
+            const dept = departments.find(d => d.id === activeDeptId);
+            const modal = document.getElementById('modal-manual-move-choice');
+            if (!dept || !modal) return;
+
+            const currentLabel = formatManualMovePlacementLabel(
+                dept,
+                payload.original.sessionId,
+                payload.original.writtenIdx,
+                payload.original.oralIdx,
+                payload.original.groupIdx
+            );
+            const targetLabel = formatManualMovePlacementLabel(
+                dept,
+                payload.target.sessionId,
+                payload.target.writtenIdx,
+                payload.target.oralIdx,
+                payload.target.groupIdx
+            );
+            const desc = document.getElementById('manual-move-choice-desc');
+            const currentEl = document.getElementById('manual-move-current-label');
+            const targetEl = document.getElementById('manual-move-target-label');
+            const noteEl = document.getElementById('manual-move-note');
+            const swapPanel = document.getElementById('manual-move-swap-panel');
+            const swapSelect = document.getElementById('manual-move-swap-select');
+            const swapCount = document.getElementById('manual-move-swap-count');
+            const swapNote = document.getElementById('manual-move-swap-note');
+
+            if (desc) {
+                desc.textContent = `${payload.student.name} 將從「${currentLabel}」調整到「${targetLabel}」。若目標組別已有考生，可選擇直接插入，或挑一位考生互相交換。`;
+            }
+            if (currentEl) currentEl.textContent = currentLabel;
+            if (targetEl) targetEl.textContent = targetLabel;
+            if (noteEl) {
+                noteEl.textContent = payload.canSwap
+                    ? '交換只會互換兩位考生的面試組別排序；若改成直接插入，即使超過原本一組設定也會照單接收並重新計算。'
+                    : '目前這個變更僅能直接插入；即使目標組別超過原本一組設定，系統仍會接受並重新計算。';
+            }
+
+            if (swapPanel) {
+                swapPanel.classList.toggle('hidden', !payload.canSwap);
+            }
+
+            const candidates = payload.candidates || [];
+            if (swapSelect) {
+                swapSelect.innerHTML = '';
+                candidates.forEach((candidate, idx) => {
+                    const option = document.createElement('option');
+                    option.value = candidate.id;
+                    const candidateLabel = formatManualMovePlacementLabel(
+                        dept,
+                        candidate.assignedSessionId,
+                        candidate.assignedWrittenRoomIdx,
+                        candidate.assignedOralRoomIdx,
+                        candidate.assignedOralGroupIdx
+                    );
+                    option.textContent = `${candidate.name || '未命名'} (${candidate.id || '未填序號'})｜${candidateLabel}`;
+                    if (idx === 0) option.selected = true;
+                    swapSelect.appendChild(option);
+                });
+                swapSelect.disabled = !payload.canSwap || candidates.length === 0;
+            }
+
+            if (swapCount) {
+                swapCount.textContent = `${candidates.length} 人可選`;
+            }
+            if (swapNote) {
+                swapNote.textContent = candidates.length > 0
+                    ? '請選擇要互換的考生，按下互換後，兩位考生的面試組別會對調。'
+                    : '目標組別目前沒有可交換的考生。';
+            }
+
+            renderManualMoveChoicePreview();
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                if (swapSelect && !swapSelect.disabled) swapSelect.focus();
+            });
+            lucide.createIcons();
+        }
+
+        function applyManualMoveChoice(mode, partnerId = null) {
+            if (!pendingManualMoveChoice) return;
+
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+
+            const student = dept.students.find(s => s.id === pendingManualMoveChoice.studentId);
+            if (!student) return;
+
+            const { original, target } = pendingManualMoveChoice;
+            const originalSnapshot = {
+                sessionId: original.sessionId,
+                writtenIdx: original.writtenIdx,
+                oralIdx: original.oralIdx,
+                groupIdx: original.groupIdx,
+                order: original.order
+            };
+
+            if (mode === 'swap') {
+                const partner = dept.students.find(s => s.id === partnerId);
+                if (!partner) {
+                    showToast('找不到要互換的考生，請重新選擇。', 'error');
+                    return;
+                }
+
+                const partnerSnapshot = {
+                    sessionId: partner.assignedSessionId,
+                    writtenIdx: partner.assignedWrittenRoomIdx,
+                    oralIdx: partner.assignedOralRoomIdx,
+                    groupIdx: partner.assignedOralGroupIdx,
+                    order: partner.assignedOrder
+                };
+
+                student.assignedOralGroupIdx = partnerSnapshot.groupIdx;
+                student.assignedOrder = partnerSnapshot.order;
+
+                partner.assignedOralGroupIdx = originalSnapshot.groupIdx;
+                partner.assignedOrder = originalSnapshot.order;
+            } else {
+                student.assignedSessionId = target.sessionId;
+                student.assignedWrittenRoomIdx = target.writtenIdx;
+                student.assignedOralRoomIdx = target.oralIdx;
+                student.assignedOralGroupIdx = target.groupIdx;
+                student.assignedOrder = getManualMoveInsertOrder(dept, target.sessionId, target.oralIdx, target.groupIdx, student.id);
+            }
+
+            resequenceSessionTimings(dept);
+            savePlatformStateToStorage();
+            syncWorkspaceUI();
+            closeManualMoveChoiceModal();
+            closeEditModal();
+            scrollToSavedStudentCard(student);
+            showToast(
+                mode === 'swap'
+                    ? `已將考生 ${student.name} 與目標組別考生完成互換，排程已更新。`
+                    : `已將考生 ${student.name} 直接插入指定面試組別，排程已更新。`,
+                'success'
+            );
+        }
+
+        function buildTimelineSearchMatches(dept, query) {
+            const normalizedQuery = normalizeTimelineSearchText(query);
+            if (!normalizedQuery) return [];
+            const sessionOrderMap = new Map((dept.sessions || []).map((session, idx) => [session.id, idx]));
+
+            return (dept.students || [])
+                .map(student => buildTimelineSearchRecord(dept, student, sessionOrderMap))
+                .filter(record => record.searchBlob.includes(normalizedQuery))
+                .sort((a, b) => {
+                    if (a.scheduled !== b.scheduled) return a.scheduled ? -1 : 1;
+                    if (a.scheduled) {
+                        if (a.sessionOrder !== b.sessionOrder) return a.sessionOrder - b.sessionOrder;
+                        if (a.groupIdx !== b.groupIdx) return a.groupIdx - b.groupIdx;
+                        if (a.roomIdx !== b.roomIdx) return a.roomIdx - b.roomIdx;
+                    }
+                    return String(a.student.name || '').localeCompare(String(b.student.name || ''), 'zh-Hant');
+                });
+        }
+
+        function updateTimelineSearchResults() {
+            const container = document.getElementById('timeline-search-results');
+            const input = document.getElementById('timeline-search-input');
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!container || !input || !dept) return;
+
+            const query = input.value.trim();
+            if (!query) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                clearTimelineSearchHighlights();
+                return;
+            }
+
+            const matches = buildTimelineSearchMatches(dept, query);
+            container.classList.remove('hidden');
+            if (matches.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
-                        暫無排程資料。請先完成自動排程，再切到這個視角查看每一組的時間軸。
+                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-3 text-[11px] text-slate-500">
+                        找不到 <span class="font-bold text-slate-700">「${escapeHtml(query)}」</span>，請改試姓名、報名序號、生日或學校。
                     </div>
                 `;
                 lucide.createIcons();
                 return;
             }
+
+            const shown = matches.slice(0, 12);
+            const moreCount = matches.length - shown.length;
+            container.innerHTML = `
+                <div class="flex items-center justify-between gap-2 text-[10px] font-bold text-slate-500">
+                    <span>找到 <span class="text-slate-950">${matches.length}</span> 位學生</span>
+                    <span>按 Enter 跳到第一筆</span>
+                </div>
+                <div class="mt-2 grid gap-2">
+                    ${shown.map(record => `
+                        <button type="button" data-timeline-search-student-id="${escapeHtml(record.student.id)}" class="group w-full rounded-2xl border px-3 py-2.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${record.scheduled ? 'border-indigo-200 bg-indigo-50/70' : 'border-slate-200 bg-white'}">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="truncate text-sm font-black text-slate-950">${escapeHtml(record.student.name || '未命名')}</span>
+                                        <span class="rounded-full border px-1.5 py-0.5 text-[9px] font-black ${record.scheduled ? 'border-indigo-200 bg-white text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}">${record.scheduled ? '時序' : '名冊'}</span>
+                                    </div>
+                                    <div class="mt-0.5 text-[10px] text-slate-500">
+                                        ${escapeHtml(record.student.id || '未填序號')}
+                                        ${record.birthText ? ` · ${escapeHtml(record.birthText)}` : ''}
+                                        ${record.schoolText ? ` · ${escapeHtml(record.schoolText)}` : ''}
+                                    </div>
+                                </div>
+                                <div class="shrink-0 text-right">
+                                    <div class="text-[10px] font-black ${record.scheduled ? 'text-indigo-700' : 'text-slate-700'}">${escapeHtml(record.groupLabel)}</div>
+                                    <div class="mt-0.5 text-[10px] text-slate-500">${escapeHtml(record.previewText)}</div>
+                                </div>
+                            </div>
+                        </button>
+                    `).join('')}
+                </div>
+                ${moreCount > 0 ? `<div class="mt-2 text-[10px] text-slate-400">還有 ${moreCount} 筆結果，請再縮小關鍵字。</div>` : ''}
+            `;
+            lucide.createIcons();
+        }
+
+        function clearTimelineSearch() {
+            const input = document.getElementById('timeline-search-input');
+            if (!input) return;
+            input.value = '';
+            updateTimelineSearchResults();
+            input.focus();
+        }
+
+        function getTimelineLayoutMode() {
+            const saved = localStorage.getItem(TIMELINE_LAYOUT_MODE_KEY);
+            return saved === 'single' || saved === 'dual' ? saved : DEFAULT_TIMELINE_LAYOUT_MODE;
+        }
+
+        function syncTimelineLayoutControls() {
+            const currentMode = getTimelineLayoutMode();
+            document.querySelectorAll('[data-timeline-layout-mode]').forEach(btn => {
+                const isActive = btn.getAttribute('data-timeline-layout-mode') === currentMode;
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                btn.classList.remove('bg-slate-950', 'text-white', 'border-slate-950', 'shadow-sm', 'bg-white', 'text-slate-500', 'border-slate-200', 'hover:bg-slate-100');
+                if (isActive) {
+                    btn.classList.add('bg-slate-950', 'text-white', 'border-slate-950', 'shadow-sm');
+                } else {
+                    btn.classList.add('bg-white', 'text-slate-500', 'border-slate-200', 'hover:bg-slate-100');
+                }
+            });
+        }
+
+        function setTimelineLayoutMode(mode) {
+            const nextMode = mode === 'single' ? 'single' : 'dual';
+            if (localStorage.getItem(TIMELINE_LAYOUT_MODE_KEY) !== nextMode) {
+                localStorage.setItem(TIMELINE_LAYOUT_MODE_KEY, nextMode);
+            }
+            syncTimelineLayoutControls();
+            renderTimelineCards();
+        }
+
+        function jumpToFirstTimelineSearchResult() {
+            const firstBtn = document.querySelector('#timeline-search-results button[data-timeline-search-student-id]');
+            if (firstBtn) {
+                firstBtn.click();
+            }
+        }
+
+        window.jumpToTimelineSearchResult = function(studentId) {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+            const student = (dept.students || []).find(s => s.id === studentId);
+            if (!student) return;
+
+            const studentRowId = `student-row-${makeSafeDomId(student.id)}`;
+            const studentChipId = `timeline-student-${makeSafeDomId(student.id)}`;
+            if (student.assignedSessionId !== null && student.assignedSessionId !== undefined) {
+                if (activeBoardTab !== 'timeline') {
+                    switchTab('timeline');
+                }
+                requestAnimationFrame(() => {
+                    const cardId = getTimelineGroupCardIdForStudent(student);
+                    const cardEl = cardId ? document.getElementById(cardId) : null;
+                    if (cardEl) {
+                        flashTimelineSearchTargets(cardId, studentChipId, null);
+                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+                return;
+            }
+
+            if (activeBoardTab !== 'list') {
+                switchTab('list');
+            }
+            requestAnimationFrame(() => {
+                const searchInput = document.getElementById('search-student-input');
+                const filterSelect = document.getElementById('filter-status-select');
+                if (filterSelect) {
+                    filterSelect.value = 'all';
+                }
+                if (searchInput) {
+                    searchInput.value = `${student.name || ''} ${student.id || ''}`.trim();
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                const rowEl = document.getElementById(studentRowId);
+                if (rowEl) {
+                    flashTimelineSearchTargets(null, null, studentRowId);
+                    rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (searchInput) searchInput.focus();
+            });
+        };
+
+        function getTimelineGroupsForDept(dept) {
+            if (!dept) return [];
 
             const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
             const evenLoadStructure = getEvenLoadOralStructure(dept);
@@ -6463,7 +7707,7 @@
             const groups = [];
 
             (dept.sessions || []).forEach((session, sessionIdx) => {
-                const sessionStudents = dept.students.filter(s => s.assignedSessionId === session.id);
+                const sessionStudents = (dept.students || []).filter(s => s.assignedSessionId === session.id);
                 const groupMap = {};
 
                 sessionStudents.forEach(student => {
@@ -6515,6 +7759,7 @@
                                     第 ${groupIdx + 1} 組
                                 </span>
                             </div>`;
+                    const groupCardId = `timeline-group-${makeSafeDomId(session.id)}-${roomIdx}-${groupIdx}`;
                     const phaseLabel = strategyId === 'even_load'
                         ? (Math.floor(groupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先')
                         : (representative.oralStart && representative.writtenStart
@@ -6592,11 +7837,13 @@
                             iconClass: 'text-emerald-600'
                         }
                     };
+
                     groups.push({
                         session,
                         sessionIdx,
                         groupIdx,
                         roomIdx,
+                        groupCardId,
                         groupLabel,
                         groupLabelMarkup,
                         phaseLabel,
@@ -6621,6 +7868,42 @@
                 return a.roomIdx - b.roomIdx;
             });
 
+            return groups;
+        }
+
+        function renderTimelineCards() {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+
+            const container = document.getElementById('timeline-cards-container');
+            if (!container) return;
+            const layoutMode = getTimelineLayoutMode();
+            const isDualLayout = layoutMode === 'dual';
+            const timelineItemsWrapClass = isDualLayout
+                ? 'space-y-2'
+                : 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2';
+            const studentGridClass = isDualLayout
+                ? 'grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-[420px]'
+                : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 w-full';
+            container.className = layoutMode === 'dual'
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-4 items-start'
+                : 'space-y-4';
+            syncTimelineLayoutControls();
+
+            const scheduledStudents = dept.students.filter(s => s.assignedSessionId);
+            if (scheduledStudents.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
+                        暫無排程資料。請先完成自動排程，再切到這個視角查看每一組的時間軸。
+                    </div>
+                `;
+                lucide.createIcons();
+                updateTimelineSearchResults();
+                return;
+            }
+
+            const groups = getTimelineGroupsForDept(dept);
+
             container.innerHTML = groups.map(group => {
                 const stepCards = group.timelineItems.map((step, index) => {
                     const style = group.timelineItemStyles[step.kind] || group.timelineItemStyles.written;
@@ -6632,7 +7915,7 @@
                                     <i data-lucide="${style.icon}" class="w-3.5 h-3.5 ${style.iconClass}"></i>
                                     <span>${index + 1}. ${step.label}</span>
                                 </div>
-                                <span class="text-[10px] font-mono font-bold">${timeText}</span>
+                                <span class="text-[10px] font-mono font-bold whitespace-nowrap">${timeText}</span>
                             </div>
                             <div class="mt-1 text-[10px] font-semibold text-slate-600">${step.room}</div>
                             ${step.meta ? `<div class="mt-0.5 text-[9px] font-medium text-slate-500">${step.meta}</div>` : ''}
@@ -6642,15 +7925,29 @@
 
                 const studentChips = group.students.map(student => {
                     const crossMatches = getCrossDeptMatches(student, dept.id);
+                    const crossDeptNames = getCrossDeptNames(student, dept.id);
                     const crossConflicts = getCrossDeptScheduledConflicts(student, dept.id, student.writtenStart, student.writtenEnd, student.oralStart, student.oralEnd);
                     const chipClass = crossConflicts.length > 0
                         ? 'border-rose-300 bg-rose-50 text-rose-800'
                         : (crossMatches.length > 0 ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700');
                     const crossBadge = crossConflicts.length > 0
-                        ? '<span class="mt-1 text-[8px] font-black text-rose-700">跨系撞</span>'
-                        : (crossMatches.length > 0 ? '<span class="mt-1 text-[8px] font-black text-amber-700">跨系</span>' : '');
+                        ? `
+                            <span class="mt-1 inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-1.5 py-0.5 text-[8px] font-black text-rose-700 leading-none">
+                                跨系撞
+                            </span>
+                            ${crossDeptNames.length > 0 ? `<span class="mt-0.5 text-[8px] font-black leading-tight text-rose-700 text-center break-words">${escapeHtml(crossDeptNames.join('、'))}</span>` : ''}
+                        `
+                        : (crossMatches.length > 0
+                            ? `
+                                <span class="mt-1 inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black text-amber-700 leading-none">
+                                    跨系
+                                </span>
+                                ${crossDeptNames.length > 0 ? `<span class="mt-0.5 text-[8px] font-black leading-tight text-amber-700 text-center break-words">${escapeHtml(crossDeptNames.join('、'))}</span>` : ''}
+                            `
+                            : '');
+                    const studentChipId = `timeline-student-${makeSafeDomId(student.id)}`;
                     return `
-                        <button onclick="openEditStudentModal('${student.id}')" class="inline-flex min-w-[120px] flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${chipClass}">
+                        <button id="${studentChipId}" data-student-id="${student.id}" onclick="openEditStudentModal('${student.id}')" class="flex w-full flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${chipClass}">
                             <span class="text-xs font-bold leading-tight">${student.name}</span>
                             <span class="mt-0.5 text-[10px] font-mono leading-tight">${student.id}</span>
                             ${crossBadge}
@@ -6659,7 +7956,7 @@
                 }).join('');
 
                 return `
-                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div id="${group.groupCardId}" data-timeline-group-card="1" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full" style="scroll-margin-top: 7rem;">
                             <div class="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div>
                                     <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">${group.session.name}</div>
@@ -6669,29 +7966,384 @@
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-700">${group.phaseLabel}</span>
                                     <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700">${group.count} 人</span>
-                            </div>
                         </div>
-                        <div class="grid gap-4 p-4 lg:grid-cols-[280px_1fr]">
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
-                                <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                    <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-500"></i>
-                                    <span>時間軸（含報到／換場）</span>
-                                </div>
-                                <div class="space-y-2">${stepCards}</div>
-                            </div>
-                            <div>
-                                <div class="flex items-center justify-between gap-2 mb-2">
-                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">本組學生</div>
-                                    <div class="text-[10px] text-slate-500">點擊學生可直接微調</div>
-                                </div>
-                                <div class="flex flex-wrap gap-2">${studentChips}</div>
-                            </div>
                         </div>
+                        ${
+                            isDualLayout ? `
+                                <div class="grid gap-3 p-4 2xl:grid-cols-[260px_minmax(0,1fr)]">
+                                    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                            <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-500"></i>
+                                            <span>時間軸（含報到／換場）</span>
+                                        </div>
+                                        <div class="${timelineItemsWrapClass}">${stepCards}</div>
+                                    </div>
+                                    <div class="flex flex-col items-start w-full max-w-[440px]">
+                                        <div class="flex items-center justify-between gap-2 mb-2">
+                                            <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">本組學生</div>
+                                            <div class="text-[10px] text-slate-500">點擊學生可直接微調</div>
+                                        </div>
+                                        <div class="${studentGridClass}">${studentChips}</div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="grid gap-4 p-4">
+                                    <section class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                            <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-500"></i>
+                                            <span>時間軸（含報到／換場）</span>
+                                        </div>
+                                        <div class="${timelineItemsWrapClass} mt-2">${stepCards}</div>
+                                    </section>
+                                    <section class="rounded-2xl border border-slate-200 bg-white p-3">
+                                        <div class="flex items-center justify-between gap-2 mb-2">
+                                            <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">本組學生</div>
+                                            <div class="text-[10px] text-slate-500">點擊學生可直接微調</div>
+                                        </div>
+                                        <div class="${studentGridClass}">${studentChips}</div>
+                                    </section>
+                                </div>
+                            `
+                        }
                     </div>
                 `;
             }).join('');
 
             lucide.createIcons();
+            updateTimelineSearchResults();
+        }
+
+        function exportDayFlowReport() {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+
+            const groups = getTimelineGroupsForDept(dept);
+            if (groups.length === 0) {
+                showToast("目前沒有可輸出的流程資料，請先完成排程。", "error");
+                return;
+            }
+
+            const firstSession = (dept.sessions || [])[0] || null;
+            const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1180,height=920');
+            if (!printWindow) {
+                showToast("瀏覽器阻擋了新視窗，請允許彈出視窗後再試一次。", "error");
+                return;
+            }
+
+            const rowsHtml = groups.map(group => {
+                const timelineList = group.timelineItems.map((step, index) => `
+                    <div class="flow-step flow-step-${step.kind}">
+                        <div class="flow-step-title">${index + 1}. ${escapeHtml(step.label)}</div>
+                        <div class="flow-step-time">${escapeHtml(step.start || '')}${step.end ? ` ~ ${escapeHtml(step.end)}` : ''}</div>
+                        <div class="flow-step-room">${escapeHtml(step.room || '')}</div>
+                        ${step.meta ? `<div class="flow-step-meta">${escapeHtml(step.meta)}</div>` : ''}
+                    </div>
+                `).join('');
+
+                const studentList = group.students.map(student => {
+                    const crossNames = getCrossDeptNames(student, dept.id);
+                    return `
+                        <div class="student-pill">
+                            <div class="student-name">${escapeHtml(student.name || '未命名')}</div>
+                            <div class="student-id">${escapeHtml(student.id || '')}</div>
+                            ${student.school ? `<div class="student-school">${escapeHtml(student.school)}</div>` : ''}
+                            ${crossNames.length > 0 ? `<div class="student-cross">跨系：${escapeHtml(crossNames.join('、'))}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                const locationText = [
+                    group.writtenRoomName ? `筆試：${escapeHtml(group.writtenRoomName)}` : '',
+                    group.oralRoomName ? `面試：${escapeHtml(group.oralRoomName)}` : ''
+                ].filter(Boolean).join('<br>');
+
+                const timeSummary = group.timelineItems
+                    .map(step => `${step.label} ${step.start || ''}${step.end ? `-${step.end}` : ''}`)
+                    .join(' / ');
+
+                return `
+                    <tr>
+                        <td class="col-time">
+                            <div class="session-name">${escapeHtml(group.session.name)}</div>
+                            <div class="time-summary">${escapeHtml(timeSummary)}</div>
+                        </td>
+                        <td class="col-group">
+                            <div class="group-label">${escapeHtml(group.groupLabel.replace(/｜/g, '｜'))}</div>
+                            <div class="group-phase">${escapeHtml(group.phaseLabel)}</div>
+                            <div class="group-count">${group.count} 人</div>
+                        </td>
+                        <td class="col-location">${locationText}</td>
+                        <td class="col-flow">
+                            <div class="flow-grid">${timelineList}</div>
+                        </td>
+                        <td class="col-students">
+                            <div class="students-grid">${studentList}</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const html = `
+                <!DOCTYPE html>
+                <html lang="zh-Hant">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>${escapeHtml(dept.name)} 當天流程表</title>
+                    <style>
+                        :root {
+                            color-scheme: light;
+                            --ink: #0f172a;
+                            --muted: #64748b;
+                            --line: #cbd5e1;
+                            --paper: #ffffff;
+                            --sky: #eff6ff;
+                            --emerald: #ecfdf5;
+                            --amber: #fff7ed;
+                            --violet: #f5f3ff;
+                        }
+                        * { box-sizing: border-box; }
+                        body {
+                            margin: 0;
+                            background: #eef2ff;
+                            color: var(--ink);
+                            font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+                        }
+                        .toolbar {
+                            position: sticky;
+                            top: 0;
+                            z-index: 20;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            gap: 12px;
+                            padding: 16px 24px;
+                            background: rgba(15, 23, 42, 0.92);
+                            color: white;
+                        }
+                        .toolbar-title {
+                            font-size: 14px;
+                            font-weight: 800;
+                            letter-spacing: 0.02em;
+                        }
+                        .toolbar-actions {
+                            display: flex;
+                            gap: 10px;
+                        }
+                        .toolbar button {
+                            border: none;
+                            border-radius: 999px;
+                            padding: 10px 16px;
+                            font-size: 12px;
+                            font-weight: 800;
+                            cursor: pointer;
+                        }
+                        .toolbar .print-btn { background: #f59e0b; color: white; }
+                        .toolbar .close-btn { background: rgba(255,255,255,.14); color: white; }
+                        .page {
+                            max-width: 1480px;
+                            margin: 24px auto 40px;
+                            padding: 32px;
+                            background: var(--paper);
+                            box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 22px;
+                        }
+                        .header h1 {
+                            margin: 0;
+                            font-size: 34px;
+                            letter-spacing: 0.08em;
+                            font-weight: 400;
+                        }
+                        .header h2 {
+                            margin: 10px 0 0;
+                            font-size: 30px;
+                            letter-spacing: 0.12em;
+                            font-weight: 400;
+                        }
+                        .header-note {
+                            margin-top: 16px;
+                            text-align: left;
+                            font-size: 15px;
+                            font-weight: 700;
+                        }
+                        .meta-line {
+                            margin-top: 8px;
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 10px;
+                            justify-content: center;
+                            color: var(--muted);
+                            font-size: 12px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            table-layout: fixed;
+                        }
+                        th, td {
+                            border: 1.4px solid #334155;
+                            vertical-align: top;
+                            padding: 12px 10px;
+                        }
+                        th {
+                            text-align: center;
+                            font-size: 14px;
+                            letter-spacing: 0.08em;
+                            font-weight: 800;
+                            background: #f8fafc;
+                        }
+                        td {
+                            font-size: 12px;
+                            line-height: 1.6;
+                        }
+                        .col-time { width: 18%; }
+                        .col-group { width: 14%; text-align: center; }
+                        .col-location { width: 14%; text-align: center; }
+                        .col-flow { width: 28%; }
+                        .col-students { width: 26%; }
+                        .session-name {
+                            font-weight: 900;
+                            font-size: 15px;
+                            margin-bottom: 6px;
+                        }
+                        .time-summary {
+                            color: var(--muted);
+                            font-size: 11px;
+                            white-space: pre-line;
+                        }
+                        .group-label {
+                            font-weight: 900;
+                            font-size: 15px;
+                        }
+                        .group-phase, .group-count {
+                            margin-top: 6px;
+                            font-size: 11px;
+                            color: var(--muted);
+                            font-weight: 700;
+                        }
+                        .flow-grid {
+                            display: grid;
+                            gap: 8px;
+                        }
+                        .flow-step {
+                            border: 1px solid var(--line);
+                            border-radius: 14px;
+                            padding: 8px 10px;
+                            break-inside: avoid;
+                        }
+                        .flow-step-report { background: var(--sky); }
+                        .flow-step-oral { background: var(--violet); }
+                        .flow-step-transfer { background: var(--amber); }
+                        .flow-step-written { background: var(--emerald); }
+                        .flow-step-title {
+                            font-weight: 900;
+                            font-size: 12px;
+                        }
+                        .flow-step-time {
+                            margin-top: 2px;
+                            font-weight: 800;
+                            font-size: 12px;
+                        }
+                        .flow-step-room, .flow-step-meta {
+                            margin-top: 4px;
+                            font-size: 11px;
+                            color: #334155;
+                        }
+                        .students-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, minmax(0, 1fr));
+                            gap: 8px;
+                        }
+                        .student-pill {
+                            border: 1px solid var(--line);
+                            border-radius: 14px;
+                            padding: 8px 10px;
+                            background: white;
+                            break-inside: avoid;
+                        }
+                        .student-name {
+                            font-size: 12px;
+                            font-weight: 900;
+                        }
+                        .student-id, .student-school, .student-cross {
+                            margin-top: 3px;
+                            font-size: 10px;
+                            color: var(--muted);
+                            line-height: 1.45;
+                        }
+                        @page {
+                            size: A4 landscape;
+                            margin: 12mm;
+                        }
+                        @media print {
+                            body {
+                                background: white;
+                            }
+                            .toolbar {
+                                display: none;
+                            }
+                            .page {
+                                margin: 0;
+                                max-width: none;
+                                padding: 0;
+                                box-shadow: none;
+                            }
+                            tr, td, th, .student-pill, .flow-step {
+                                break-inside: avoid;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="toolbar">
+                        <div>
+                            <div class="toolbar-title">${escapeHtml(dept.name)} 當天流程表</div>
+                            <div style="font-size:11px; opacity:.8;">依目前排程結果自動整理，可直接列印或另存 PDF</div>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button class="print-btn" onclick="window.print()">列印 / 另存 PDF</button>
+                            <button class="close-btn" onclick="window.close()">關閉</button>
+                        </div>
+                    </div>
+                    <main class="page">
+                        <header class="header">
+                            <h1>${escapeHtml(dept.name)} 二階甄選</h1>
+                            <h2>當天流程表</h2>
+                            <div class="header-note">※ 建議於首場 ${escapeHtml(firstSession?.startTime || '')} 前完成報到與叫號準備。</div>
+                            <div class="meta-line">
+                                <span>排法：${escapeHtml(getSchedulerStrategyForDept(dept).shortName || '未設定')}</span>
+                                <span>筆試時間：${escapeHtml(String(dept.cfgWrittenDuration || 0))} 分</span>
+                                <span>面試時間：${escapeHtml(String(dept.cfgOralDuration || 0))} 分</span>
+                                <span>報到緩衝：${escapeHtml(String(dept.cfgReportLeadMinutes || 0))} 分</span>
+                                <span>共 ${groups.length} 組</span>
+                            </div>
+                        </header>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>時段 / 時間</th>
+                                    <th>梯 / 隊 / 組</th>
+                                    <th>地點</th>
+                                    <th>流程內容</th>
+                                    <th>本組學生</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </main>
+                </body>
+                </html>
+            `;
+
+            printWindow.document.open();
+            printWindow.document.write(html);
+            printWindow.document.close();
+            showToast("已開啟當天流程表，可直接列印或另存成 PDF。", "success");
         }
 
         // Render tabular master students spreadsheet (Panel B)
@@ -6709,14 +8361,15 @@
             const filtered = dept.students.filter(s => {
 	                const birthDate = normalizeBirthDate(s.birthDate || '');
 	                const school = String(s.school || '').toLowerCase();
-	                const matchQ = s.name.toLowerCase().includes(query) || s.id.includes(query) || birthDate.includes(query) || school.includes(query);
+	                const prefSearch = normalizeTimelineSearchText(getStudentPreferenceDetails(s, dept).searchText || '');
+	                const matchQ = s.name.toLowerCase().includes(query) || s.id.includes(query) || birthDate.includes(query) || school.includes(query) || prefSearch.includes(query);
                 let matchStatus = true;
                 const crossMatches = getCrossDeptMatches(s, dept.id);
 
                 if (filter === 'pref_registered') {
-                    matchStatus = s.pref && s.pref !== '';
+                    matchStatus = (s.pref && s.pref !== '') || !!getStudentPreferencePeriod(s);
                 } else if (filter === 'pref_none') {
-                    matchStatus = !s.pref || s.pref === '';
+                    matchStatus = (!s.pref || s.pref === '') && !getStudentPreferencePeriod(s);
                 } else if (filter === 'conflict') {
                     matchStatus = s.conflict && s.conflict.trim() !== '';
                 } else if (filter === 'cross_registered') {
@@ -6750,11 +8403,15 @@
                     .map(conflict => `${conflict.deptName}${conflict.otherType}${conflict.start}-${conflict.end}`)
                     .join('、');
 
-                let prefLabel = '<span class="text-slate-400">未填偏好</span>';
-                if (s.pref) {
-                    const prefSession = dept.sessions.find(ses => ses.id === s.pref);
-                    prefLabel = prefSession ? `<span class="text-amber-600 font-bold">預約：${prefSession.name}</span>` : '<span class="text-slate-400">未填偏好</span>';
-                }
+                const prefDetails = getStudentPreferenceDetails(s, dept);
+                const prefLabel = prefDetails.summaryText
+                    ? `
+                        <div class="flex flex-col gap-1">
+                            ${prefDetails.prefSession ? `<span class="inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">預約：${escapeHtml(prefDetails.prefSession.name)}</span>` : ''}
+                            ${prefDetails.prefPeriodLabel ? `<span class="inline-flex items-center rounded-full border border-sky-100 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">上下午：${escapeHtml(prefDetails.prefPeriodLabel)}</span>` : ''}
+                        </div>
+                    `
+                    : '<span class="text-slate-400">未填偏好</span>';
 
                 let batchGroupLabel = '<span class="text-rose-500 font-bold">❌ 尚未指派</span>';
                 if (s.assignedSessionId) {
@@ -6783,6 +8440,7 @@
                 }
 
                 const tr = document.createElement('tr');
+                tr.id = `student-row-${makeSafeDomId(s.id)}`;
                 tr.className = "hover:bg-slate-50/80 transition text-xs";
                 tr.innerHTML = `
                     <td class="p-3 pl-5">
@@ -6833,18 +8491,18 @@
             const student = dept.students.find(s => s.id === studentId);
             if(!student) return;
 
-            const prefSession = dept.sessions.find(ses => ses.id === student.pref);
-	            const prefText = prefSession ? `${prefSession.name} (${prefSession.startTime})` : '無';
-	            const birthDate = normalizeBirthDate(student.birthDate || '');
-	            const schoolText = student.school ? String(student.school).trim() : '未填';
-	            const crossMatches = getCrossDeptMatches(student, dept.id);
+            const prefDetails = getStudentPreferenceDetails(student, dept);
+	            const prefText = prefDetails.summaryText || '無';
+            const birthDate = normalizeBirthDate(student.birthDate || '');
+            const schoolText = student.school ? String(student.school).trim() : '未填';
+            const crossMatches = getCrossDeptMatches(student, dept.id);
             const crossSummary = crossMatches.length > 0
                 ? crossMatches.map(match => match.dept.name).join('、')
                 : '無';
 
             document.getElementById('edit-modal-student-desc').innerHTML = `
 	                考生姓名：<b>${student.name}</b> (${student.id}) <br>
-	                出生年月日：<b>${birthDate || '未填'}</b> | 就讀學校：<b>${schoolText}</b> | 學生預約偏好：<b>${prefText}</b><br>
+	                出生年月日：<b>${birthDate || '未填'}</b> | 就讀學校：<b>${schoolText}</b> | 學生預約偏好：<b>${escapeHtml(prefText)}</b><br>
                 外部撞期時間：${student.conflict || '無'} | 跨系同人報名：<b>${crossSummary}</b>
             `;
 
@@ -6936,13 +8594,13 @@
                                                            s.assignedOralRoomIdx === oralIdx && 
                                                            s.assignedOralGroupIdx === grpIdx).length;
                 const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
-                const oralGroupSoftLimit = oralGroupCapacity + ORAL_GROUP_TAIL_MERGE_LIMIT;
+                const oralGroupSoftLimit = oralGroupCapacity + getOralTailMergeLimit(dept);
                 const groupPosition = getEvenLoadGroupPosition(dept, grpIdx);
                 if (grpCount >= oralGroupSoftLimit) {
                     const groupLabel = strategyId === 'even_load'
                         ? `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`
                         : `第 ${grpIdx + 1} 組`;
-                    errors.push(`<b>組別名額提醒：</b>該梯次面試室的「${groupLabel}」目前已排了 <b>${grpCount}</b> 位考生！若強行塞入，該組人數將超出尾組容納上限（${oralGroupCapacity + ORAL_GROUP_TAIL_MERGE_LIMIT}人）。`);
+                    errors.push(`<b>組別名額提醒：</b>該梯次面試室的「${groupLabel}」目前已排了 <b>${grpCount}</b> 位考生；若你是要直接插入，系統仍會接受並重新計算時序。`);
                 }
 
                 if (errors.length > 0) {
@@ -6963,6 +8621,9 @@
         };
 
         window.closeEditModal = function() {
+            if (typeof window.closeManualMoveChoiceModal === 'function') {
+                window.closeManualMoveChoiceModal();
+            }
             document.getElementById('modal-edit-student').classList.add('hidden');
             currentlyEditingStudentId = null;
         };
@@ -6981,25 +8642,69 @@
             const writtenIdx = parseInt(document.getElementById('edit-modal-written-select').value);
             const oralIdx = parseInt(document.getElementById('edit-modal-oral-select').value);
             const grpIdx = parseInt(document.getElementById('edit-modal-order-select').value);
+            const originalSessionId = student.assignedSessionId;
+            const originalWrittenIdx = student.assignedWrittenRoomIdx;
+            const originalOralIdx = student.assignedOralRoomIdx;
+            const originalGroupIdx = student.assignedOralGroupIdx;
+            const samePlacementExceptGroup = originalSessionId === session && originalWrittenIdx === writtenIdx && originalOralIdx === oralIdx;
+            const groupChanged = originalGroupIdx !== grpIdx;
+            const swapCandidates = samePlacementExceptGroup && groupChanged
+                ? getManualMoveSwapCandidates(dept, student.id, session, oralIdx, grpIdx)
+                : [];
 
-            const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
+            if (samePlacementExceptGroup && groupChanged && swapCandidates.length > 0) {
+                openManualMoveChoiceModal({
+                    studentId: student.id,
+                    student: deepCloneData(student),
+                    original: {
+                        sessionId: originalSessionId,
+                        writtenIdx: originalWrittenIdx,
+                        oralIdx: originalOralIdx,
+                        groupIdx: originalGroupIdx,
+                        order: student.assignedOrder
+                    },
+                    target: {
+                        sessionId: session,
+                        writtenIdx,
+                        oralIdx,
+                        groupIdx: grpIdx
+                    },
+                    canSwap: true,
+                    candidates: swapCandidates.map(candidate => deepCloneData(candidate))
+                });
+                return;
+            }
 
-            // Apply manual overrides. We set assignedOrder based on Group Index to sort properly in resequencer
             student.assignedSessionId = session;
             student.assignedWrittenRoomIdx = writtenIdx;
             student.assignedOralRoomIdx = oralIdx;
             student.assignedOralGroupIdx = grpIdx;
-            // Temporarily assign ordering so that resequencer positions this student inside that group
-            student.assignedOrder = grpIdx * oralGroupCapacity + 0.5; 
+            student.assignedOrder = getManualMoveInsertOrder(dept, session, oralIdx, grpIdx, student.id);
 
-            // Recalculate whole session flow to resolve overlaps and re-pack group offsets
             resequenceSessionTimings(dept);
 
+            const savedStudent = student;
             savePlatformStateToStorage();
             syncWorkspaceUI();
             closeEditModal();
-            showToast(`已將考生 ${student.name} 移動至指定面試組別，全場時間已動態更新校準！`, "success");
+            scrollToSavedStudentCard(savedStudent);
+            showToast(`已將考生 ${student.name} 直接插入指定面試組別，全場時間已動態更新校準！`, "success");
         });
+
+        document.getElementById('manual-move-insert-btn').addEventListener('click', () => {
+            applyManualMoveChoice('insert');
+        });
+
+        document.getElementById('manual-move-swap-btn').addEventListener('click', () => {
+            const swapSelect = document.getElementById('manual-move-swap-select');
+            if (!swapSelect || !swapSelect.value) {
+                showToast('請先選擇要互換的考生。', 'error');
+                return;
+            }
+            applyManualMoveChoice('swap', swapSelect.value);
+        });
+
+        document.getElementById('manual-move-swap-select').addEventListener('change', renderManualMoveChoicePreview);
 
         // Export Excel/TSV Clipboard
         function exportToExcelTsvClipboard() {
@@ -7009,13 +8714,14 @@
                 return;
             }
 
-	            let tsv = "姓名\t出生年月日\t就讀學校\t報名序號\t跨系同人報名\t跨系時間重疊\t登記偏好\t分配甄試時段\t筆試教室\t筆試時間\t面試教室\t面試組別\t面試時間\t跨系撞期時間\r\n";
+	            let tsv = "姓名\t出生年月日\t就讀學校\t報名序號\t跨系同人報名\t跨系時間重疊\t登記偏好\t上下午偏好\t分配甄試時段\t筆試教室\t筆試時間\t面試教室\t面試組別\t面試時間\t跨系撞期時間\r\n";
             dept.students.forEach(s => {
             const assignedS = dept.sessions.find(ses => ses.id === s.assignedSessionId);
             const batchText = assignedS ? assignedS.name : '未分配';
                 
-                const prefS = dept.sessions.find(ses => ses.id === s.pref);
-                const prefText = prefS ? prefS.name : '無';
+                const prefDetails = getStudentPreferenceDetails(s, dept);
+                const prefText = prefDetails.prefSession ? prefDetails.prefSession.name : '無';
+                const prefPeriodText = prefDetails.prefPeriodLabel || '無';
 
                 const writtenRoom = s.assignedWrittenRoomIdx !== null ? (dept.writtenRooms[s.assignedWrittenRoomIdx] || '') : '';
                 const oralRoom = s.assignedOralRoomIdx !== null ? (dept.oralRooms[s.assignedOralRoomIdx] || '') : '';
@@ -7031,7 +8737,7 @@
                     .map(conflict => `${conflict.deptName}${conflict.otherType}${conflict.start}-${conflict.end}`)
                     .join('、') || '無';
 
-	                tsv += `${s.name}\t${birthDate}\t${s.school || ''}\t${s.id}\t${crossDeptNames}\t${crossConflictText}\t${prefText}\t${batchText}\t${writtenRoom}\t${s.writtenStart || ''}~${s.writtenEnd || ''}\t${oralRoom}\t${grpText}\t${s.oralStart || ''}~${s.oralEnd || ''}\t${s.conflict || '無'}\r\n`;
+	                tsv += `${s.name}\t${birthDate}\t${s.school || ''}\t${s.id}\t${crossDeptNames}\t${crossConflictText}\t${prefText}\t${prefPeriodText}\t${batchText}\t${writtenRoom}\t${s.writtenStart || ''}~${s.writtenEnd || ''}\t${oralRoom}\t${grpText}\t${s.oralStart || ''}~${s.oralEnd || ''}\t${s.conflict || '無'}\r\n`;
             });
 
             // Use robust fallback for iframe sandboxes
