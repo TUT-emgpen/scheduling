@@ -1355,7 +1355,7 @@
                     系所考務二階智慧多時段流水線排程系統
                 </h1>
                 <p class="max-w-2xl mx-auto text-sm text-slate-500">
-                    專為各學系承辦書記設計。<b>支援一鍵匯入招策會/教務處官方 Excel 甄試名單與考生選填時段查詢表 (.xlsx, .csv)</b>，自動合併更新時段偏好、平衡多時段與團體口試（一次進去五人）排程。
+                    專為各學系承辦書記設計。<b>支援一鍵匯入招策會/教務處官方 Excel 甄試名單與考生選填時段查詢表 (.xlsx, .csv)</b>，自動合併更新時段偏好、平衡多時段與團體面試（一次進去五人）排程。
                 </p>
                 <div class="portal-feature-badges pt-2 text-[10px] font-bold">
                     <span id="portal-storage-badge"><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i>本機儲存</span>
@@ -1511,7 +1511,7 @@
                             <div>
                                 <p class="setup-kicker">設定與匯入</p>
                                 <h3 class="setup-title">先設定考場，再匯入考生</h3>
-                                <p class="setup-desc">依序完成時段、口試結構、教室與名單，系統會接上排法自動排程，整體操作更清楚。</p>
+                                <p class="setup-desc">依序完成時段、面試結構、教室與名單，系統會接上排法自動排程，整體操作更清楚。</p>
                             </div>
                             <div class="setup-steps">
                                 <span class="setup-step is-blue"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>1 時段</span>
@@ -1528,7 +1528,7 @@
                                 <div>
                                     <div class="setup-section-number">01</div>
                                     <h3 class="setup-card-title">一條龍考場參數與時段配置</h3>
-                                    <p class="setup-card-desc">先把梯次、口試結構與教室定義好，後面的排程才會清楚、穩定。</p>
+                                    <p class="setup-card-desc">先把梯次、面試結構與教室定義好，後面的排程才會清楚、穩定。</p>
                                 </div>
                                 <div class="setup-section-note">
                                     <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
@@ -1565,8 +1565,12 @@
                                     <input type="number" id="cfg-written-duration" min="10" max="180" class="setup-soft-input" value="40">
                                 </div>
                                 <div class="setup-subcard">
-                                    <label class="setup-field-label">口試每組時間 (分)</label>
+                                    <label class="setup-field-label">面試每組時間 (分)</label>
                                     <input type="number" id="cfg-oral-duration" min="5" max="120" class="setup-soft-input" value="20">
+                                </div>
+                                <div class="setup-subcard">
+                                    <label class="setup-field-label" title="進到筆試或面試前，預先保留多少分鐘做報到集合。時序小卡會依這個數值顯示報到時間。">報到緩衝時間 (分)</label>
+                                    <input type="number" id="cfg-report-lead-minutes" min="0" max="60" class="setup-soft-input" value="10">
                                 </div>
                                 <div class="setup-subcard">
                                     <label class="setup-field-label" title="一梯內有幾隊；預設 2 隊，可依系所需求改成 3 隊或更多。">一梯有幾隊 (隊)</label>
@@ -1581,7 +1585,7 @@
                                     <input type="number" id="cfg-team-capacity" min="2" max="100" class="setup-soft-input" value="30">
                                 </div>
                                 <div class="setup-subcard">
-                                    <label class="setup-field-label">口試每組進場人數 (人)</label>
+                                    <label class="setup-field-label">面試每組進場人數 (人)</label>
                                     <input type="number" id="cfg-oral-group-capacity" min="1" max="20" class="setup-soft-input" value="5">
                                 </div>
                             </div>
@@ -1590,7 +1594,7 @@
                                 <div>
                                     <label class="setup-label">
                                         <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                                        <span>口試結構預覽</span>
+                                        <span>面試結構預覽</span>
                                     </label>
                                     <p id="oral-structure-preview-text" class="mt-1 text-lg font-extrabold tracking-tight text-slate-900">1 梯 = 2 隊 × 2 組</p>
                                     <p class="setup-help">預覽會跟著左側設定即時更新，方便書記快速確認總組數與分組層級。</p>
@@ -1621,15 +1625,15 @@
                                     <div class="flex items-center justify-between gap-3">
                                         <label class="setup-label">
                                             <i data-lucide="mic" class="w-3.5 h-3.5"></i>
-                                            <span>團體口試考場空間</span>
+                                            <span>團體面試考場空間</span>
                                         </label>
                                         <button onclick="addNewOralRoom()" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 transition">
                                             <i data-lucide="plus" class="w-3 h-3"></i>
-                                            <span>增加口試室</span>
+                                            <span>增加面試室</span>
                                         </button>
                                     </div>
                                     <div id="oral-rooms-list" class="setup-chip-list"></div>
-                                    <p class="setup-help">系統會依筆試與口試時間自動切成多個波段；可設定一梯幾隊、每隊幾組，排法會即時套用。</p>
+                                    <p class="setup-help">系統會依筆試與面試時間自動切成多個波段；可設定一梯幾隊、每隊幾組，排法會即時套用。</p>
                                 </div>
                             </div>
                         </div>
@@ -1682,7 +1686,7 @@
                                             <input type="text" id="add-stu-name" placeholder="如：陳小華" class="setup-soft-input">
                                         </div>
                                         <div>
-                                            <label class="setup-field-label">准考證 / 考生編號</label>
+                                            <label class="setup-field-label">報名序號</label>
                                             <input type="text" id="add-stu-id" placeholder="如：11500101" class="setup-soft-input">
                                         </div>
                                         <div>
@@ -1716,7 +1720,7 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
                                         <h4 class="text-sm font-bold text-slate-900">大量批次貼上</h4>
-                                        <p class="setup-help">可直接貼上 Excel 複製資料，一次帶入姓名、編號、生日、預約時段、衝突時間與就讀學校。</p>
+                                        <p class="setup-help">可直接貼上 Excel 複製資料，一次帶入姓名、報名序號、生日、預約時段、衝突時間與就讀學校。</p>
                                     </div>
                                     <button class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 transition" onclick="showImportTip()">
                                         <span>格式與範例說明</span>
@@ -1765,7 +1769,7 @@
                                         避開跨系與外部衝突
                                     </div>
                                 </div>
-	                                <p class="text-xs leading-relaxed text-indigo-50/90">按下開始分組後再確認排法，系統會依本系的筆試與口試條件自動排程，書記也可以再手動微調。</p>
+	                                <p class="text-xs leading-relaxed text-indigo-50/90">按下開始分組後再確認排法，系統會依本系的筆試與面試條件自動排程，書記也可以再手動微調。</p>
                             </div>
 
 	                            <div class="setup-engine-panel space-y-3">
@@ -1775,7 +1779,7 @@
 	                                        <span id="scheduler-strategy-badge" class="rounded-full bg-white px-2 py-0.5 text-[9px] font-black text-indigo-700">目前排法</span>
                                     </div>
                                     <p id="scheduler-strategy-desc" class="mt-1 text-[11px] leading-relaxed text-indigo-50/90">
-                                        先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與口試採分波流水線，並自動避開跨系/外部撞期。
+                                        先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與面試採分波流水線，並自動避開跨系/外部撞期。
                                     </p>
 	                                    <p id="scheduler-strategy-help" class="mt-1 text-[10px] leading-relaxed text-indigo-100/80">
 	                                        適合大多數二階甄試：兼顧學生志願、各時段人數平均與現場動線清楚。
@@ -1799,13 +1803,34 @@
                 <div id="workspace-column-dashboard" class="lg:col-span-12 space-y-6">
 
                     <!-- Tab Controls -->
-                    <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="flex space-x-1">
-                            <button id="tab-btn-dashboard" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition">
-                                <i data-lucide="layout-grid" class="w-3.5 h-3.5 inline-block mr-1"></i>一條龍流水線看板
+                    <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="grid flex-1 grid-cols-1 gap-2 md:grid-cols-3">
+                            <button id="tab-btn-dashboard" data-tab="dashboard" class="group inline-flex items-center gap-3 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-white shadow-sm transition">
+                                <span data-tab-badge class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white" style="box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);">
+                                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                                </span>
+                                <span class="flex flex-col items-start">
+                                    <span data-tab-title class="text-xs font-bold leading-tight">流程總覽</span>
+                                    <span data-tab-sub class="text-[10px] leading-tight text-white/70">整體排程</span>
+                                </span>
                             </button>
-                            <button id="tab-btn-list" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-                                <i data-lucide="list-filter" class="w-3.5 h-3.5 inline-block mr-1"></i>考生排程名冊
+                            <button id="tab-btn-timeline" data-tab="timeline" class="group inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                                <span data-tab-badge class="flex h-9 w-9 items-center justify-center rounded-xl text-cyan-600" style="background: rgba(14,165,233,.09); box-shadow: inset 0 0 0 1px rgba(14,165,233,.18);">
+                                    <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                                </span>
+                                <span class="flex flex-col items-start">
+                                    <span data-tab-title class="text-xs font-bold leading-tight">時序小卡</span>
+                                    <span data-tab-sub class="text-[10px] leading-tight text-slate-500">每組時間軸</span>
+                                </span>
+                            </button>
+                            <button id="tab-btn-list" data-tab="list" class="group inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                                <span data-tab-badge class="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-600" style="background: rgba(16,185,129,.09); box-shadow: inset 0 0 0 1px rgba(16,185,129,.18);">
+                                    <i data-lucide="list-filter" class="w-4 h-4"></i>
+                                </span>
+                                <span class="flex flex-col items-start">
+                                    <span data-tab-title class="text-xs font-bold leading-tight">學生名冊</span>
+                                    <span data-tab-sub class="text-[10px] leading-tight text-slate-500">排程明細</span>
+                                </span>
                             </button>
                         </div>
                         <div>
@@ -1823,8 +1848,8 @@
                         <div class="bg-slate-100 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 flex items-start space-x-2.5">
                             <i data-lucide="info" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
                             <div class="space-y-1">
-                                <p class="font-bold text-slate-900">🎓 本系「分波筆試 × 團體口試」排程規範：</p>
-                                <p>筆試會優先集中在同一間教室節省監考人力；系統會再依口試順序拆成「先筆試後口試」與「先口試後筆試」兩種流向，考生仍會以 <b>5 人一組</b> 集體進入口試教室。</p>
+                                <p class="font-bold text-slate-900">🎓 本系「分波筆試 × 團體面試」排程規範：</p>
+                                <p>筆試會優先集中在同一間教室節省監考人力；系統會再依面試順序拆成「先筆試後面試」與「先面試後筆試」兩種流向，考生仍會以 <b>5 人一組</b> 集體進入面試教室。</p>
                             </div>
                         </div>
 
@@ -1837,15 +1862,35 @@
 
                     </div>
 
-                    <!-- Panel B: Student Master List & Quick Manual Overrides -->
+                    <!-- Panel B: Timeline Cards -->
+                    <div id="panel-timeline" class="hidden space-y-6">
+                        <div class="bg-white/80 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-950 text-sm">當天時序小卡總覽</h4>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">把每一組的報到、換場、筆試、面試與學生名單整理成卡片，方便書記快速掃描整天流程。</p>
+                                </div>
+                                <div class="text-[11px] text-slate-500">
+                                    點卡片可直接進入學生微調
+                                </div>
+                            </div>
+                        </div>
+                        <div id="timeline-cards-container" class="space-y-4">
+                            <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
+                                暫無排程資料。請先完成自動排程，再切到這個視角查看每一組的時間軸。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel C: Student Master List & Quick Manual Overrides -->
                     <div id="panel-list" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <h4 class="font-bold text-slate-950 text-sm">考生排程暨手動平衡微調</h4>
-                                <p class="text-[11px] text-slate-400 mt-0.5">顯示考生預約登記狀態與分配結果。支援手動強制調整梯次、考場與口試組別。</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">顯示考生預約登記狀態與分配結果。支援手動強制調整梯次、考場與面試組別。</p>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <input type="text" id="search-student-input" placeholder="搜尋姓名/准考證/生日..." class="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-40 bg-white">
+                                <input type="text" id="search-student-input" placeholder="搜尋姓名/報名序號/生日..." class="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-40 bg-white">
                                 <select id="filter-status-select" class="px-2 py-1.5 text-xs border border-slate-200 bg-slate-50 rounded-md text-slate-600">
                                     <option value="all">全部考生</option>
                                     <option value="pref_registered">有自訂預約偏好者</option>
@@ -1863,12 +1908,12 @@
                                     <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
                                         <th class="p-3 pl-5">姓名</th>
                                         <th class="p-3">出生年月日</th>
-                                        <th class="p-3">准考證 / 編號</th>
+                                        <th class="p-3">報名序號</th>
                                         <th class="p-3">就讀學校</th>
                                         <th class="p-3">學生登記偏好</th>
                                         <th class="p-3">分配時段</th>
                                         <th class="p-3">筆試教室 & 時間</th>
-                                        <th class="p-3">口試教室 & 時間 (梯 / 隊 / 組)</th>
+                                        <th class="p-3">面試教室 & 時間 (梯 / 隊 / 組)</th>
                                         <th class="p-3 text-center">調整</th>
                                     </tr>
                                 </thead>
@@ -1886,9 +1931,9 @@
                             <span>系所書記多波段排程指引</span>
                         </h4>
                         <div class="text-xs text-indigo-900/90 space-y-2 leading-relaxed">
-                            <p>1. <b>先看流程摘要：</b>每個時段會先列出筆試波段與口試輪次，承辦人可先確認整體節奏，再往下查看各教室名單。</p>
-                            <p>2. <b>再看分室明細：</b>筆試區依實際進場時間分波；口試區則依梯 / 隊 / 組顯示「先筆試後口試」或「先口試後筆試」，避免現場叫號混淆。</p>
-                            <p>3. <b>匯出交接表：</b>點選右上角「複製至 Excel 貼上」，考生的筆試時間、口試教室與口試組別會一併匯出，方便排序、列印與張貼。</p>
+                            <p>1. <b>先看流程摘要：</b>每個時段會先列出筆試波段與面試輪次，承辦人可先確認整體節奏，再往下查看各教室名單。</p>
+                            <p>2. <b>再看分室明細：</b>筆試區依實際進場時間分波；面試區則依梯 / 隊 / 組顯示「先筆試後面試」或「先面試後筆試」，避免現場叫號混淆。</p>
+                            <p>3. <b>匯出交接表：</b>點選右上角「複製至 Excel 貼上」，考生的筆試時間、面試教室與面試組別會一併匯出，方便排序、列印與張貼。</p>
                         </div>
                     </div>
 
@@ -2012,10 +2057,10 @@
                 <p><b>資料格解析規則：</b></p>
                 <ul class="list-disc pl-4 space-y-1">
                     <li>第一欄：姓名</li>
-                    <li>第二欄：准考證編號</li>
+                    <li>第二欄：報名序號</li>
                     <li>第三欄：出生年月日（支援西元、民國年，例如 <code>2007/05/12</code> 或 <code>0960512</code>）</li>
                     <li>第四欄：預約登記時段（可填<b>「時段一」</b>、<b>「時段二」</b>等，或填編號<b>「1」</b>, <b>「2」</b>或起跑時間 <b>「09:00」</b>）</li>
-                    <li>第五欄：外部撞期段（如他校口試撞期 <code>14:00-15:30</code>，排程演算法會完全避開）</li>
+                    <li>第五欄：外部撞期段（如他校面試撞期 <code>14:00-15:30</code>，排程演算法會完全避開）</li>
                     <li>第六欄：就讀學校（選用；可搭配排程設定讓同校考生盡量同組）</li>
                 </ul>
                 <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2">
@@ -2038,7 +2083,7 @@
                 <i data-lucide="plus-circle" class="text-indigo-600 w-5 h-5"></i>
                 <span>啟動全新系所工作區</span>
             </h4>
-            <p class="text-xs text-slate-400 mb-4">建立後，該科系將擁有獨立的筆試、口試空間與一條龍流程。</p>
+            <p class="text-xs text-slate-400 mb-4">建立後，該科系將擁有獨立的筆試、面試空間與一條龍流程。</p>
 
             <form id="create-dept-form" class="space-y-4 text-xs">
                 <div>
@@ -2050,15 +2095,13 @@
                     <input type="text" id="new-dept-sub" placeholder="例如：115學年度甄選二階 (招生名額：55名)" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">代表圖標</label>
+                    <label class="block font-bold text-slate-700 mb-1">快速選擇科系</label>
                     <select id="new-dept-icon" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-                        <option value="palette">🎨 創意設計 / 藝術類 (Palette)</option>
-                        <option value="cpu">💻 資訊科技 / 晶片類 (CPU)</option>
-                        <option value="zap">⚡ 電機工程 / 能量類 (Zap)</option>
-                        <option value="briefcase">💼 企業管理 / 商管類 (Briefcase)</option>
-                        <option value="languages">🗣️ 語言文學 / 應外類 (Languages)</option>
-                        <option value="flask-conical">🔬 化學材料 / 生技類 (Flask)</option>
-                        <option value="building">🏢 土木營建 / 空間類 (Building)</option>
+                        <option value="palette" data-name="漫畫系">漫畫系</option>
+                        <option value="pen-tool" data-name="視覺傳達設計系">視覺傳達設計系</option>
+                        <option value="film" data-name="多媒體動畫系">多媒體動畫系</option>
+                        <option value="package" data-name="商品設計系">商品設計系</option>
+                        <option value="building-2" data-name="室內設計系">室內設計系</option>
                     </select>
                 </div>
 
@@ -2087,7 +2130,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-slate-950 text-base">開始分組前選擇排法</h4>
-                    <p class="mt-1 text-xs leading-relaxed text-slate-500">確認這次要使用的排法與同校分組偏好後，系統會立即重新分配時段、筆試與口試組別。</p>
+                    <p class="mt-1 text-xs leading-relaxed text-slate-500">確認這次要使用的排法與同校分組偏好後，系統會立即重新分配時段、筆試與面試組別。</p>
                 </div>
             </div>
 
@@ -2138,7 +2181,7 @@
                         <span id="scheduler-options-strategy-name" class="font-bold text-indigo-950">志願優先・均衡分波流水線</span>
                         <span id="scheduler-options-strategy-badge" class="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-indigo-700">目前排法</span>
                     </div>
-                    <p id="scheduler-options-strategy-desc" class="mt-2 text-xs leading-relaxed text-indigo-900/80">先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與口試採分波流水線，並自動避開跨系/外部撞期。</p>
+                    <p id="scheduler-options-strategy-desc" class="mt-2 text-xs leading-relaxed text-indigo-900/80">先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與面試採分波流水線，並自動避開跨系/外部撞期。</p>
                     <p id="scheduler-options-school-desc" class="mt-2 text-[11px] leading-relaxed text-slate-500">同校分組：不特別處理。</p>
                 </div>
             </div>
@@ -2192,13 +2235,13 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">分配口試教室</label>
+                        <label class="block font-bold text-slate-700 mb-1">分配面試教室</label>
                         <select id="edit-modal-oral-select" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white text-slate-700 font-medium">
                             <!-- Dynamic -->
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">指派口試組別 (梯 / 隊 / 組)</label>
+                        <label class="block font-bold text-slate-700 mb-1">指派面試組別 (梯 / 隊 / 組)</label>
                         <select id="edit-modal-order-select" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 bg-white text-slate-700 font-bold">
                             <!-- Filled by JS -->
                         </select>
@@ -2274,7 +2317,7 @@
                     </div>
                     <div>
                         <p class="font-bold text-slate-900 group-hover:text-emerald-950">B. 僅合併更新選填時段偏好 (極力推薦) ✨</p>
-                        <p class="text-slate-400 text-[10px] mt-0.5"><b>不刪除現有考生的通訊錄、生日與學校</b>。系統會依據「准考證號」或「姓名」自動匹配考生，並更新預約時段偏好與可辨識的學校資料。</p>
+                        <p class="text-slate-400 text-[10px] mt-0.5"><b>不刪除現有考生的通訊錄、生日與學校</b>。系統會依據「報名序號」或「姓名」自動匹配考生，並更新預約時段偏好與可辨識的學校資料。</p>
                     </div>
                 </button>
             </div>
@@ -2333,7 +2376,7 @@
                 name: '志願優先・均衡分波流水線',
                 shortName: '志願優先流水線',
                 badge: '目前排法',
-                description: '先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與口試採分波流水線，並自動避開跨系/外部撞期。',
+                description: '先尊重學生登記的報到時段，即使超出平均值也優先保留；未選者再平均補進各時段，筆試與面試採分波流水線，並自動避開跨系/外部撞期。',
                 helpText: '適合大多數二階甄試：兼顧學生志願、各時段人數平均與現場動線清楚。',
                 theme: 'indigo',
                 guide: {
@@ -2342,7 +2385,7 @@
                     steps: [
                         { icon: 'calendar-check-2', title: '先看學生志願', desc: '有填報時段的考生先保留原本選項。' },
                         { icon: 'split-square-vertical', title: '未填者平均補位', desc: '剩下的人平均補進各時段，避免某一場太擠。' },
-                        { icon: 'shuffle', title: '再分波排進場', desc: '筆試與口試依流水線順序交錯安排。' }
+                        { icon: 'shuffle', title: '再分波排進場', desc: '筆試與面試依流水線順序交錯安排。' }
                     ]
                 }
             },
@@ -2399,7 +2442,7 @@
                 sub: '二階甄選 • 本系招生名額 45 名',
                 icon: 'palette',
                 writtenRooms: ['筆試一試室 (R201)', '筆試二試室 (R202)'],
-                oralRooms: ['口試一教室 (R401)', '口試二教室 (R402)'],
+                oralRooms: ['面試一教室 (R401)', '面試二教室 (R402)'],
                 sessions: [
                     { id: 's1', name: '時段一 (梯次一)', startTime: '08:00' },
                     { id: 's2', name: '時段二 (梯次二)', startTime: '10:40' },
@@ -2422,7 +2465,7 @@
                 sub: '二階甄選 • 本系招生名額 50 名',
                 icon: 'cpu',
                 writtenRooms: ['筆試一試室 (R201)', '筆試二試室 (R202)'],
-                oralRooms: ['口試一教室 (R401)', '口試二教室 (R402)'], 
+                oralRooms: ['面試一教室 (R401)', '面試二教室 (R402)'], 
                 sessions: [
                     { id: 's1', name: '時段一 (梯次一)', startTime: '08:00' },
                     { id: 's2', name: '時段二 (梯次二)', startTime: '10:40' },
@@ -2730,6 +2773,7 @@
                 sessions: deepCloneData(dept.sessions || []),
                 cfgWrittenDuration: parseInt(dept.cfgWrittenDuration) || 30,
                 cfgOralDuration: parseInt(dept.cfgOralDuration) || 20,
+                cfgReportLeadMinutes: parseInt(dept.cfgReportLeadMinutes) >= 0 ? parseInt(dept.cfgReportLeadMinutes) : 10,
                 cfgOralTeamsPerLadder: parseInt(dept.cfgOralTeamsPerLadder) || 2,
                 cfgOralTeamGroupCount: parseInt(dept.cfgOralTeamGroupCount) || 2,
                 cfgTeamCapacity: parseInt(dept.cfgTeamCapacity) || 30,
@@ -2850,21 +2894,20 @@
                     if (settled) return;
                     settled = true;
                     cleanup();
-                    reject(new Error('雲端同步逾時，請確認 Apps Script 部署網址是否正確。'));
+                    reject(new Error('雲端同步逾時，請確認 Apps Script 已重新部署，而且部署網址正確。'));
                 }, 25000);
 
                 const handleMessage = (event) => {
-                    if (event.source !== iframe.contentWindow) return;
-                    const data = event.data;
-                    if (!data || data.__schedulerBridge !== true || data.requestId !== requestId) return;
+                    const bridgeData = event.data;
+                    if (!bridgeData || bridgeData.__schedulerBridge !== true || bridgeData.requestId !== requestId) return;
                     if (settled) return;
                     settled = true;
                     clearTimeout(timer);
                     cleanup();
-                    if (data.payload?.ok) {
-                        resolve(data.payload.result || {});
+                    if (bridgeData.payload?.ok) {
+                        resolve(bridgeData.payload.result || {});
                     } else {
-                        reject(new Error(data.payload?.error || '雲端同步失敗'));
+                        reject(new Error(bridgeData.payload?.error || '雲端同步失敗'));
                     }
                 };
 
@@ -3336,8 +3379,17 @@
             const passphrase = document.getElementById('cloud-sync-passphrase').value.trim();
             const rememberDevice = !!document.getElementById('cloud-sync-remember')?.checked;
             const localDepartments = loadLocalDepartmentWorkspaces() || deepCloneData(departments || []);
+            const connectBtn = document.getElementById('cloud-sync-connect-btn');
+            const connectLabel = connectBtn?.querySelector('span');
 
             try {
+                if (connectBtn) {
+                    connectBtn.disabled = true;
+                    connectBtn.classList.add('cursor-wait', 'opacity-80');
+                }
+                if (connectLabel) {
+                    connectLabel.textContent = '驗證中...';
+                }
                 await connectRemoteSecureWorkspace(passphrase, {
                     webAppUrl: url,
                     seedDepartments: localDepartments,
@@ -3349,6 +3401,12 @@
             } catch (error) {
                 console.error(error);
                 showToast(`雲端連線失敗：${error.message || error}`, 'error');
+            } finally {
+                if (connectBtn) {
+                    connectBtn.disabled = false;
+                    connectBtn.classList.remove('cursor-wait', 'opacity-80');
+                }
+                updateCloudSyncStatusUI();
             }
         }
 
@@ -3426,6 +3484,7 @@
             
             // Core Tab Switching Event Hooks
             document.getElementById('tab-btn-dashboard').addEventListener('click', () => switchTab('dashboard'));
+            document.getElementById('tab-btn-timeline').addEventListener('click', () => switchTab('timeline'));
             document.getElementById('tab-btn-list').addEventListener('click', () => switchTab('list'));
             document.getElementById('workspace-page-btn-dashboard').addEventListener('click', () => switchWorkspacePage('dashboard'));
             document.getElementById('workspace-page-btn-setup').addEventListener('click', () => switchWorkspacePage('setup'));
@@ -3433,6 +3492,7 @@
             // Core Config Event Hooks for instant state updating
             document.getElementById('cfg-written-duration').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-oral-duration').addEventListener('input', syncCurrentDeptConfigsToState);
+            document.getElementById('cfg-report-lead-minutes').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-oral-teams-per-ladder').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-oral-team-group-count').addEventListener('input', syncCurrentDeptConfigsToState);
             document.getElementById('cfg-team-capacity').addEventListener('input', syncCurrentDeptConfigsToState);
@@ -3451,6 +3511,7 @@
             document.getElementById('search-student-input').addEventListener('input', renderStudentsTable);
             document.getElementById('filter-status-select').addEventListener('change', renderStudentsTable);
             document.getElementById('create-dept-form').addEventListener('submit', handleCreateDepartment);
+            document.getElementById('new-dept-icon').addEventListener('change', () => applyNewDeptTemplateSelection(true));
             document.getElementById('export-excel-tsv').addEventListener('click', exportToExcelTsvClipboard);
             document.getElementById('cloud-sync-connect-btn').addEventListener('click', handleCloudSyncConnect);
             document.getElementById('cloud-sync-lock-btn').addEventListener('click', () => {
@@ -3638,7 +3699,7 @@
                                 <strong style="color: rgb(59, 130, 246);">${preferCount}</strong>
                             </div>
                             <div class="department-metric">
-                                <span>時段 / 筆試 / 口試</span>
+                                <span>時段 / 筆試 / 面試</span>
                                 <strong>${sessionCount}/${dept.writtenRooms.length}/${dept.oralRooms.length}</strong>
                             </div>
                         </div>
@@ -3688,6 +3749,10 @@
                 dept.cfgOralDuration = 20;
                 needsSave = true;
             }
+            if (dept.cfgReportLeadMinutes === undefined) {
+                dept.cfgReportLeadMinutes = 10;
+                needsSave = true;
+            }
             if (dept.cfgOralTeamsPerLadder === undefined) {
                 dept.cfgOralTeamsPerLadder = 2;
                 needsSave = true;
@@ -3728,6 +3793,7 @@
             // Load Configurations to Controls
             document.getElementById('cfg-written-duration').value = dept.cfgWrittenDuration || 40;
             document.getElementById('cfg-oral-duration').value = dept.cfgOralDuration || 20;
+            document.getElementById('cfg-report-lead-minutes').value = dept.cfgReportLeadMinutes ?? 10;
             document.getElementById('cfg-oral-teams-per-ladder').value = dept.cfgOralTeamsPerLadder || 2;
             document.getElementById('cfg-oral-team-group-count').value = dept.cfgOralTeamGroupCount || 2;
             document.getElementById('cfg-team-capacity').value = dept.cfgTeamCapacity || 30;
@@ -3781,7 +3847,7 @@
                 },
                 same_group: {
                     label: '同校：盡量同一組',
-                    desc: '同校分組：系統會在同一時段內盡量把同校考生排進同一個口試小組。'
+                    desc: '同校分組：系統會在同一時段內盡量把同校考生排進同一個面試小組。'
                 },
                 spread: {
                     label: '同校：盡量分散',
@@ -3943,8 +4009,13 @@
 
             // Render stats indicators
             updateStatsIndicators();
-            renderDashboardBoards();
-            renderStudentsTable();
+            if (activeBoardTab === 'timeline') {
+                renderTimelineCards();
+            } else if (activeBoardTab === 'list') {
+                renderStudentsTable();
+            } else {
+                renderDashboardBoards();
+            }
             lucide.createIcons();
         }
 
@@ -4159,6 +4230,17 @@
             return `${nameKey}|${birthKey}`;
         }
 
+        function getStudentOverlapKeys(student) {
+            const keys = new Set();
+            const identityKey = getStudentIdentityKey(student);
+            const idKey = cleanStandardValue(student?.id);
+            const nameKey = cleanStandardValue(student?.name);
+            if (identityKey) keys.add(`identity:${identityKey}`);
+            if (idKey) keys.add(`id:${idKey}`);
+            if (nameKey) keys.add(`name:${nameKey}`);
+            return keys;
+        }
+
         function getCrossDeptMatches(student, currentDeptId) {
             const identityKey = getStudentIdentityKey(student);
             if (!identityKey) return [];
@@ -4175,13 +4257,33 @@
             return matches;
         }
 
+        function getCrossDeptRosterOverlap(parsedList, currentDeptId) {
+            if (!Array.isArray(parsedList) || parsedList.length === 0) return [];
+
+            const matches = [];
+            parsedList.forEach(student => {
+                const identityKey = getStudentIdentityKey(student);
+                if (!identityKey) return;
+
+                departments.forEach(dept => {
+                    if (!dept || dept.id === currentDeptId) return;
+                    (dept.students || []).forEach(other => {
+                        if (getStudentIdentityKey(other) === identityKey) {
+                            matches.push({ dept, student: other, source: student });
+                        }
+                    });
+                });
+            });
+            return matches;
+        }
+
         function getScheduledPeriodsForStudent(student) {
             const periods = [];
             if (student?.writtenStart && student?.writtenEnd) {
                 periods.push({ type: '筆試', start: student.writtenStart, end: student.writtenEnd });
             }
             if (student?.oralStart && student?.oralEnd) {
-                periods.push({ type: '口試', start: student.oralStart, end: student.oralEnd });
+                periods.push({ type: '面試', start: student.oralStart, end: student.oralEnd });
             }
             return periods;
         }
@@ -4189,7 +4291,7 @@
         function getCrossDeptScheduledConflicts(student, currentDeptId, writtenStart, writtenEnd, oralStart, oralEnd) {
             const targetPeriods = [
                 { type: '筆試', start: writtenStart, end: writtenEnd },
-                { type: '口試', start: oralStart, end: oralEnd }
+                { type: '面試', start: oralStart, end: oralEnd }
             ].filter(p => p.start && p.end);
 
             if (targetPeriods.length === 0) return [];
@@ -4334,22 +4436,22 @@
 
             const existingKeys = new Set();
             existingStudents.forEach(student => {
-                const idKey = cleanStandardValue(student.id);
-                const nameKey = cleanStandardValue(student.name);
-                if (idKey) existingKeys.add(`id:${idKey}`);
-                if (nameKey) existingKeys.add(`name:${nameKey}`);
+                getStudentOverlapKeys(student).forEach(key => existingKeys.add(key));
             });
 
             let overlap = 0;
             parsedList.forEach(student => {
-                const idKey = cleanStandardValue(student.id);
-                const nameKey = cleanStandardValue(student.name);
-                if ((idKey && existingKeys.has(`id:${idKey}`)) || (nameKey && existingKeys.has(`name:${nameKey}`))) {
+                const keys = getStudentOverlapKeys(student);
+                if ([...keys].some(key => existingKeys.has(key))) {
                     overlap++;
                 }
             });
 
             return overlap;
+        }
+
+        function countCrossDeptOverlap(parsedList, currentDeptId) {
+            return getCrossDeptRosterOverlap(parsedList, currentDeptId).length;
         }
 
         // Close Merge/Import Option Choice Modal
@@ -4392,8 +4494,17 @@
                     // Smart Robust Index matching with multiple synonyms (incorporating official format)
                     const idxName = headers.findIndex(h => h.includes("姓名") || h === "cname" || h.includes("name") || h.includes("考生姓名"));
                     
-                    // Prioritize dedicated Exam ID (准考證號 or 報名序號), then fallback to General ID Card
-                    const idxId = headers.findIndex(h => h.includes("准考證") || h.includes("報名序號") || h.includes("編號") || h === "id" || h.includes("序號"));
+                    // Use the department application serial number, not the TVE joint exam registration number.
+                    const exactApplicationSerialIdx = headers.findIndex(h => h === "報名序號");
+                    const idxId = exactApplicationSerialIdx !== -1
+                        ? exactApplicationSerialIdx
+                        : headers.findIndex(h =>
+                            (h.includes("報名序號") && !h.includes("統測")) ||
+                            h.includes("准考證") ||
+                            h.includes("編號") ||
+                            h === "id" ||
+                            (h.includes("序號") && !h.includes("統測"))
+                        );
                     const idxIdCard = headers.findIndex(h => h.includes("身分證") || h === "idcard");
                     
                     const idxDept = headers.findIndex(h => h.includes("系科組") || h.includes("科系") || h.includes("學系") || h.includes("組學程") || h.includes("學組") || h === "志願" || h.includes("系所"));
@@ -4534,7 +4645,8 @@
 	                                    hasPrefCol: idxPref !== -1,
 	                                    prefSummary: formatSessionPreferenceSummary(parsedList, dept.sessions),
 	                                    schoolSummary: formatSchoolImportSummary(parsedList),
-	                                    overlapCount: countRosterOverlap(parsedList, dept.students)
+	                                    overlapCount: countRosterOverlap(parsedList, dept.students),
+	                                    crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id)
 	                                });
                             },
                             () => {
@@ -4554,7 +4666,8 @@
 	                        hasPrefCol: idxPref !== -1,
 	                        prefSummary: formatSessionPreferenceSummary(parsedList, dept.sessions),
 	                        schoolSummary: formatSchoolImportSummary(parsedList),
-	                        overlapCount: countRosterOverlap(parsedList, dept.students)
+	                        overlapCount: countRosterOverlap(parsedList, dept.students),
+	                        crossDeptOverlapCount: countCrossDeptOverlap(parsedList, dept.id)
 	                    });
 
                 } catch (error) {
@@ -4579,6 +4692,7 @@
 	            const prefSummary = importMeta.prefSummary || '';
 	            const schoolSummary = importMeta.schoolSummary || '';
 	            const overlapCount = importMeta.overlapCount || 0;
+	            const crossDeptOverlapCount = importMeta.crossDeptOverlapCount || 0;
             const overlapRatio = dept.students.length > 0 ? overlapCount / dept.students.length : 0;
             const looksLikeNewRoster = overlapCount === 0 || overlapRatio < 0.2;
 
@@ -4594,7 +4708,8 @@
                 syncWorkspaceUI();
 	                const summaryParts = [prefSummary, schoolSummary].filter(Boolean);
 	                const summarySuffix = summaryParts.length > 0 ? `，${summaryParts.join('，')}` : '';
-	                showToast(`🎉 成功解析並篩選出 ${parsedList.length} 位『${dept.name}』官方考生名單${summarySuffix}！`, "success");
+	                const crossDeptSuffix = crossDeptOverlapCount > 0 ? `，其中 ${crossDeptOverlapCount} 筆已在其他科系出現` : '';
+	                showToast(`🎉 成功解析並篩選出 ${parsedList.length} 位『${dept.name}』官方考生名單${summarySuffix}${crossDeptSuffix}！`, "success");
             }
         }
 
@@ -4621,10 +4736,13 @@
             // Merge Loop: Match on candidate ID (or Name fallback) to update preference values
             dept.students.forEach(existingStudent => {
                 // Search in newly uploaded dataset
-                const matchedSource = pendingImportData.find(fresh => 
-                    cleanStandardValue(fresh.id) === cleanStandardValue(existingStudent.id) || 
-                    cleanStandardValue(fresh.name) === cleanStandardValue(existingStudent.name)
-                );
+                const matchedSource = pendingImportData.find(fresh => {
+                    const freshIdentity = getStudentIdentityKey(fresh);
+                    const existingIdentity = getStudentIdentityKey(existingStudent);
+                    if (freshIdentity && existingIdentity && freshIdentity === existingIdentity) return true;
+                    return cleanStandardValue(fresh.id) === cleanStandardValue(existingStudent.id) ||
+                        cleanStandardValue(fresh.name) === cleanStandardValue(existingStudent.name);
+                });
 
                 if (matchedSource) {
                     // Update only preference value
@@ -4718,25 +4836,79 @@
             }
         }
 
+        function applyBoardTabStyles(activeTabId) {
+            const tabConfig = [
+                { id: 'dashboard', title: '流程總覽', subtitle: '整體排程', icon: 'layout-grid', accent: { bg: 'rgba(79,70,229,.09)', fg: '#4f46e5', ring: 'rgba(79,70,229,.18)' } },
+                { id: 'timeline', title: '時序小卡', subtitle: '每組時間軸', icon: 'calendar-range', accent: { bg: 'rgba(14,165,233,.09)', fg: '#0284c7', ring: 'rgba(14,165,233,.18)' } },
+                { id: 'list', title: '學生名冊', subtitle: '排程明細', icon: 'list-filter', accent: { bg: 'rgba(16,185,129,.09)', fg: '#059669', ring: 'rgba(16,185,129,.18)' } }
+            ];
+
+            tabConfig.forEach(cfg => {
+                const btn = document.getElementById(`tab-btn-${cfg.id}`);
+                if (!btn) return;
+                const active = activeTabId === cfg.id;
+                btn.className = active
+                    ? 'group inline-flex items-center gap-3 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-white shadow-sm transition'
+                    : 'group inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50';
+
+                const badge = btn.querySelector('[data-tab-badge]');
+                if (badge) {
+                    badge.style.background = active ? 'rgba(255,255,255,.10)' : cfg.accent.bg;
+                    badge.style.color = active ? '#ffffff' : cfg.accent.fg;
+                    badge.style.boxShadow = active
+                        ? 'inset 0 0 0 1px rgba(255,255,255,.12)'
+                        : `inset 0 0 0 1px ${cfg.accent.ring}`;
+                }
+
+                const title = btn.querySelector('[data-tab-title]');
+                if (title) {
+                    title.textContent = cfg.title;
+                    title.className = active
+                        ? 'text-xs font-bold leading-tight text-white'
+                        : 'text-xs font-bold leading-tight text-slate-800';
+                }
+
+                const sub = btn.querySelector('[data-tab-sub]');
+                if (sub) {
+                    sub.textContent = cfg.subtitle;
+                    sub.className = active
+                        ? 'text-[10px] leading-tight text-white/70'
+                        : 'text-[10px] leading-tight text-slate-500';
+                }
+
+                const icon = badge?.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', cfg.icon);
+                    icon.className = 'w-4 h-4';
+                }
+            });
+
+            requestAnimationFrame(() => lucide.createIcons());
+        }
+
         // Tab panels navigation
         function switchTab(tabId) {
-            activeBoardTab = tabId === 'list' ? 'list' : 'dashboard';
-            const btnDash = document.getElementById('tab-btn-dashboard');
-            const btnList = document.getElementById('tab-btn-list');
+            activeBoardTab = ['dashboard', 'timeline', 'list'].includes(tabId) ? tabId : 'dashboard';
             const panelDash = document.getElementById('panel-dashboard');
+            const panelTimeline = document.getElementById('panel-timeline');
             const panelList = document.getElementById('panel-list');
 
+            applyBoardTabStyles(activeBoardTab);
+
             if(activeBoardTab === 'dashboard') {
-                btnDash.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition";
-                btnList.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition";
                 panelDash.classList.remove('hidden');
+                panelTimeline.classList.add('hidden');
                 panelList.classList.add('hidden');
                 renderDashboardBoards();
-            } else {
-                btnList.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition";
-                btnDash.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition";
-                panelList.classList.remove('hidden');
+            } else if (activeBoardTab === 'timeline') {
                 panelDash.classList.add('hidden');
+                panelTimeline.classList.remove('hidden');
+                panelList.classList.add('hidden');
+                renderTimelineCards();
+            } else {
+                panelDash.classList.add('hidden');
+                panelTimeline.classList.add('hidden');
+                panelList.classList.remove('hidden');
                 renderStudentsTable();
             }
         }
@@ -4748,6 +4920,8 @@
 
             dept.cfgWrittenDuration = parseInt(document.getElementById('cfg-written-duration').value) || 30;
             dept.cfgOralDuration = parseInt(document.getElementById('cfg-oral-duration').value) || 20;
+            const reportLeadMinutes = parseInt(document.getElementById('cfg-report-lead-minutes').value);
+            dept.cfgReportLeadMinutes = Number.isFinite(reportLeadMinutes) && reportLeadMinutes >= 0 ? reportLeadMinutes : 0;
             dept.cfgOralTeamsPerLadder = parseInt(document.getElementById('cfg-oral-teams-per-ladder').value) || 2;
             dept.cfgOralTeamGroupCount = parseInt(document.getElementById('cfg-oral-team-group-count').value) || 2;
             dept.cfgTeamCapacity = parseInt(document.getElementById('cfg-team-capacity').value) || 30;
@@ -4802,12 +4976,12 @@
             const dept = departments.find(d => d.id === activeDeptId);
             if(!dept) return;
 
-            const name = prompt("請輸入新增的個別口試教室名稱 (例如：口試二教室 (R402)):");
+            const name = prompt("請輸入新增的個別面試教室名稱 (例如：面試二教室 (R402)):");
             if (name && name.trim()) {
                 dept.oralRooms.push(name.trim());
                 savePlatformStateToStorage();
                 syncWorkspaceUI();
-                showToast(`已新增口試教室：${name}`, "success");
+                showToast(`已新增面試教室：${name}`, "success");
             }
         };
 
@@ -4816,13 +4990,13 @@
             if(!dept) return;
 
             if(dept.oralRooms.length <= 1) {
-                showToast("必須為該系保留至少一間口試試場！", "error");
+                showToast("必須為該系保留至少一間面試試場！", "error");
                 return;
             }
             const removed = dept.oralRooms.splice(idx, 1);
             savePlatformStateToStorage();
             syncWorkspaceUI();
-            showToast(`已移除口試教室：${removed}`, "info");
+            showToast(`已移除面試教室：${removed}`, "info");
         };
 
         // Generate Realistic Mock cohorts based on active configured sessions
@@ -4920,7 +5094,7 @@
             const conflict = document.getElementById('add-stu-conflict').value.trim();
 
             if(!name || !id) {
-                showToast("姓名與編號/准考證為必填欄位！", "error");
+                showToast("姓名與報名序號為必填欄位！", "error");
                 return;
             }
 
@@ -5056,6 +5230,17 @@
         };
 
         // Managing department creation & deletions
+        function applyNewDeptTemplateSelection(force = false) {
+            const nameInput = document.getElementById('new-dept-name');
+            const iconSelect = document.getElementById('new-dept-icon');
+            if (!nameInput || !iconSelect) return;
+            const selected = iconSelect.options[iconSelect.selectedIndex];
+            const templateName = selected?.dataset?.name || '';
+            if (templateName && (force || !nameInput.value.trim())) {
+                nameInput.value = templateName;
+            }
+        }
+
         window.openCreateDeptModal = function() {
             if (isRemoteSecureMode() && !isCloudUnlocked()) {
                 openCloudSyncModal();
@@ -5063,6 +5248,7 @@
                 return;
             }
             document.getElementById('modal-create-dept').classList.remove('hidden');
+            applyNewDeptTemplateSelection();
         };
         window.closeCreateDeptModal = function() {
             document.getElementById('modal-create-dept').classList.add('hidden');
@@ -5082,7 +5268,7 @@
                 sub: sub || "二階甄選一條龍流水線智慧考場",
                 icon: icon,
                 writtenRooms: ['第一筆試空間 (R101)', '第二筆試空間 (R102)'],
-                oralRooms: ['第一口試空間 (R201)'], // Default to 2-written 1-oral for realism
+                oralRooms: ['第一面試空間 (R201)'], // Default to 2-written 1-oral for realism
                 sessions: [
                     { id: 's1', name: '上午梯次', startTime: '09:00' },
                     { id: 's2', name: '下午梯次', startTime: '13:30' }
@@ -5197,7 +5383,7 @@
             const groupSlotInLadder = safeGroupIdx % groupsPerLadder;
             const teamNumber = Math.floor(groupSlotInLadder / groupsPerTeam) + 1;
             const groupInTeam = (groupSlotInLadder % groupsPerTeam) + 1;
-            const ladderPhase = ladderIndex % 2 === 0 ? '口試先' : '筆試先';
+            const ladderPhase = ladderIndex % 2 === 0 ? '面試先' : '筆試先';
 
             return {
                 ladderIndex,
@@ -5223,7 +5409,7 @@
                 const cycleDuration = writtenMins + (oralMins * groupsPerLadder) + oralTransitionBuffer;
                 const ladderIndex = Math.floor(safeGroupIdx / groupsPerLadder);
                 const cycleIndex = Math.floor(ladderIndex / 2);
-                const ladderSlot = ladderIndex % 2; // 0 = 口試先, 1 = 筆試先
+                const ladderSlot = ladderIndex % 2; // 0 = 面試先, 1 = 筆試先
                 const groupSlot = safeGroupIdx % groupsPerLadder;
                 const teamIndex = Math.floor(groupSlot / groupsPerTeam);
                 const groupInTeam = (groupSlot % groupsPerTeam) + 1;
@@ -5251,7 +5437,7 @@
                         teamsPerLadder,
                         groupsPerLadder,
                         isOralFirst,
-                        phaseLabel: '口試先'
+                        phaseLabel: '面試先'
                     };
                 }
 
@@ -5309,7 +5495,7 @@
                     teamsPerLadder: 1,
                     groupsPerLadder: 1,
                     isOralFirst: true,
-                    phaseLabel: '口試先'
+                    phaseLabel: '面試先'
                 };
             }
 
@@ -5592,7 +5778,7 @@
                 const numWritten = dept.writtenRooms.length;
                 const numOral = dept.oralRooms.length;
                 if (numWritten === 0 || numOral === 0) {
-                    showToast("請確認您至少設定了一間筆試教室與一間口試教室！", "error");
+                    showToast("請確認您至少設定了一間筆試教室與一間面試教室！", "error");
                     return;
                 }
 
@@ -5679,7 +5865,7 @@
                 });
 
                 // 3. For each session, pack into Written Rooms greedily up to teamLimit
-                // while distributing evenly across Oral Rooms to ensure parallel口試 efficiency
+                // while distributing evenly across Oral Rooms to ensure parallel面試 efficiency
                 dept.sessions.forEach(session => {
                     const list = sessionAssignments[session.id];
                     assignStudentsWithinSession(list, session.id, dept, numWritten, numOral, teamLimit);
@@ -5882,9 +6068,9 @@
                             const repGroupIdx = item.sampleStudent?.assignedOralGroupIdx ?? 0;
                             const ladderIndex = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) + 1;
                             const isOralFirstLadder = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0;
-                            return `第 ${ladderIndex} 梯（${isOralFirstLadder ? '口試先' : '筆試先'}）`;
+                            return `第 ${ladderIndex} 梯（${isOralFirstLadder ? '面試先' : '筆試先'}）`;
                         })()
-                        : (item.isOralFirst ? '口試後回筆試' : '先筆試'),
+                        : (item.isOralFirst ? '面試後回筆試' : '先筆試'),
                     countText: `${item.students.length} 人`,
                     order: idx
                 }));
@@ -5897,10 +6083,10 @@
                             const groupSlotInLadder = repGroupIdx % evenLoadStructure.groupsPerLadder;
                             const teamIndex = Math.floor(groupSlotInLadder / evenLoadStructure.groupsPerTeam) + 1;
                             const groupInTeam = (groupSlotInLadder % evenLoadStructure.groupsPerTeam) + 1;
-                            const phaseLabel = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '口試先' : '筆試先';
+                            const phaseLabel = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先';
                             return `第 ${ladderIndex} 梯・第 ${teamIndex} 隊・第 ${groupInTeam} 組（${phaseLabel}）`;
                         })()
-                        : `口試第 ${idx + 1} 輪`,
+                        : `面試第 ${idx + 1} 輪`,
                     countText: `${item.groupKeys.size} 組 / ${item.students} 人`,
                     order: idx
                 }));
@@ -5914,7 +6100,7 @@
                 const sessionFlowHtml = sessionFlowItems.map(item => {
                     const timeText = item.start && item.end ? `${item.start} ~ ${item.end}` : '未排定';
                     const typeClass = item.type === 'written' ? 'is-written' : 'is-oral';
-                    const typeLabel = item.type === 'written' ? '筆試' : '口試';
+                    const typeLabel = item.type === 'written' ? '筆試' : '面試';
                     const badgeClass = item.type === 'written'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-indigo-50 text-indigo-700 border-indigo-200';
@@ -5976,7 +6162,7 @@
                             const isOralFirstWave = representative && representative.oralStart && representative.writtenStart
                                 ? timeToMins(representative.oralStart) < timeToMins(representative.writtenStart)
                                 : false;
-                            const waveLabel = isOralFirstWave ? '先口試後筆試' : '先筆試後口試';
+                            const waveLabel = isOralFirstWave ? '先面試後筆試' : '先筆試後面試';
                             const waveBadgeClass = isOralFirstWave
                                 ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -6007,7 +6193,7 @@
 	                                            const schoolTitle = s.school ? `｜就讀學校：${s.school}` : '';
 	                                            const conflictTitle = crossConflicts.length > 0 ? '｜已有跨系時間重疊' : '';
 	                                            return `
-	                                                <span onclick="openEditStudentModal('${s.id}')" class="student-chip inline-flex items-center justify-center gap-1 hover:bg-slate-100 border ${chipStateClass} text-[10px] px-2.5 py-0.5 rounded-lg cursor-pointer transition font-medium" title="准考證: ${s.id}｜${waveLabel}｜筆試 ${waveTimeText}${schoolTitle}${crossTitle}${conflictTitle}">
+	                                                <span onclick="openEditStudentModal('${s.id}')" class="student-chip inline-flex items-center justify-center gap-1 hover:bg-slate-100 border ${chipStateClass} text-[10px] px-2.5 py-0.5 rounded-lg cursor-pointer transition font-medium" title="報名序號: ${s.id}｜${waveLabel}｜筆試 ${waveTimeText}${schoolTitle}${crossTitle}${conflictTitle}">
                                                     <span>${s.name}</span>
                                                     ${crossConflicts.length > 0 ? '<span class="text-[8px] font-black">撞</span>' : (crossMatches.length > 0 ? '<span class="text-[8px] font-black">跨</span>' : '')}
                                                 </span>
@@ -6080,9 +6266,9 @@
                             ? `第 ${ladderNumber} 梯｜第 ${teamNumber} 隊｜第 ${groupSlot} 組`
                             : `第 ${parseInt(gKey) + 1} 組`;
                         const grpPhaseLabel = strategyId === 'even_load'
-                            ? `${isOralFirstGroup ? '口試先' : '筆試先'}`
+                            ? `${isOralFirstGroup ? '面試先' : '筆試先'}`
                             : (representative && representative.oralStart && representative.writtenStart
-                                ? (isOralFirstGroup ? '先口試 → 後筆試' : '先筆試 → 後口試')
+                                ? (isOralFirstGroup ? '先面試 → 後筆試' : '先筆試 → 後面試')
                                 : '交錯時段');
                         const grpPhaseClass = isOralFirstGroup
                             ? 'bg-amber-50 text-amber-700 border-amber-200'
@@ -6091,7 +6277,7 @@
                         const grpTimeBadgesHtml = isOralFirstGroup
                             ? `
                                 <span class="text-[10px] bg-indigo-100/60 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded font-mono font-bold flex items-center">
-                                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>口試：${grpStart} ~ ${grpEnd}
+                                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>面試：${grpStart} ~ ${grpEnd}
                                 </span>
                                 <span class="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-mono font-bold flex items-center">
                                     <i data-lucide="file-text" class="w-3 h-3 mr-1"></i>筆試：${grpWrittenTimeText}
@@ -6102,7 +6288,7 @@
                                     <i data-lucide="file-text" class="w-3 h-3 mr-1"></i>筆試：${grpWrittenTimeText}
                                 </span>
                                 <span class="text-[10px] bg-indigo-100/60 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded font-mono font-bold flex items-center">
-                                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>口試：${grpStart} ~ ${grpEnd}
+                                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>面試：${grpStart} ~ ${grpEnd}
                                 </span>
                             `;
 
@@ -6132,7 +6318,7 @@
                                     ` : ''}
                                     
                                     <span class="hidden group-hover:block absolute -top-16 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-[9px] py-1.5 px-2.5 rounded-lg whitespace-nowrap z-30 shadow-xl leading-tight text-left">
-	                                        准考證: ${s.id}<br>
+	                                        報名序號: ${s.id}<br>
 	                                        出生年月日: ${normalizeBirthDate(s.birthDate || '') || '未填'}<br>
 	                                        就讀學校: ${s.school || '未填'}<br>
                                         筆試時間: ${s.writtenStart} ~ ${s.writtenEnd}<br>
@@ -6179,7 +6365,7 @@
                             <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                                 <span class="font-bold text-xs text-slate-800 flex items-center">
                                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 mr-2"></span>
-                                    🗣️ ${roomName} 團體口試排班表 ${strategyId === 'even_load'
+                                    🗣️ ${roomName} 團體面試排班表 ${strategyId === 'even_load'
                                         ? `(每梯 ${evenLoadStructure.teamsPerLadder} 隊 / 每隊 ${evenLoadStructure.groupsPerTeam} 組 / 每組 ${oralGroupCapacity} 人，尾組可多 ${ORAL_GROUP_TAIL_MERGE_LIMIT} 人)`
                                         : `(每組 ${oralGroupCapacity} 人，尾組可多 ${ORAL_GROUP_TAIL_MERGE_LIMIT} 人)`}
                                 </span>
@@ -6237,7 +6423,7 @@
                         <div class="space-y-3">
                             <h5 class="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center space-x-1.5">
                                 <i data-lucide="mic" class="w-4 h-4 text-indigo-500"></i>
-                                <span>II. 團體口試分組看板 (可排在筆試前後，一次進去 ${oralGroupCapacity} 人，${oralTailMergeText})</span>
+                                <span>II. 團體面試分組看板 (可排在筆試前後，一次進去 ${oralGroupCapacity} 人，${oralTailMergeText})</span>
                             </h5>
                             <div class="space-y-4">
                                 ${oralQueuesHtml}
@@ -6247,6 +6433,263 @@
                 `;
                 container.appendChild(sessionCard);
             });
+
+            lucide.createIcons();
+        }
+
+        function renderTimelineCards() {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+
+            const container = document.getElementById('timeline-cards-container');
+            if (!container) return;
+
+            const scheduledStudents = dept.students.filter(s => s.assignedSessionId);
+            if (scheduledStudents.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center py-12 text-slate-400 text-xs shadow-sm">
+                        暫無排程資料。請先完成自動排程，再切到這個視角查看每一組的時間軸。
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
+            const evenLoadStructure = getEvenLoadOralStructure(dept);
+            const reportLeadMinutes = Number.isFinite(parseInt(dept.cfgReportLeadMinutes))
+                ? Math.max(0, parseInt(dept.cfgReportLeadMinutes))
+                : 10;
+            const groups = [];
+
+            (dept.sessions || []).forEach((session, sessionIdx) => {
+                const sessionStudents = dept.students.filter(s => s.assignedSessionId === session.id);
+                const groupMap = {};
+
+                sessionStudents.forEach(student => {
+                    const groupIdx = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : 0;
+                    const roomIdx = student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : 0;
+                    const key = `${session.id}|${roomIdx}|${groupIdx}`;
+                    if (!groupMap[key]) groupMap[key] = [];
+                    groupMap[key].push(student);
+                });
+
+                Object.keys(groupMap).forEach(key => {
+                    const students = [...groupMap[key]].sort((a, b) => {
+                        const aOrder = a.assignedOrder !== null && a.assignedOrder !== undefined ? a.assignedOrder : 0;
+                        const bOrder = b.assignedOrder !== null && b.assignedOrder !== undefined ? b.assignedOrder : 0;
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
+                    });
+                    const representative = students[0];
+                    if (!representative) return;
+
+                    const groupIdx = representative.assignedOralGroupIdx !== null && representative.assignedOralGroupIdx !== undefined ? representative.assignedOralGroupIdx : 0;
+                    const roomIdx = representative.assignedOralRoomIdx !== null && representative.assignedOralRoomIdx !== undefined ? representative.assignedOralRoomIdx : 0;
+                    const writtenRoomIdx = representative.assignedWrittenRoomIdx !== null && representative.assignedWrittenRoomIdx !== undefined ? representative.assignedWrittenRoomIdx : 0;
+                    const oralRoomName = dept.oralRooms[roomIdx] || `面試教室 ${roomIdx + 1}`;
+                    const writtenRoomName = dept.writtenRooms[writtenRoomIdx] || `筆試教室 ${writtenRoomIdx + 1}`;
+                    const groupPosition = strategyId === 'even_load' ? getEvenLoadGroupPosition(dept, groupIdx) : null;
+                    const groupLabel = strategyId === 'even_load'
+                        ? `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`
+                        : `第 ${groupIdx + 1} 組`;
+                    const groupLabelMarkup = strategyId === 'even_load' && groupPosition
+                        ? `
+                            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-indigo-700 shadow-sm">
+                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">梯</span>
+                                    <span class="text-sm font-black leading-none">${groupPosition.ladderNumber}</span>
+                                </span>
+                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-700 shadow-sm">
+                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">隊</span>
+                                    <span class="text-sm font-black leading-none">${groupPosition.teamNumber}</span>
+                                </span>
+                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-emerald-700 shadow-sm">
+                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">組</span>
+                                    <span class="text-sm font-black leading-none">${groupPosition.groupInTeam}</span>
+                                </span>
+                            </div>`
+                        : `
+                            <div class="mt-1">
+                                <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">
+                                    第 ${groupIdx + 1} 組
+                                </span>
+                            </div>`;
+                    const phaseLabel = strategyId === 'even_load'
+                        ? (Math.floor(groupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先')
+                        : (representative.oralStart && representative.writtenStart
+                            ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
+                            : '交錯時段');
+                    const isOralFirst = phaseLabel.includes('面試先') || phaseLabel.includes('先面試');
+                    const steps = isOralFirst
+                        ? [
+                            { kind: 'oral', label: '面試', start: representative.oralStart, end: representative.oralEnd, room: oralRoomName },
+                            { kind: 'written', label: '筆試', start: representative.writtenStart, end: representative.writtenEnd, room: writtenRoomName }
+                        ]
+                        : [
+                            { kind: 'written', label: '筆試', start: representative.writtenStart, end: representative.writtenEnd, room: writtenRoomName },
+                            { kind: 'oral', label: '面試', start: representative.oralStart, end: representative.oralEnd, room: oralRoomName }
+                        ];
+                    const firstStep = steps.find(step => step.start && step.end) || steps[0];
+                    const secondStep = steps[1] || null;
+                    const reportStartMin = firstStep?.start ? Math.max(0, timeToMins(firstStep.start) - reportLeadMinutes) : null;
+                    const transferStartMin = firstStep?.end ? timeToMins(firstStep.end) : null;
+                    const transferEndMin = secondStep?.start ? timeToMins(secondStep.start) : null;
+                    const transferGapMin = transferStartMin !== null && transferEndMin !== null ? Math.max(0, transferEndMin - transferStartMin) : null;
+                    const reportItem = firstStep?.start && reportStartMin !== null
+                        ? {
+                            kind: 'report',
+                            label: '報到',
+                            start: minsToTimeStr(reportStartMin),
+                            end: firstStep.start,
+                            room: `報到後前往 ${firstStep.room}`,
+                            meta: `建議提早 ${reportLeadMinutes} 分鐘集合`
+                        }
+                        : null;
+                    const transferItem = firstStep && secondStep
+                        ? {
+                            kind: 'transfer',
+                            label: '走路換場',
+                            start: firstStep.end || '',
+                            end: secondStep.start || '',
+                            room: `${firstStep.room} → ${secondStep.room}`,
+                            meta: transferGapMin !== null
+                                ? (transferGapMin > 0 ? `${transferGapMin} 分鐘` : '同場銜接')
+                                : ''
+                        }
+                        : null;
+                    const timelineItems = [];
+                    if (reportItem) timelineItems.push(reportItem);
+                    timelineItems.push(...steps);
+                    if (transferItem) timelineItems.push(transferItem);
+                    timelineItems.sort((a, b) => {
+                        const aStart = a.start ? timeToMins(a.start) : Number.MAX_SAFE_INTEGER;
+                        const bStart = b.start ? timeToMins(b.start) : Number.MAX_SAFE_INTEGER;
+                        if (aStart !== bStart) return aStart - bStart;
+                        const kindOrder = { report: 0, oral: 1, transfer: 2, written: 3 };
+                        return (kindOrder[a.kind] ?? 99) - (kindOrder[b.kind] ?? 99);
+                    });
+
+                    const timelineItemStyles = {
+                        report: {
+                            wrapper: 'border-sky-200 bg-sky-50/80 text-sky-900',
+                            icon: 'calendar-check-2',
+                            iconClass: 'text-sky-600'
+                        },
+                        transfer: {
+                            wrapper: 'border-amber-200 bg-amber-50/80 text-amber-900',
+                            icon: 'footprints',
+                            iconClass: 'text-amber-600'
+                        },
+                        oral: {
+                            wrapper: 'border-indigo-200 bg-indigo-50/70 text-indigo-900',
+                            icon: 'mic',
+                            iconClass: 'text-indigo-600'
+                        },
+                        written: {
+                            wrapper: 'border-emerald-200 bg-emerald-50/70 text-emerald-900',
+                            icon: 'file-text',
+                            iconClass: 'text-emerald-600'
+                        }
+                    };
+                    groups.push({
+                        session,
+                        sessionIdx,
+                        groupIdx,
+                        roomIdx,
+                        groupLabel,
+                        groupLabelMarkup,
+                        phaseLabel,
+                        writtenRoomName,
+                        oralRoomName,
+                        steps,
+                        timelineItems,
+                        timelineItemStyles,
+                        students,
+                        count: students.length,
+                        firstTime: firstStep?.start || session.startTime || ''
+                    });
+                });
+            });
+
+            groups.sort((a, b) => {
+                const aStart = a.firstTime ? timeToMins(a.firstTime) : Number.MAX_SAFE_INTEGER;
+                const bStart = b.firstTime ? timeToMins(b.firstTime) : Number.MAX_SAFE_INTEGER;
+                if (aStart !== bStart) return aStart - bStart;
+                if (a.sessionIdx !== b.sessionIdx) return a.sessionIdx - b.sessionIdx;
+                if (a.groupIdx !== b.groupIdx) return a.groupIdx - b.groupIdx;
+                return a.roomIdx - b.roomIdx;
+            });
+
+            container.innerHTML = groups.map(group => {
+                const stepCards = group.timelineItems.map((step, index) => {
+                    const style = group.timelineItemStyles[step.kind] || group.timelineItemStyles.written;
+                    const timeText = step.start && step.end ? `${step.start} ~ ${step.end}` : (step.start || step.end || '未排定');
+                    return `
+                        <div class="rounded-xl border p-3 ${style.wrapper}">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5 font-black text-[10px]">
+                                    <i data-lucide="${style.icon}" class="w-3.5 h-3.5 ${style.iconClass}"></i>
+                                    <span>${index + 1}. ${step.label}</span>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold">${timeText}</span>
+                            </div>
+                            <div class="mt-1 text-[10px] font-semibold text-slate-600">${step.room}</div>
+                            ${step.meta ? `<div class="mt-0.5 text-[9px] font-medium text-slate-500">${step.meta}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                const studentChips = group.students.map(student => {
+                    const crossMatches = getCrossDeptMatches(student, dept.id);
+                    const crossConflicts = getCrossDeptScheduledConflicts(student, dept.id, student.writtenStart, student.writtenEnd, student.oralStart, student.oralEnd);
+                    const chipClass = crossConflicts.length > 0
+                        ? 'border-rose-300 bg-rose-50 text-rose-800'
+                        : (crossMatches.length > 0 ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700');
+                    const crossBadge = crossConflicts.length > 0
+                        ? '<span class="mt-1 text-[8px] font-black text-rose-700">跨系撞</span>'
+                        : (crossMatches.length > 0 ? '<span class="mt-1 text-[8px] font-black text-amber-700">跨系</span>' : '');
+                    return `
+                        <button onclick="openEditStudentModal('${student.id}')" class="inline-flex min-w-[120px] flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${chipClass}">
+                            <span class="text-xs font-bold leading-tight">${student.name}</span>
+                            <span class="mt-0.5 text-[10px] font-mono leading-tight">${student.id}</span>
+                            ${crossBadge}
+                        </button>
+                    `;
+                }).join('');
+
+                return `
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div>
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">${group.session.name}</div>
+                                    ${group.groupLabelMarkup}
+                                    <p class="mt-0.5 text-[11px] text-slate-500">${group.writtenRoomName} ｜ ${group.oralRoomName}</p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-700">${group.phaseLabel}</span>
+                                    <span class="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700">${group.count} 人</span>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 p-4 lg:grid-cols-[280px_1fr]">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
+                                <div class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-500"></i>
+                                    <span>時間軸（含報到／換場）</span>
+                                </div>
+                                <div class="space-y-2">${stepCards}</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">本組學生</div>
+                                    <div class="text-[10px] text-slate-500">點擊學生可直接微調</div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">${studentChips}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             lucide.createIcons();
         }
@@ -6474,7 +6917,7 @@
                         errors.push(`<b>考生外部撞期：</b>筆試時段落入該生預先登記的衝突時段 (${student.conflict})！`);
                     }
                     if (hasConflictWithPeriod(student.conflict, simOralStart, simOralEnd)) {
-                        errors.push(`<b>考生外部撞期：</b>口試時段落入該生預先登記的衝突時段 (${student.conflict})！`);
+                        errors.push(`<b>考生外部撞期：</b>面試時段落入該生預先登記的衝突時段 (${student.conflict})！`);
                     }
                 }
 
@@ -6484,7 +6927,7 @@
                     const conflictText = crossConflicts
                         .map(conflict => `${conflict.deptName} ${conflict.otherType} ${conflict.start}-${conflict.end}`)
                         .join('、');
-                    errors.push(`<b>跨系時間重疊：</b>此考生在其他科系已有排程 (${conflictText})。可改選其他梯次或口試組別避開。`);
+                    errors.push(`<b>跨系時間重疊：</b>此考生在其他科系已有排程 (${conflictText})。可改選其他梯次或面試組別避開。`);
                 }
 
                 // 3. Check group size capacity warning
@@ -6499,7 +6942,7 @@
                     const groupLabel = strategyId === 'even_load'
                         ? `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`
                         : `第 ${grpIdx + 1} 組`;
-                    errors.push(`<b>組別名額提醒：</b>該梯次口試室的「${groupLabel}」目前已排了 <b>${grpCount}</b> 位考生！若強行塞入，該組人數將超出尾組容納上限（${oralGroupCapacity + ORAL_GROUP_TAIL_MERGE_LIMIT}人）。`);
+                    errors.push(`<b>組別名額提醒：</b>該梯次面試室的「${groupLabel}」目前已排了 <b>${grpCount}</b> 位考生！若強行塞入，該組人數將超出尾組容納上限（${oralGroupCapacity + ORAL_GROUP_TAIL_MERGE_LIMIT}人）。`);
                 }
 
                 if (errors.length > 0) {
@@ -6555,7 +6998,7 @@
             savePlatformStateToStorage();
             syncWorkspaceUI();
             closeEditModal();
-            showToast(`已將考生 ${student.name} 移動至指定口試組別，全場時間已動態更新校準！`, "success");
+            showToast(`已將考生 ${student.name} 移動至指定面試組別，全場時間已動態更新校準！`, "success");
         });
 
         // Export Excel/TSV Clipboard
@@ -6566,7 +7009,7 @@
                 return;
             }
 
-	            let tsv = "姓名\t出生年月日\t就讀學校\t准考證/考生編號\t跨系同人報名\t跨系時間重疊\t登記偏好\t分配甄試時段\t筆試教室\t筆試時間\t口試教室\t口試組別\t口試時間\t跨系撞期時間\r\n";
+	            let tsv = "姓名\t出生年月日\t就讀學校\t報名序號\t跨系同人報名\t跨系時間重疊\t登記偏好\t分配甄試時段\t筆試教室\t筆試時間\t面試教室\t面試組別\t面試時間\t跨系撞期時間\r\n";
             dept.students.forEach(s => {
             const assignedS = dept.sessions.find(ses => ses.id === s.assignedSessionId);
             const batchText = assignedS ? assignedS.name : '未分配';

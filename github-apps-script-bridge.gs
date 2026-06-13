@@ -1,6 +1,7 @@
 const PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 const PROP_REMOTE_AUTH_SALT = 'REMOTE_AUTH_SALT';
 const PROP_REMOTE_AUTH_HASH = 'REMOTE_AUTH_HASH';
+const FIXED_REMOTE_ACCESS_PASSPHRASE = '20260620';
 const SETTINGS_SUFFIX = '_設定';
 const STUDENTS_SUFFIX = '_學生名單';
 const SCHEDULE_SUFFIX = '_自動排程';
@@ -318,9 +319,19 @@ function createBridgeResponseHtml_(requestId, clientOrigin, bridgePayload) {
     '<script>',
     'const message = ' + messageJson + ';',
     'const targetOrigin = ' + JSON.stringify(safeTargetOrigin || '*') + ';',
-    'if (window.parent && window.parent !== window) {',
-    '  window.parent.postMessage(message, targetOrigin);',
-    '}',
+    'const notifyTarget = function (target) {',
+    '  try {',
+    '    if (target && target !== window && typeof target.postMessage === "function") {',
+    '      target.postMessage(message, targetOrigin);',
+    '    }',
+    '  } catch (error) {}',
+    '};',
+    'notifyTarget(window.top);',
+    'notifyTarget(window.parent);',
+    'setTimeout(function () {',
+    '  notifyTarget(window.top);',
+    '  notifyTarget(window.parent);',
+    '}, 50);',
     'document.body.textContent = "bridge-ready";',
     '</script>',
     '</body></html>'
@@ -338,6 +349,7 @@ function sanitizePostMessageOrigin_(origin) {
 }
 
 function isSecureRemoteConfigured_() {
+  if (safe_(FIXED_REMOTE_ACCESS_PASSPHRASE).length >= 8) return true;
   const props = PropertiesService.getScriptProperties();
   return !!props.getProperty(PROP_REMOTE_AUTH_HASH);
 }
@@ -346,6 +358,14 @@ function verifyOrInitializeSecurePassphrase_(passphrase) {
   const secret = safe_(passphrase);
   if (secret.length < 8) {
     throw new Error('保護密碼至少需要 8 碼。');
+  }
+
+  const fixedSecret = safe_(FIXED_REMOTE_ACCESS_PASSPHRASE);
+  if (fixedSecret.length >= 8) {
+    if (secret !== fixedSecret) {
+      throw new Error('保護密碼不正確。');
+    }
+    return { newlyConfigured: false, fixed: true };
   }
 
   const props = PropertiesService.getScriptProperties();
