@@ -1541,6 +1541,10 @@
                             </div>
                         </div>
                         <div class="workspace-topbar-actions">
+                            <button id="open-onsite-mode-btn" class="workspace-topbar-button is-primary flex items-center space-x-1.5">
+                                <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
+                                <span>報到現場模式</span>
+                            </button>
                             <button onclick="openCloudSyncModal()" id="workspace-cloud-sync-btn" class="workspace-topbar-button is-ghost flex items-center space-x-1.5">
                                 <i data-lucide="shield" class="w-3.5 h-3.5"></i>
                                 <span id="workspace-cloud-sync-label">雲端保護</span>
@@ -1682,8 +1686,12 @@
                                     <input type="number" id="cfg-oral-duration" min="5" max="120" class="setup-soft-input" value="20">
                                 </div>
                                 <div class="setup-subcard">
-                                    <label class="setup-field-label" title="進到筆試或面試前，預先保留多少分鐘做報到集合。時序小卡會依這個數值顯示報到時間。">報到緩衝時間 (分)</label>
+                                    <label class="setup-field-label" title="報到截止前，預先保留多少分鐘做集合與報到。">報到集合時間 (分)</label>
                                     <input type="number" id="cfg-report-lead-minutes" min="0" max="60" class="setup-soft-input" value="10">
+                                </div>
+                                <div class="setup-subcard">
+                                    <label class="setup-field-label" title="報到時間截止後，再預留多少分鐘給書記叫號、整隊與考生就定位。實際筆試與面試會從這段預留時間後才開始。">報到截止後預留 (分)</label>
+                                    <input type="number" id="cfg-report-post-buffer-minutes" min="10" max="20" class="setup-soft-input" value="10">
                                 </div>
                                 <div class="setup-subcard">
                                     <label class="setup-field-label" title="一梯內有幾隊；預設 2 隊，可依系所需求改成 3 隊或更多。">一梯有幾隊 (隊)</label>
@@ -1962,6 +1970,10 @@
                             <button id="export-day-flow-report" class="flex items-center space-x-1 px-3 py-1.5 border border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg text-xs font-semibold transition">
                                 <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                 <span>輸出當天流程表</span>
+                            </button>
+                            <button id="export-schedule-xlsx" class="flex items-center space-x-1 px-3 py-1.5 border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition">
+                                <i data-lucide="sheet" class="w-3.5 h-3.5"></i>
+                                <span>下載 Excel 檔</span>
                             </button>
                             <button id="export-excel-tsv" class="flex items-center space-x-1 px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
                                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
@@ -2691,6 +2703,8 @@
                 ],
                 cfgWrittenDuration: 30,
                 cfgOralDuration: 20, 
+                cfgReportLeadMinutes: 10,
+                cfgReportPostBufferMinutes: 10,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
@@ -2715,6 +2729,8 @@
                 ],
                 cfgWrittenDuration: 30,
                 cfgOralDuration: 20, 
+                cfgReportLeadMinutes: 10,
+                cfgReportPostBufferMinutes: 10,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
@@ -2738,6 +2754,8 @@
                 ],
                 cfgWrittenDuration: 40,
                 cfgOralDuration: 15,
+                cfgReportLeadMinutes: 10,
+                cfgReportPostBufferMinutes: 10,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 40,
@@ -3035,6 +3053,7 @@
                 cfgWrittenDuration: parseInt(dept.cfgWrittenDuration) || 30,
                 cfgOralDuration: parseInt(dept.cfgOralDuration) || 20,
                 cfgReportLeadMinutes: parseInt(dept.cfgReportLeadMinutes) >= 0 ? parseInt(dept.cfgReportLeadMinutes) : 10,
+                cfgReportPostBufferMinutes: parseInt(dept.cfgReportPostBufferMinutes) >= 10 ? Math.min(20, parseInt(dept.cfgReportPostBufferMinutes)) : 10,
                 cfgOralTeamsPerLadder: parseInt(dept.cfgOralTeamsPerLadder) || 2,
                 cfgOralTeamGroupCount: parseInt(dept.cfgOralTeamGroupCount) || 2,
                 cfgTeamCapacity: parseInt(dept.cfgTeamCapacity) || 30,
@@ -3848,11 +3867,13 @@
             document.getElementById('scheduler-options-start-btn').addEventListener('click', startSchedulerFromOptionsModal);
             document.getElementById('load-heavy-sample').addEventListener('click', reloadActiveDeptSampleData);
             document.getElementById('clear-all-data').addEventListener('click', clearActiveDeptData);
+            document.getElementById('open-onsite-mode-btn').addEventListener('click', openOnsiteModePage);
             document.getElementById('search-student-input').addEventListener('input', renderStudentsTable);
             document.getElementById('filter-status-select').addEventListener('change', renderStudentsTable);
             document.getElementById('create-dept-form').addEventListener('submit', handleCreateDepartment);
             document.getElementById('new-dept-icon').addEventListener('change', () => applyNewDeptTemplateSelection(true));
             document.getElementById('export-day-flow-report').addEventListener('click', exportDayFlowReport);
+            document.getElementById('export-schedule-xlsx').addEventListener('click', exportScheduleWorkbook);
             document.getElementById('export-excel-tsv').addEventListener('click', exportToExcelTsvClipboard);
             document.getElementById('cloud-sync-connect-btn').addEventListener('click', handleCloudSyncConnect);
             document.getElementById('cloud-sync-lock-btn').addEventListener('click', () => {
@@ -3917,6 +3938,34 @@
             }
         }
 
+        function getOnsiteModeUrl(deptId = activeDeptId) {
+            const url = new URL(window.location.href);
+            const dept = departments.find(d => d.id === deptId);
+            if (/script\.google\.com|script\.googleusercontent\.com/.test(window.location.host)) {
+                url.searchParams.set('page', 'onsite');
+            } else if (/\/index\.html$/i.test(url.pathname)) {
+                url.pathname = url.pathname.replace(/\/index\.html$/i, '/onsite.html');
+            } else if (!/\/onsite\.html$/i.test(url.pathname)) {
+                url.pathname = url.pathname.replace(/\/$/, '') + '/onsite.html';
+            }
+            if (deptId) {
+                url.searchParams.set('dept', deptId);
+            }
+            if (dept?.name) {
+                url.searchParams.set('deptName', dept.name);
+            }
+            return url.toString();
+        }
+
+        function openOnsiteModePage() {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) {
+                showToast('請先進入一個科系工作區，再開啟報到現場模式。', 'error');
+                return;
+            }
+            window.open(getOnsiteModeUrl(activeDeptId), '_blank');
+        }
+
         function normalizeAllDepartmentStudentData() {
             let changed = false;
             departments.forEach(dept => {
@@ -3949,6 +3998,14 @@
                     dept.cfgOralGroupCapacity = 5;
                     changed = true;
                 }
+                if (dept.cfgReportLeadMinutes === undefined) {
+                    dept.cfgReportLeadMinutes = 10;
+                    changed = true;
+                }
+                if (dept.cfgReportPostBufferMinutes === undefined) {
+                    dept.cfgReportPostBufferMinutes = 10;
+                    changed = true;
+                }
                 if (dept.cfgOralTailMergeLimit === undefined) {
                     dept.cfgOralTailMergeLimit = 0;
                     changed = true;
@@ -3963,6 +4020,11 @@
                     if (student.conflict === undefined) student.conflict = '';
                     if (student.phone === undefined) student.phone = '';
                     if (student.email === undefined) student.email = '';
+                    if (student.onsiteCheckedInAt === undefined) student.onsiteCheckedInAt = '';
+                    if (student.onsiteWrittenDoneAt === undefined) student.onsiteWrittenDoneAt = '';
+                    if (student.onsiteOralDoneAt === undefined) student.onsiteOralDoneAt = '';
+                    if (student.onsiteAbsentAt === undefined) student.onsiteAbsentAt = '';
+                    if (student.onsiteNote === undefined) student.onsiteNote = '';
                 });
             });
             if (changed) {
@@ -4105,6 +4167,10 @@
                 dept.cfgReportLeadMinutes = 10;
                 needsSave = true;
             }
+            if (dept.cfgReportPostBufferMinutes === undefined) {
+                dept.cfgReportPostBufferMinutes = 10;
+                needsSave = true;
+            }
             if (dept.cfgOralTeamsPerLadder === undefined) {
                 dept.cfgOralTeamsPerLadder = 2;
                 needsSave = true;
@@ -4150,6 +4216,7 @@
             document.getElementById('cfg-written-duration').value = dept.cfgWrittenDuration || 40;
             document.getElementById('cfg-oral-duration').value = dept.cfgOralDuration || 20;
             document.getElementById('cfg-report-lead-minutes').value = dept.cfgReportLeadMinutes ?? 10;
+            document.getElementById('cfg-report-post-buffer-minutes').value = dept.cfgReportPostBufferMinutes ?? 10;
             document.getElementById('cfg-oral-teams-per-ladder').value = dept.cfgOralTeamsPerLadder || 2;
             document.getElementById('cfg-oral-team-group-count').value = dept.cfgOralTeamGroupCount || 2;
             document.getElementById('cfg-team-capacity').value = dept.cfgTeamCapacity || 30;
@@ -5343,6 +5410,10 @@
             dept.cfgOralDuration = parseInt(document.getElementById('cfg-oral-duration').value) || 20;
             const reportLeadMinutes = parseInt(document.getElementById('cfg-report-lead-minutes').value);
             dept.cfgReportLeadMinutes = Number.isFinite(reportLeadMinutes) && reportLeadMinutes >= 0 ? reportLeadMinutes : 0;
+            const reportPostBufferMinutes = parseInt(document.getElementById('cfg-report-post-buffer-minutes').value);
+            dept.cfgReportPostBufferMinutes = Number.isFinite(reportPostBufferMinutes)
+                ? Math.min(20, Math.max(10, reportPostBufferMinutes))
+                : 10;
             dept.cfgOralTeamsPerLadder = parseInt(document.getElementById('cfg-oral-teams-per-ladder').value) || 2;
             dept.cfgOralTeamGroupCount = parseInt(document.getElementById('cfg-oral-team-group-count').value) || 2;
             dept.cfgTeamCapacity = parseInt(document.getElementById('cfg-team-capacity').value) || 30;
@@ -5791,6 +5862,8 @@
                 ],
                 cfgWrittenDuration: 50,
                 cfgOralDuration: 20,
+                cfgReportLeadMinutes: 10,
+                cfgReportPostBufferMinutes: 10,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, // Big written capacity limit!
@@ -5872,6 +5945,16 @@
             return Math.max(0, parseInt(dept?.cfgOralTailMergeLimit, 10) || 0);
         }
 
+        function getReportLeadMinutes(dept) {
+            return Math.max(0, parseInt(dept?.cfgReportLeadMinutes, 10) || 0);
+        }
+
+        function getReportPostBufferMinutes(dept) {
+            const parsed = parseInt(dept?.cfgReportPostBufferMinutes, 10);
+            if (!Number.isFinite(parsed)) return 10;
+            return Math.min(20, Math.max(10, parsed));
+        }
+
         function getOralTailMergeLabel(dept) {
             const tailMergeLimit = getOralTailMergeLimit(dept);
             return tailMergeLimit > 0 ? `尾組可多收 ${tailMergeLimit} 人` : '尾組不超收';
@@ -5927,6 +6010,8 @@
             const writtenMins = parseInt(dept.cfgWrittenDuration) || 30;
             const oralMins = parseInt(dept.cfgOralDuration) || 20;
             const oralTransitionBuffer = 10;
+            const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
+            const effectiveStartMin = sessionStartMin + reportPostBufferMinutes;
             const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
 
             if (strategyId === 'even_load') {
@@ -5938,7 +6023,7 @@
                 const groupSlot = safeGroupIdx % groupsPerLadder;
                 const teamIndex = Math.floor(groupSlot / groupsPerTeam);
                 const groupInTeam = (groupSlot % groupsPerTeam) + 1;
-                const cycleStartMin = sessionStartMin + (cycleIndex * cycleDuration);
+                const cycleStartMin = effectiveStartMin + (cycleIndex * cycleDuration);
                 const isOralFirst = ladderSlot === 0;
 
                 if (isOralFirst) {
@@ -5993,16 +6078,16 @@
             const theoreticalPreWrittenGroupCount = getPreWrittenOralGroupCount(writtenMins, oralMins);
             const maxActualOralGroups = roomGroupCounts.length > 0 ? Math.max(...roomGroupCounts) : 0;
             const preWrittenGroupCount = Math.min(theoreticalPreWrittenGroupCount, maxActualOralGroups);
-            const earlyWrittenStartMin = sessionStartMin;
+            const earlyWrittenStartMin = effectiveStartMin;
             const earlyWrittenEndMin = earlyWrittenStartMin + writtenMins;
             const lateWrittenStartMin = preWrittenGroupCount > 0
-                ? sessionStartMin + (preWrittenGroupCount * oralMins) + oralTransitionBuffer
+                ? effectiveStartMin + (preWrittenGroupCount * oralMins) + oralTransitionBuffer
                 : earlyWrittenStartMin;
             const lateWrittenEndMin = lateWrittenStartMin + writtenMins;
             const lateOralStartBaseMin = earlyWrittenEndMin + oralTransitionBuffer;
 
             if (safeGroupIdx < preWrittenGroupCount) {
-                const oralStartMin = sessionStartMin + (safeGroupIdx * oralMins);
+                const oralStartMin = effectiveStartMin + (safeGroupIdx * oralMins);
                 const oralEndMin = oralStartMin + oralMins;
 
                 return {
@@ -6944,7 +7029,7 @@
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div class="flex items-center space-x-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                            <h4 class="font-bold text-slate-950 text-sm">⏱️ ${session.name} 流水線 (預計 ${session.startTime} 起跑)</h4>
+                            <h4 class="font-bold text-slate-950 text-sm">⏱️ ${session.name} 流水線 (報到截止 ${session.startTime})</h4>
                         </div>
                         <span class="text-[10px] bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded font-bold border border-amber-200">共 ${sessionStudents.length} 人</span>
                     </div>
@@ -7045,17 +7130,18 @@
             const sessionOrder = scheduled ? (sessionOrderMap.get(student.assignedSessionId) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
             const groupIdx = scheduled && student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : Number.MAX_SAFE_INTEGER;
             const roomIdx = scheduled && student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : Number.MAX_SAFE_INTEGER;
-            const reportLeadMinutes = Number.isFinite(parseInt(dept.cfgReportLeadMinutes))
-                ? Math.max(0, parseInt(dept.cfgReportLeadMinutes))
-                : 10;
+            const reportLeadMinutes = getReportLeadMinutes(dept);
+            const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
             const oralStep = student.oralStart && student.oralEnd ? { label: '面試', start: student.oralStart, end: student.oralEnd } : null;
             const writtenStep = student.writtenStart && student.writtenEnd ? { label: '筆試', start: student.writtenStart, end: student.writtenEnd } : null;
             const sortedSteps = [oralStep, writtenStep].filter(Boolean).sort((a, b) => timeToMins(a.start) - timeToMins(b.start));
             let previewText = scheduled ? '已排定' : '尚未排入時序';
             if (sortedSteps.length > 0) {
                 const firstStep = sortedSteps[0];
-                const reportStart = minsToTimeStr(Math.max(0, timeToMins(firstStep.start) - reportLeadMinutes));
-                previewText = `${reportStart} 報到 / ${firstStep.label} ${firstStep.start} ~ ${firstStep.end}`;
+                const reportDeadlineMin = Math.max(0, timeToMins(firstStep.start) - reportPostBufferMinutes);
+                const reportStart = minsToTimeStr(Math.max(0, reportDeadlineMin - reportLeadMinutes));
+                const reportDeadline = minsToTimeStr(reportDeadlineMin);
+                previewText = `${reportStart} ~ ${reportDeadline} 報到 / ${reportDeadline} ~ ${firstStep.start} 預留 / ${firstStep.label} ${firstStep.start} ~ ${firstStep.end}`;
                 if (sortedSteps[1]) {
                     const secondStep = sortedSteps[1];
                     previewText += ` / ${secondStep.label} ${secondStep.start} ~ ${secondStep.end}`;
@@ -7701,9 +7787,8 @@
 
             const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
             const evenLoadStructure = getEvenLoadOralStructure(dept);
-            const reportLeadMinutes = Number.isFinite(parseInt(dept.cfgReportLeadMinutes))
-                ? Math.max(0, parseInt(dept.cfgReportLeadMinutes))
-                : 10;
+            const reportLeadMinutes = getReportLeadMinutes(dept);
+            const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
             const groups = [];
 
             (dept.sessions || []).forEach((session, sessionIdx) => {
@@ -7777,18 +7862,35 @@
                         ];
                     const firstStep = steps.find(step => step.start && step.end) || steps[0];
                     const secondStep = steps[1] || null;
-                    const reportStartMin = firstStep?.start ? Math.max(0, timeToMins(firstStep.start) - reportLeadMinutes) : null;
+                    const firstStepStartMin = firstStep?.start ? timeToMins(firstStep.start) : null;
+                    const reportDeadlineMin = session?.startTime
+                        ? timeToMins(session.startTime)
+                        : (firstStepStartMin !== null ? Math.max(0, firstStepStartMin - reportPostBufferMinutes) : null);
+                    const reportStartMin = reportDeadlineMin !== null ? Math.max(0, reportDeadlineMin - reportLeadMinutes) : null;
                     const transferStartMin = firstStep?.end ? timeToMins(firstStep.end) : null;
                     const transferEndMin = secondStep?.start ? timeToMins(secondStep.start) : null;
                     const transferGapMin = transferStartMin !== null && transferEndMin !== null ? Math.max(0, transferEndMin - transferStartMin) : null;
-                    const reportItem = firstStep?.start && reportStartMin !== null
+                    const reportItem = reportDeadlineMin !== null && reportStartMin !== null
                         ? {
                             kind: 'report',
                             label: '報到',
                             start: minsToTimeStr(reportStartMin),
-                            end: firstStep.start,
+                            end: minsToTimeStr(reportDeadlineMin),
                             room: `報到後前往 ${firstStep.room}`,
-                            meta: `建議提早 ${reportLeadMinutes} 分鐘集合`
+                            meta: reportLeadMinutes > 0 ? `建議提早 ${reportLeadMinutes} 分鐘集合` : '依報到截止時間到場'
+                        }
+                        : null;
+                    const stagingGapMin = reportDeadlineMin !== null && firstStepStartMin !== null
+                        ? Math.max(0, firstStepStartMin - reportDeadlineMin)
+                        : null;
+                    const stagingItem = reportDeadlineMin !== null && firstStepStartMin !== null && stagingGapMin > 0
+                        ? {
+                            kind: 'buffer',
+                            label: '叫號準備',
+                            start: minsToTimeStr(reportDeadlineMin),
+                            end: firstStep.start,
+                            room: `完成報到後等候 ${firstStep.room}`,
+                            meta: `報到截止後預留 ${stagingGapMin} 分鐘`
                         }
                         : null;
                     const transferItem = firstStep && secondStep
@@ -7805,13 +7907,14 @@
                         : null;
                     const timelineItems = [];
                     if (reportItem) timelineItems.push(reportItem);
+                    if (stagingItem) timelineItems.push(stagingItem);
                     timelineItems.push(...steps);
                     if (transferItem) timelineItems.push(transferItem);
                     timelineItems.sort((a, b) => {
                         const aStart = a.start ? timeToMins(a.start) : Number.MAX_SAFE_INTEGER;
                         const bStart = b.start ? timeToMins(b.start) : Number.MAX_SAFE_INTEGER;
                         if (aStart !== bStart) return aStart - bStart;
-                        const kindOrder = { report: 0, oral: 1, transfer: 2, written: 3 };
+                        const kindOrder = { report: 0, buffer: 1, oral: 2, transfer: 3, written: 4 };
                         return (kindOrder[a.kind] ?? 99) - (kindOrder[b.kind] ?? 99);
                     });
 
@@ -7825,6 +7928,11 @@
                             wrapper: 'border-amber-200 bg-amber-50/80 text-amber-900',
                             icon: 'footprints',
                             iconClass: 'text-amber-600'
+                        },
+                        buffer: {
+                            wrapper: 'border-cyan-200 bg-cyan-50/80 text-cyan-900',
+                            icon: 'clock-3',
+                            iconClass: 'text-cyan-600'
                         },
                         oral: {
                             wrapper: 'border-indigo-200 bg-indigo-50/70 text-indigo-900',
@@ -8024,11 +8132,6 @@
             }
 
             const firstSession = (dept.sessions || [])[0] || null;
-            const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1180,height=920');
-            if (!printWindow) {
-                showToast("瀏覽器阻擋了新視窗，請允許彈出視窗後再試一次。", "error");
-                return;
-            }
 
             const rowsHtml = groups.map(group => {
                 const timelineList = group.timelineItems.map((step, index) => `
@@ -8062,24 +8165,46 @@
                     .join(' / ');
 
                 return `
-                    <tr>
-                        <td class="col-time">
-                            <div class="session-name">${escapeHtml(group.session.name)}</div>
-                            <div class="time-summary">${escapeHtml(timeSummary)}</div>
-                        </td>
-                        <td class="col-group">
-                            <div class="group-label">${escapeHtml(group.groupLabel.replace(/｜/g, '｜'))}</div>
-                            <div class="group-phase">${escapeHtml(group.phaseLabel)}</div>
-                            <div class="group-count">${group.count} 人</div>
-                        </td>
-                        <td class="col-location">${locationText}</td>
-                        <td class="col-flow">
-                            <div class="flow-grid">${timelineList}</div>
-                        </td>
-                        <td class="col-students">
-                            <div class="students-grid">${studentList}</div>
-                        </td>
-                    </tr>
+                    <section class="report-block">
+                        <table class="report-block-table">
+                            <colgroup>
+                                <col style="width:16%">
+                                <col style="width:14%">
+                                <col style="width:13%">
+                                <col style="width:27%">
+                                <col style="width:30%">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>時段 / 時間</th>
+                                    <th>梯 / 隊 / 組</th>
+                                    <th>地點</th>
+                                    <th>流程內容</th>
+                                    <th>本組學生</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="col-time">
+                                        <div class="session-name">${escapeHtml(group.session.name)}</div>
+                                        <div class="time-summary">${escapeHtml(timeSummary)}</div>
+                                    </td>
+                                    <td class="col-group">
+                                        <div class="group-label">${escapeHtml(group.groupLabel.replace(/｜/g, '｜'))}</div>
+                                        <div class="group-phase">${escapeHtml(group.phaseLabel)}</div>
+                                        <div class="group-count">${group.count} 人</div>
+                                    </td>
+                                    <td class="col-location">${locationText}</td>
+                                    <td class="col-flow">
+                                        <div class="flow-grid">${timelineList}</div>
+                                    </td>
+                                    <td class="col-students">
+                                        <div class="students-grid">${studentList}</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </section>
                 `;
             }).join('');
 
@@ -8178,32 +8303,42 @@
                             color: var(--muted);
                             font-size: 12px;
                         }
-                        table {
+                        .report-list {
+                            display: grid;
+                            gap: 18px;
+                        }
+                        .report-block {
+                            break-inside: avoid-page;
+                            page-break-inside: avoid;
+                        }
+                        .report-block-table {
                             width: 100%;
                             border-collapse: collapse;
                             table-layout: fixed;
                         }
-                        th, td {
+                        .report-block-table th,
+                        .report-block-table td {
                             border: 1.4px solid #334155;
                             vertical-align: top;
                             padding: 12px 10px;
+                            overflow-wrap: anywhere;
+                            word-break: break-word;
                         }
-                        th {
+                        .report-block-table th {
                             text-align: center;
                             font-size: 14px;
                             letter-spacing: 0.08em;
                             font-weight: 800;
                             background: #f8fafc;
                         }
-                        td {
+                        .report-block-table td {
                             font-size: 12px;
                             line-height: 1.6;
                         }
-                        .col-time { width: 18%; }
-                        .col-group { width: 14%; text-align: center; }
-                        .col-location { width: 14%; text-align: center; }
-                        .col-flow { width: 28%; }
-                        .col-students { width: 26%; }
+                        .col-group,
+                        .col-location {
+                            text-align: center;
+                        }
                         .session-name {
                             font-weight: 900;
                             font-size: 15px;
@@ -8211,8 +8346,9 @@
                         }
                         .time-summary {
                             color: var(--muted);
-                            font-size: 11px;
+                            font-size: 10px;
                             white-space: pre-line;
+                            overflow-wrap: anywhere;
                         }
                         .group-label {
                             font-weight: 900;
@@ -8223,6 +8359,7 @@
                             font-size: 11px;
                             color: var(--muted);
                             font-weight: 700;
+                            overflow-wrap: anywhere;
                         }
                         .flow-grid {
                             display: grid;
@@ -8251,11 +8388,13 @@
                             margin-top: 4px;
                             font-size: 11px;
                             color: #334155;
+                            overflow-wrap: anywhere;
                         }
                         .students-grid {
                             display: grid;
                             grid-template-columns: repeat(2, minmax(0, 1fr));
                             gap: 8px;
+                            align-items: start;
                         }
                         .student-pill {
                             border: 1px solid var(--line);
@@ -8263,16 +8402,20 @@
                             padding: 8px 10px;
                             background: white;
                             break-inside: avoid;
+                            min-width: 0;
                         }
                         .student-name {
-                            font-size: 12px;
+                            font-size: 11px;
                             font-weight: 900;
+                            line-height: 1.35;
+                            overflow-wrap: anywhere;
                         }
                         .student-id, .student-school, .student-cross {
                             margin-top: 3px;
-                            font-size: 10px;
+                            font-size: 9px;
                             color: var(--muted);
-                            line-height: 1.45;
+                            line-height: 1.35;
+                            overflow-wrap: anywhere;
                         }
                         @page {
                             size: A4 landscape;
@@ -8291,7 +8434,34 @@
                                 padding: 0;
                                 box-shadow: none;
                             }
-                            tr, td, th, .student-pill, .flow-step {
+                            .report-block,
+                            .report-block-table,
+                            .report-block-table thead,
+                            .report-block-table tbody,
+                            .report-block-table tr {
+                                break-inside: avoid-page;
+                                page-break-inside: avoid;
+                            }
+                            .report-block {
+                                break-after: page;
+                                page-break-after: always;
+                                margin: 0;
+                            }
+                            .report-block:last-child {
+                                break-after: auto;
+                                page-break-after: auto;
+                            }
+                            .report-block-table th,
+                            .report-block-table td {
+                                padding: 10px 8px;
+                            }
+                            .flow-step {
+                                padding: 7px 8px;
+                            }
+                            .student-pill {
+                                padding: 7px 8px;
+                            }
+                            .report-block, .report-block-table, .report-block-table tr, .student-pill, .flow-step {
                                 break-inside: avoid;
                             }
                         }
@@ -8312,38 +8482,71 @@
                         <header class="header">
                             <h1>${escapeHtml(dept.name)} 二階甄選</h1>
                             <h2>當天流程表</h2>
-                            <div class="header-note">※ 建議於首場 ${escapeHtml(firstSession?.startTime || '')} 前完成報到與叫號準備。</div>
+                            <div class="header-note">※ 建議於首場 ${escapeHtml(firstSession?.startTime || '')} 前完成報到，並於截止後再預留 ${escapeHtml(String(getReportPostBufferMinutes(dept)))} 分鐘進場準備。</div>
                             <div class="meta-line">
                                 <span>排法：${escapeHtml(getSchedulerStrategyForDept(dept).shortName || '未設定')}</span>
                                 <span>筆試時間：${escapeHtml(String(dept.cfgWrittenDuration || 0))} 分</span>
                                 <span>面試時間：${escapeHtml(String(dept.cfgOralDuration || 0))} 分</span>
-                                <span>報到緩衝：${escapeHtml(String(dept.cfgReportLeadMinutes || 0))} 分</span>
+                                <span>報到集合：${escapeHtml(String(getReportLeadMinutes(dept)))} 分</span>
+                                <span>截止後預留：${escapeHtml(String(getReportPostBufferMinutes(dept)))} 分</span>
                                 <span>共 ${groups.length} 組</span>
                             </div>
                         </header>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>時段 / 時間</th>
-                                    <th>梯 / 隊 / 組</th>
-                                    <th>地點</th>
-                                    <th>流程內容</th>
-                                    <th>本組學生</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml}
-                            </tbody>
-                        </table>
+                        <section class="report-list">
+                            ${rowsHtml}
+                        </section>
                     </main>
                 </body>
                 </html>
             `;
 
-            printWindow.document.open();
-            printWindow.document.write(html);
-            printWindow.document.close();
-            showToast("已開啟當天流程表，可直接列印或另存成 PDF。", "success");
+            let reportUrl = "";
+            try {
+                const reportBlob = new Blob([html], { type: "text/html;charset=utf-8" });
+                reportUrl = URL.createObjectURL(reportBlob);
+            } catch (error) {
+                console.error("建立當天流程表失敗", error);
+            }
+
+            const printWindow = window.open("about:blank", "_blank", "width=1180,height=920");
+            if (printWindow && !printWindow.closed) {
+                try {
+                    if (reportUrl) {
+                        printWindow.location.href = reportUrl;
+                        setTimeout(() => {
+                            try { URL.revokeObjectURL(reportUrl); } catch (_) {}
+                        }, 60000);
+                    } else {
+                        printWindow.document.open();
+                        printWindow.document.write(html);
+                        printWindow.document.close();
+                    }
+                    showToast("已開啟當天流程表，可直接列印或另存 PDF。", "success");
+                    return;
+                } catch (error) {
+                    console.error("新視窗載入當天流程表失敗，改以目前頁面開啟", error);
+                }
+            }
+
+            if (reportUrl) {
+                showToast("瀏覽器擋下新分頁，已改在目前頁面開啟流程表；列印後可按上一頁返回。", "success");
+                window.location.href = reportUrl;
+                setTimeout(() => {
+                    try { URL.revokeObjectURL(reportUrl); } catch (_) {}
+                }, 60000);
+                return;
+            }
+
+            const previewWindow = window.open("", "_self");
+            if (previewWindow) {
+                previewWindow.document.open();
+                previewWindow.document.write(html);
+                previewWindow.document.close();
+                showToast("已在目前頁面開啟流程表；列印後可按上一頁返回。", "success");
+                return;
+            }
+
+            showToast("瀏覽器阻擋了流程表開啟，請改用允許彈出視窗的瀏覽器再試一次。", "error");
         }
 
         // Render tabular master students spreadsheet (Panel B)
@@ -8707,6 +8910,175 @@
         document.getElementById('manual-move-swap-select').addEventListener('change', renderManualMoveChoicePreview);
 
         // Export Excel/TSV Clipboard
+        function exportScheduleWorkbook() {
+            const dept = departments.find(d => d.id === activeDeptId);
+            if (!dept) return;
+
+            const groups = getTimelineGroupsForDept(dept);
+            if (!groups.length) {
+                showToast("目前沒有可下載的排程資料，請先完成排程。", "error");
+                return;
+            }
+
+            const aoa = [
+                ['實作梯次', '報到時間', '筆試 / 實作', '', '面試', '', '', '報名序號', '人數'],
+                ['', '', '時間', '地點', '組別', '時間', '地點', '', '']
+            ];
+            const merges = [
+                XLSX.utils.decode_range('A1:A2'),
+                XLSX.utils.decode_range('B1:B2'),
+                XLSX.utils.decode_range('C1:D1'),
+                XLSX.utils.decode_range('E1:G1'),
+                XLSX.utils.decode_range('H1:H2'),
+                XLSX.utils.decode_range('I1:I2')
+            ];
+
+            groups.forEach(group => {
+                const reportItem = group.timelineItems.find(item => item.kind === 'report') || null;
+                const writtenItem = group.timelineItems.find(item => item.kind === 'written') || null;
+                const oralItem = group.timelineItems.find(item => item.kind === 'oral') || null;
+                const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
+                const groupPosition = strategyId === 'even_load'
+                    ? getEvenLoadGroupPosition(dept, group.groupIdx)
+                    : null;
+
+                const ladderLabel = groupPosition
+                    ? `${group.session.name} / 第${groupPosition.ladderNumber}梯次`
+                    : `${group.session.name} / 第${group.groupIdx + 1}梯次`;
+                const reportTime = reportItem
+                    ? `${reportItem.start || ''}${reportItem.end ? `~${reportItem.end}` : ''}`
+                    : '';
+                const writtenTime = writtenItem
+                    ? `${writtenItem.start || ''}${writtenItem.end ? `~${writtenItem.end}` : ''}`
+                    : '';
+                const oralTime = oralItem
+                    ? `${oralItem.start || ''}${oralItem.end ? `~${oralItem.end}` : ''}`
+                    : '';
+                const interviewGroupLabel = groupPosition
+                    ? `第${groupPosition.teamNumber}隊・第${groupPosition.groupInTeam}組`
+                    : group.groupLabel;
+                const registrationIds = group.students
+                    .map(student => String(student.id || '').trim())
+                    .filter(Boolean)
+                    .join('、\n');
+
+                aoa.push([
+                    ladderLabel,
+                    reportTime,
+                    writtenTime,
+                    group.writtenRoomName || '',
+                    interviewGroupLabel,
+                    oralTime,
+                    group.oralRoomName || '',
+                    registrationIds,
+                    group.count
+                ]);
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+            worksheet['!merges'] = merges;
+            worksheet['!cols'] = [
+                { wch: 18 },
+                { wch: 14 },
+                { wch: 14 },
+                { wch: 18 },
+                { wch: 15 },
+                { wch: 14 },
+                { wch: 18 },
+                { wch: 44 },
+                { wch: 8 }
+            ];
+            worksheet['!rows'] = [
+                { hpt: 28 },
+                { hpt: 24 },
+                ...groups.map(group => {
+                    const lineCount = Math.max(1, group.count);
+                    return { hpt: Math.max(42, 18 * lineCount) };
+                })
+            ];
+
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            for (let row = range.s.r; row <= range.e.r; row += 1) {
+                for (let col = range.s.c; col <= range.e.c; col += 1) {
+                    const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (!worksheet[cellRef]) continue;
+                    worksheet[cellRef].s = {
+                        alignment: {
+                            vertical: 'center',
+                            horizontal: row <= 1 ? 'center' : (col === 7 ? 'left' : 'center'),
+                            wrapText: true
+                        },
+                        font: {
+                            bold: row <= 1
+                        }
+                    };
+                }
+            }
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '當天排程總表');
+
+            const detailRows = [[
+                '姓名', '出生年月日', '就讀學校', '報名序號', '登記偏好', '上下午偏好',
+                '分配甄試時段', '報到時間', '筆試 / 實作時間', '筆試 / 實作地點',
+                '面試組別', '面試時間', '面試地點', '跨系同人報名', '跨系時間重疊'
+            ]];
+
+            dept.students.forEach(student => {
+                const assignedSession = dept.sessions.find(session => session.id === student.assignedSessionId);
+                const prefDetails = getStudentPreferenceDetails(student, dept);
+                const birthDate = normalizeBirthDate(student.birthDate || '');
+                const crossDeptNames = [...new Set(getCrossDeptMatches(student, dept.id).map(match => match.dept.name))].join('、') || '無';
+                const crossConflictText = getCrossDeptScheduledConflicts(student, dept.id, student.writtenStart, student.writtenEnd, student.oralStart, student.oralEnd)
+                    .map(conflict => `${conflict.deptName}${conflict.otherType}${conflict.start}-${conflict.end}`)
+                    .join('、') || '無';
+                const assignedGroupText = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined
+                    ? (() => {
+                        const pos = getEvenLoadGroupPosition(dept, student.assignedOralGroupIdx);
+                        return `第${pos.ladderNumber}梯・第${pos.teamNumber}隊・第${pos.groupInTeam}組`;
+                    })()
+                    : '未分配';
+                const reportTime = student.assignedSessionId
+                    ? (() => {
+                        const matchedGroup = groups.find(group => group.students.some(member => member.id === student.id));
+                        const report = matchedGroup?.timelineItems?.find(item => item.kind === 'report');
+                        return report ? `${report.start || ''}${report.end ? `~${report.end}` : ''}` : '';
+                    })()
+                    : '';
+
+                detailRows.push([
+                    student.name || '',
+                    birthDate,
+                    student.school || '',
+                    student.id || '',
+                    prefDetails.prefSession ? prefDetails.prefSession.name : '無',
+                    prefDetails.prefPeriodLabel || '無',
+                    assignedSession ? assignedSession.name : '未分配',
+                    reportTime,
+                    student.writtenStart && student.writtenEnd ? `${student.writtenStart}~${student.writtenEnd}` : '',
+                    student.assignedWrittenRoomIdx !== null && student.assignedWrittenRoomIdx !== undefined ? (dept.writtenRooms[student.assignedWrittenRoomIdx] || '') : '',
+                    assignedGroupText,
+                    student.oralStart && student.oralEnd ? `${student.oralStart}~${student.oralEnd}` : '',
+                    student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? (dept.oralRooms[student.assignedOralRoomIdx] || '') : '',
+                    crossDeptNames,
+                    crossConflictText
+                ]);
+            });
+
+            const detailSheet = XLSX.utils.aoa_to_sheet(detailRows);
+            detailSheet['!cols'] = [
+                { wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 18 },
+                { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 18 },
+                { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 20 }, { wch: 28 }
+            ];
+            XLSX.utils.book_append_sheet(workbook, detailSheet, '考生排程明細');
+
+            const safeDeptName = String(dept.name || '排程').replace(/[\\/:*?"<>|]+/g, '_');
+            const dateTag = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `${safeDeptName}_當天排程_${dateTag}.xlsx`);
+            showToast("已下載 Excel 排程檔，可直接交給書記整理或列印。", "success");
+        }
+
         function exportToExcelTsvClipboard() {
             const dept = departments.find(d => d.id === activeDeptId);
             if(!dept || dept.students.length === 0) {

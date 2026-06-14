@@ -118,10 +118,15 @@ const SECURE_SCHEDULE_HEADERS = [
   'updated_at_iso'
 ];
 
-function doGet() {
+function doGet(e) {
   try {
-    return HtmlService.createHtmlOutputFromFile('Index')
-      .setTitle('四技二專甄選二階智慧團體流水線排程系統')
+    const page = safe_((e && e.parameter && e.parameter.page) || '');
+    const htmlFile = page === 'onsite' ? 'Onsite' : 'Index';
+    const title = page === 'onsite'
+      ? '二階甄選報到現場模式'
+      : '四技二專甄選二階智慧團體流水線排程系統';
+    return HtmlService.createHtmlOutputFromFile(htmlFile)
+      .setTitle(title)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } catch (error) {
     return HtmlService.createHtmlOutput(

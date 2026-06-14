@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二階甄選報到現場模式</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --bg: #edf3fb;
+            --surface: rgba(255,255,255,.92);
+            --line: rgba(148,163,184,.22);
+            --ink: #0f172a;
+            --muted: #64748b;
+            --brand: #4338ca;
+            --brand-soft: #eef2ff;
+        }
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(79,70,229,.12), transparent 30%),
+                radial-gradient(circle at top right, rgba(14,165,233,.10), transparent 24%),
+                linear-gradient(180deg, #f8fbff 0%, #edf3fb 42%, #edf2f7 100%);
+            color: var(--ink);
+        }
+        .surface {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, .06);
+            backdrop-filter: blur(16px);
+        }
+        .status-pending { color: #475569; background: #f8fafc; border-color: #cbd5e1; }
+        .status-checked { color: #0369a1; background: #f0f9ff; border-color: #bae6fd; }
+        .status-progress { color: #6d28d9; background: #f5f3ff; border-color: #ddd6fe; }
+        .status-completed { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+        .status-absent { color: #be123c; background: #fff1f2; border-color: #fecdd3; }
+        .student-card {
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        }
+        .student-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 24px rgba(15, 23, 42, .08);
+        }
+        .action-btn {
+            transition: transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
+        }
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+        .timeline-chip {
+            min-width: 0;
+        }
+        .pulse-live {
+            position: relative;
+        }
+        .pulse-live::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: inherit;
+            border: 2px solid rgba(79,70,229,.14);
+            pointer-events: none;
+            animation: pulseRing 1.8s ease-out infinite;
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(.98); opacity: .75; }
+            70% { transform: scale(1.04); opacity: 0; }
+            100% { transform: scale(1.04); opacity: 0; }
+        }
+        .view-toggle-btn {
+            transition: all .18s ease;
+        }
+        .view-toggle-btn.is-active {
+            background: linear-gradient(135deg, #111827 0%, #334155 100%);
+            color: #fff;
+            border-color: rgba(15, 23, 42, .12);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .16);
+        }
+        .onsite-table-wrap {
+            overflow-x: auto;
+            padding-right: .5rem;
+            padding-bottom: .5rem;
+        }
+        .onsite-table {
+            min-width: 1160px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .onsite-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .onsite-table th,
+        .onsite-table td {
+            border-bottom: 1px solid rgba(226, 232, 240, .9);
+            vertical-align: top;
+        }
+        .onsite-table tr:last-child td {
+            border-bottom: none;
+        }
+        .mask-dot {
+            letter-spacing: .12em;
+        }
+        .onsite-action-grid {
+            width: 176px;
+        }
+        .onsite-status-stack {
+            width: 140px;
+        }
+        .loading-overlay {
+            transition: opacity .22s ease, transform .22s ease;
+        }
+        .loading-overlay.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+        }
+        .loading-orb {
+            animation: loadingOrb 1.4s ease-in-out infinite;
+        }
+        .loading-orb.delay-1 {
+            animation-delay: .16s;
+        }
+        .loading-orb.delay-2 {
+            animation-delay: .32s;
+        }
+        @keyframes loadingOrb {
+            0%, 80%, 100% {
+                transform: translateY(0) scale(.82);
+                opacity: .45;
+            }
+            40% {
+                transform: translateY(-8px) scale(1);
+                opacity: 1;
+            }
+        }
+        .batch-toolbar {
+            border: 1px solid rgba(59, 130, 246, .14);
+            background: linear-gradient(180deg, rgba(239, 246, 255, .98), rgba(255, 255, 255, .98));
+            box-shadow: 0 16px 34px rgba(15, 23, 42, .06);
+        }
+        .batch-toggle {
+            transition: all .16s ease;
+        }
+        .batch-toggle.is-selected {
+            background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+            color: #fff;
+            border-color: rgba(37, 99, 235, .3);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
+        }
+        .collision-card {
+            background: linear-gradient(180deg, rgba(255, 247, 237, .98), rgba(255, 255, 255, .98));
+            border: 1px solid rgba(251, 146, 60, .18);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, .06);
+        }
+        .collision-chip {
+            background: linear-gradient(135deg, rgba(254, 243, 199, .95), rgba(255, 237, 213, .95));
+            border: 1px solid rgba(251, 191, 36, .22);
+        }
+        .scan-modal {
+            background:
+                radial-gradient(circle at top left, rgba(79, 70, 229, .12), transparent 24%),
+                radial-gradient(circle at bottom right, rgba(14, 165, 233, .12), transparent 28%),
+                rgba(15, 23, 42, .54);
+        }
+        .scan-preview {
+            min-height: 360px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, .96), rgba(30, 41, 59, .94));
+        }
+        .scan-preview video,
+        .scan-preview canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            border-radius: 24px;
+        }
+        .scan-result-card {
+            transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        }
+        .scan-result-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 24px rgba(15, 23, 42, .08);
+        }
+        .scan-focus {
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, .12), 0 18px 34px rgba(15, 23, 42, .08) !important;
+            border-color: rgba(244, 63, 94, .45) !important;
+        }
+        .scan-feedback-shell {
+            transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+        }
+        .scan-feedback-shell.scan-feedback-success {
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, .18), 0 0 0 8px rgba(16, 185, 129, .08), 0 22px 48px rgba(15, 23, 42, .18);
+        }
+        .scan-feedback-shell.scan-feedback-error {
+            animation: scanShellShake .34s ease;
+            box-shadow: 0 0 0 1px rgba(244, 63, 94, .30), 0 0 0 8px rgba(244, 63, 94, .12), 0 22px 48px rgba(15, 23, 42, .18);
+        }
+        @keyframes scanShellShake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-3px); }
+            40% { transform: translateX(3px); }
+            60% { transform: translateX(-2px); }
+            80% { transform: translateX(2px); }
+            100% { transform: translateX(0); }
+        }
+        #onsite-scan-modal.scan-feedback-error #onsite-scan-status {
+            border-color: rgba(244, 63, 94, .38) !important;
+            background: linear-gradient(180deg, rgba(255, 228, 230, .98), rgba(255, 255, 255, .98)) !important;
+            color: #7f1d1d !important;
+        }
+        #onsite-scan-modal.scan-feedback-error #onsite-scan-input {
+            border-color: rgba(244, 63, 94, .52) !important;
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, .10) !important;
+        }
+        #onsite-scan-modal.scan-feedback-error .scan-preview {
+            box-shadow: 0 0 0 1px rgba(244, 63, 94, .38), 0 0 0 8px rgba(244, 63, 94, .10);
+        }
+        #onsite-scan-modal.scan-feedback-success #onsite-scan-status {
+            border-color: rgba(16, 185, 129, .38) !important;
+            background: linear-gradient(180deg, rgba(236, 253, 245, .98), rgba(255, 255, 255, .98)) !important;
+            color: #064e3b !important;
+        }
+        #onsite-scan-modal.scan-feedback-success #onsite-scan-input {
+            border-color: rgba(16, 185, 129, .36) !important;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, .09) !important;
+        }
+        #onsite-scan-modal.scan-feedback-success .scan-preview {
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, .22), 0 0 0 8px rgba(16, 185, 129, .08);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-900">
+    <div id="onsite-loading-overlay" class="loading-overlay fixed inset-0 z-[60] flex items-center justify-center bg-white/45 backdrop-blur-sm">
+        <div class="rounded-[30px] border border-white/80 bg-white/90 px-8 py-7 text-center shadow-[0_24px_70px_rgba(15,23,42,.14)]">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50/80">
+                <i data-lucide="loader-circle" class="w-8 h-8 text-indigo-600 animate-spin"></i>
+            </div>
+            <div class="mt-4 text-lg font-black text-slate-900">正在載入現場資料</div>
+            <div id="onsite-loading-text" class="mt-1 text-sm text-slate-500">請稍候，系統正在整理今天的報到內容。</div>
+            <div class="mt-4 flex items-center justify-center gap-2">
+                <span class="loading-orb h-3 w-3 rounded-full bg-indigo-500"></span>
+                <span class="loading-orb delay-1 h-3 w-3 rounded-full bg-sky-500"></span>
+                <span class="loading-orb delay-2 h-3 w-3 rounded-full bg-violet-500"></span>
+            </div>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        <header class="surface rounded-3xl p-4 sm:p-5">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex items-start gap-3">
+                    <button id="back-to-main-btn" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center justify-center shadow-sm">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    </button>
+                    <div>
+                        <div class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-700">
+                            <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                            當天操作系統
+                        </div>
+                        <h1 class="mt-2 text-2xl sm:text-3xl font-black tracking-tight">報到現場模式</h1>
+                        <p class="mt-1 text-sm text-slate-500">專心處理報到、缺考、筆試完成、面試完成與整體現場進度。</p>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <button id="onsite-refresh-btn" class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm inline-flex items-center justify-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        重新整理資料
+                    </button>
+                    <div id="onsite-save-status" class="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
+                        已同步待命
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section id="onsite-unlock-panel" class="surface rounded-3xl p-5 hidden">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-black">解鎖雲端現場模式</h2>
+                    <p class="mt-1 text-sm text-slate-500">這個頁面會讀取和主排程頁相同的資料。若目前使用 GitHub / Apps Script 雲端同步，請先輸入保護資訊。</p>
+                </div>
+                <div class="text-xs text-slate-400">如果這台電腦曾經記住解鎖資訊，系統會自動帶入。</div>
+            </div>
+            <div class="mt-4 grid grid-cols-1 lg:grid-cols-[1.3fr_.8fr_auto] gap-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-bold text-slate-500">Web App 網址</span>
+                    <input id="unlock-webapp-url" type="text" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" placeholder="貼上 Apps Script Web App / GitHub 安全同步橋接網址">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-bold text-slate-500">保護密碼</span>
+                    <input id="unlock-passphrase" type="password" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" placeholder="輸入保護密碼">
+                </label>
+                <button id="unlock-onsite-btn" class="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-700 shadow-sm inline-flex items-center justify-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    解鎖現場系統
+                </button>
+            </div>
+        </section>
+
+        <section id="onsite-toolbar" class="surface rounded-3xl p-4 sm:p-5 hidden">
+            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_240px_220px] gap-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-bold text-slate-500">搜尋考生</span>
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input id="onsite-search-input" type="text" placeholder="搜尋姓名 / 報名序號 / 學校 / 組別" class="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100">
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-bold text-slate-500">現場篩選</span>
+                    <select id="onsite-filter-select" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100">
+                        <option value="all">全部考生</option>
+                        <option value="pending">待報到</option>
+                        <option value="checked_in">已報到</option>
+                        <option value="in_progress">進行中</option>
+                        <option value="completed">全部完成</option>
+                        <option value="absent">缺考</option>
+                        <option value="unscheduled">未排定</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-bold text-slate-500">科系工作區</span>
+                    <select id="onsite-dept-select" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"></select>
+                </label>
+            </div>
+                <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">現場呈現方式</div>
+                        <p class="mt-1 text-sm text-slate-500">工讀生可依現場需求切換成卡片操作，或切成隱私清單快速對名。</p>
+                    </div>
+                    <div class="inline-flex items-center gap-2 rounded-[22px] border border-slate-200 bg-slate-50 p-1">
+                        <button id="onsite-view-cards-btn" class="view-toggle-btn rounded-2xl px-4 py-2 text-sm font-black text-slate-600 inline-flex items-center gap-2">
+                            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                            卡片模式
+                        </button>
+                        <button id="onsite-view-roster-btn" class="view-toggle-btn rounded-2xl px-4 py-2 text-sm font-black text-slate-600 inline-flex items-center gap-2">
+                            <i data-lucide="table-properties" class="w-4 h-4"></i>
+                            隱私清單
+                        </button>
+                        <button id="onsite-scan-btn" class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50 inline-flex items-center gap-2 shadow-sm">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                            掃描 / 快速輸入
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        <section id="onsite-summary" class="hidden grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></section>
+
+        <section id="onsite-warning" class="hidden"></section>
+        <section id="onsite-collision-warning" class="hidden"></section>
+        <section id="onsite-batch-toolbar" class="hidden"></section>
+
+        <section id="onsite-group-container" class="space-y-4"></section>
+    </div>
+
+    <div id="onsite-scan-modal" class="scan-modal fixed inset-0 z-[70] hidden items-center justify-center p-4">
+        <div id="onsite-scan-shell" class="surface scan-feedback-shell w-full max-w-5xl rounded-[32px] p-5 sm:p-6 lg:p-7">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-[11px] font-black text-sky-700">
+                        <i data-lucide="scan-line" class="w-3.5 h-3.5"></i>
+                        現場快速通關
+                    </div>
+                    <h2 class="mt-3 text-2xl font-black tracking-tight">掃描 / 快速輸入模式</h2>
+                    <p class="mt-2 text-sm text-slate-500">可用平板相機掃描條碼或 QR Code，也能直接輸入報名序號、姓名、學校或組別。掃到後會自動定位到對應考生。</p>
+                </div>
+                <button id="onsite-scan-close-btn" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center shadow-sm" title="關閉">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 lg:grid-cols-[1.1fr_.9fr] gap-4">
+                <div class="rounded-[28px] border border-slate-200 bg-slate-950/95 p-3 shadow-[0_18px_40px_rgba(15,23,42,.12)]">
+                    <div class="scan-preview overflow-hidden rounded-[24px]">
+                        <div id="onsite-scan-reader" class="h-[360px] w-full"></div>
+                    </div>
+                    <div id="onsite-scan-status" class="mt-3 rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm text-slate-100">
+                        等待啟動相機掃描，或直接使用右側快速輸入。
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="surface rounded-[28px] p-4">
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-black uppercase tracking-[0.24em] text-slate-400">快速輸入</span>
+                            <input id="onsite-scan-input" type="text" placeholder="掃描後自動帶入，或直接輸入報名序號 / 姓名" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100">
+                        </label>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button id="onsite-scan-start-btn" class="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-black text-sky-700 hover:bg-sky-100 inline-flex items-center gap-2">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                                啟動相機掃描
+                            </button>
+                            <button id="onsite-scan-stop-btn" class="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50 inline-flex items-center gap-2">
+                                <i data-lucide="square-stop" class="w-4 h-4"></i>
+                                停止掃描
+                            </button>
+                            <button id="onsite-scan-clear-btn" class="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-2 text-sm font-black text-rose-700 hover:bg-rose-100 inline-flex items-center gap-2">
+                                <i data-lucide="eraser" class="w-4 h-4"></i>
+                                清除結果
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="surface rounded-[28px] p-4">
+                        <div class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">使用提示</div>
+                        <ul class="mt-2 space-y-2 text-sm text-slate-600">
+                            <li class="flex items-start gap-2"><span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-50 text-sky-600 text-[11px] font-black">1</span><span>優先用報名序號搜尋，速度最快、辨識最準。</span></li>
+                            <li class="flex items-start gap-2"><span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-black">2</span><span>若掃碼結果不唯一，右側會列出候選考生供點選。</span></li>
+                            <li class="flex items-start gap-2"><span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-50 text-violet-600 text-[11px] font-black">3</span><span>沒有相機權限也沒關係，直接輸入關鍵字一樣可以跳轉定位。</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="surface rounded-[28px] p-4">
+                        <div class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">候選結果</div>
+                        <div id="onsite-scan-results" class="mt-3 space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        const PLATFORM_STORAGE_KEY = 'multi_dept_workspaces_v6_1';
+        const PRESET_REMOTE_SYNC_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzLiQWA9yFDrBYQ035OQiIeqy7HkAUAAswfopcLpJ0CD36jGEFOXGi6BuKGXqHw6pg/exec';
+        const REMOTE_SYNC_CONFIG_KEY = 'secure_remote_sync_config_v1';
+        const REMOTE_SYNC_PASSPHRASE_KEY = 'secure_remote_sync_passphrase_v1';
+        const REMOTE_SYNC_REMEMBERED_PASSPHRASE_KEY = 'secure_remote_sync_remembered_unlock_v1';
+        const REMOTE_SYNC_REMEMBER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+        const REMOTE_SECURE_STORAGE_MODE = 'encrypted_v1';
+        const DEFAULT_SCHEDULER_STRATEGY = 'preference_wave';
+        const ONSITE_DISPLAY_MODE_KEY = 'onsite_display_mode_v1';
+        const ONSITE_QUICK_SCAN_SCRIPT_URL = 'https://unpkg.com/html5-qrcode';
+
+        let departments = [];
+        const initialDeptQueryId = new URLSearchParams(window.location.search).get('dept') || '';
+        const initialDeptQueryName = new URLSearchParams(window.location.search).get('deptName') || '';
+        let activeDeptId = initialDeptQueryId;
+        let onsiteFilter = 'all';
+        let onsiteQuery = '';
+        const onsiteState = {
+            mode: 'local',
+            webAppUrl: '',
+            passphrase: '',
+            secureLocked: false,
+            loading: false,
+            saveTimer: null,
+            saveInFlight: false,
+            pendingSave: false,
+            lastSavedFingerprint: '',
+            displayMode: localStorage.getItem(ONSITE_DISPLAY_MODE_KEY) === 'roster' ? 'roster' : 'cards',
+            collisionAlertKey: '',
+            scanModalOpen: false,
+            scanScanner: null,
+            scanLibraryPromise: null,
+            scanLibraryReady: false,
+            focusStudentId: '',
+            focusStudentTimer: null,
+            scanFeedbackTimer: null
+        };
+        const selectedStudentIds = new Set();
+        let onsiteAudioContext = null;
+
+        function setLoadingOverlay(visible, text = '') {
+            const overlay = document.getElementById('onsite-loading-overlay');
+            const message = document.getElementById('onsite-loading-text');
+            if (!overlay) return;
+            if (message && text) message.textContent = text;
+            overlay.classList.toggle('is-hidden', !visible);
+        }
+
+        function deepCloneData(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function normalizeBirthDate(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(raw)) {
+                const [y, m, d] = raw.split('/');
+                return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+            if (/^\d{8}$/.test(raw)) {
+                return `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`;
+            }
+            return raw;
+        }
+
+        function normalizeWebAppUrl(url) {
+            return String(url || '').trim().replace(/\/+$/, '');
+        }
+
+        function getPresetRemoteSyncUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const fromQuery = normalizeWebAppUrl(params.get('bridge') || '');
+                if (fromQuery) return fromQuery;
+            } catch (error) {}
+            return normalizeWebAppUrl(PRESET_REMOTE_SYNC_WEB_APP_URL);
+        }
+
+        function loadRemoteSyncConfig() {
+            const saved = localStorage.getItem(REMOTE_SYNC_CONFIG_KEY);
+            const presetUrl = getPresetRemoteSyncUrl();
+            if (!saved) {
+                return presetUrl ? { webAppUrl: presetUrl, sheetUrl: '', spreadsheetName: '' } : null;
+            }
+            try {
+                const parsed = JSON.parse(saved);
+                if (!parsed || typeof parsed !== 'object') return null;
+                const webAppUrl = presetUrl || normalizeWebAppUrl(parsed.webAppUrl || '');
+                if (!webAppUrl) return null;
+                return {
+                    webAppUrl,
+                    sheetUrl: String(parsed.sheetUrl || ''),
+                    spreadsheetName: String(parsed.spreadsheetName || '')
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function readRemoteSyncPassphrase() {
+            try { return sessionStorage.getItem(REMOTE_SYNC_PASSPHRASE_KEY) || ''; } catch (error) { return ''; }
+        }
+
+        function writeRemoteSyncPassphrase(passphrase) {
+            try {
+                if (passphrase) sessionStorage.setItem(REMOTE_SYNC_PASSPHRASE_KEY, passphrase);
+            } catch (error) {}
+        }
+
+        function readRememberedRemoteSyncPassphrase() {
+            try {
+                const raw = localStorage.getItem(REMOTE_SYNC_REMEMBERED_PASSPHRASE_KEY);
+                if (!raw) return '';
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') return '';
+                const savedAt = Number(parsed.savedAt || 0);
+                if (!savedAt || (Date.now() - savedAt) > REMOTE_SYNC_REMEMBER_TTL_MS) {
+                    localStorage.removeItem(REMOTE_SYNC_REMEMBERED_PASSPHRASE_KEY);
+                    return '';
+                }
+                return String(parsed.passphrase || '');
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function normalizeSessionToken(inputStr) {
+            return String(inputStr || '').trim().toLowerCase().replace(/\s+/g, '');
+        }
+
+        function normalizePreferencePeriodToken(inputStr) {
+            const token = normalizeSessionToken(inputStr).replace(/[.．。:：]/g, '');
+            if (!token) return '';
+            if (token.includes('上午') || token.includes('早上') || token === 'am' || token === 'morning') return 'am';
+            if (token.includes('下午') || token.includes('午後') || token === 'pm' || token === 'afternoon') return 'pm';
+            return '';
+        }
+
+        function getPreferencePeriodLabel(period) {
+            if (period === 'am') return '上午';
+            if (period === 'pm') return '下午';
+            return '';
+        }
+
+        function getStudentPreferencePeriod(student) {
+            return normalizePreferencePeriodToken(student?.prefPeriod || student?.prefHalfDay || student?.preferredPeriod || '');
+        }
+
+        function getStudentPreferenceDetails(student, dept) {
+            const prefSession = Array.isArray(dept?.sessions) ? dept.sessions.find(session => session.id === student?.pref) : null;
+            const prefPeriod = getStudentPreferencePeriod(student);
+            return {
+                prefSession,
+                prefPeriod,
+                prefPeriodLabel: getPreferencePeriodLabel(prefPeriod)
+            };
+        }
+
+        function timeToMins(tStr) {
+            const safe = String(tStr || '');
+            if (!safe.includes(':')) return Number.NaN;
+            const parts = safe.split(':');
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        }
+
+        function minsToTimeStr(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function getEvenLoadOralStructure(dept) {
+            const groupsPerTeam = Math.max(1, parseInt(dept?.cfgOralTeamGroupCount) || 2);
+            const teamsPerLadder = Math.max(1, parseInt(dept?.cfgOralTeamsPerLadder) || 2);
+            return {
+                groupsPerTeam,
+                teamsPerLadder,
+                groupsPerLadder: groupsPerTeam * teamsPerLadder
+            };
+        }
+
+        function getEvenLoadGroupPosition(dept, groupIdx) {
+            const { groupsPerTeam, groupsPerLadder } = getEvenLoadOralStructure(dept);
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            const ladderIndex = Math.floor(safeGroupIdx / groupsPerLadder);
+            const ladderNumber = ladderIndex + 1;
+            const groupSlotInLadder = safeGroupIdx % groupsPerLadder;
+            const teamNumber = Math.floor(groupSlotInLadder / groupsPerTeam) + 1;
+            const groupInTeam = (groupSlotInLadder % groupsPerTeam) + 1;
+            const ladderPhase = ladderIndex % 2 === 0 ? '面試先' : '筆試先';
+            return { ladderIndex, ladderNumber, groupSlotInLadder, teamNumber, groupInTeam, ladderPhase, groupsPerTeam, groupsPerLadder };
+        }
+
+        function getAssignedGroupLabelForExport(dept, student) {
+            if (student?.assignedOralGroupIdx === null || student?.assignedOralGroupIdx === undefined) return '';
+            if ((dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY) === 'even_load') {
+                const pos = getEvenLoadGroupPosition(dept, student.assignedOralGroupIdx);
+                return `第 ${pos.ladderNumber} 梯・第 ${pos.teamNumber} 隊・第 ${pos.groupInTeam} 組`;
+            }
+            return `第 ${parseInt(student.assignedOralGroupIdx, 10) + 1} 組`;
+        }
+
+        function utf8ToBase64(text) {
+            return btoa(unescape(encodeURIComponent(String(text || ''))));
+        }
+
+        function base64ToUtf8(base64) {
+            return decodeURIComponent(escape(atob(base64)));
+        }
+
+        function bytesToBase64(bytes) {
+            let binary = '';
+            bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            return btoa(binary);
+        }
+
+        function base64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes;
+        }
+
+        async function deriveAesKey(passphrase, saltBytes) {
+            const encoder = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', encoder.encode(String(passphrase || '')), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: saltBytes, iterations: 120000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encryptJsonWithPassphrase(payload, passphrase) {
+            const encoder = new TextEncoder();
+            const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+            const ivBytes = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveAesKey(passphrase, saltBytes);
+            const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: ivBytes }, key, encoder.encode(JSON.stringify(payload)));
+            return {
+                version: REMOTE_SECURE_STORAGE_MODE,
+                salt: bytesToBase64(saltBytes),
+                iv: bytesToBase64(ivBytes),
+                ciphertext: bytesToBase64(new Uint8Array(cipherBuffer))
+            };
+        }
+
+        async function decryptJsonWithPassphrase(bundle, passphrase) {
+            const key = await deriveAesKey(passphrase, base64ToBytes(bundle.salt));
+            const plainBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: base64ToBytes(bundle.iv) }, key, base64ToBytes(bundle.ciphertext));
+            return JSON.parse(new TextDecoder().decode(plainBuffer));
+        }
+
+        function parseSecureEncryptedBundle(row) {
+            const raw = row?.encryptedPayload;
+            if (!raw) throw new Error('雲端資料缺少加密內容。');
+            if (typeof raw === 'object') return raw;
+            return JSON.parse(raw);
+        }
+
+        function maskStudentName(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '未命名';
+            if (raw.length === 1) return raw + '○';
+            return raw[0] + '○'.repeat(Math.max(1, raw.length - 1));
+        }
+
+        function maskBirthDate(value) {
+            const birthDate = normalizeBirthDate(value || '');
+            if (!birthDate) return '未填';
+            const [year = '****'] = birthDate.split('-');
+            return `${year}-**-**`;
+        }
+
+        function maskSchoolName(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '未填';
+            if (raw.length <= 2) return raw[0] + '…';
+            return raw.slice(0, 2) + '…';
+        }
+
+        function maskConflictText(value) {
+            return String(value || '').trim() ? '已登記外部撞期' : '';
+        }
+
+        function maskDisplayName(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '未命名';
+            if (raw.length === 1) return `${raw}○`;
+            if (raw.length === 2) return `${raw[0]}○`;
+            return `${raw[0]}○${raw[raw.length - 1]}`;
+        }
+
+        function maskRegistrationId(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '未填';
+            if (raw.length <= 4) return `${raw.slice(0, 1)}${'•'.repeat(Math.max(1, raw.length - 1))}`;
+            return `${raw.slice(0, 4)}${'•'.repeat(Math.max(2, raw.length - 6))}${raw.slice(-2)}`;
+        }
+
+        function maskSchoolDisplay(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '未填';
+            const codeMatch = raw.match(/^\d{3,5}/);
+            const code = codeMatch ? codeMatch[0] : '';
+            const rest = code ? raw.slice(code.length).trim() : raw;
+            if (!rest) return `${code} …`.trim();
+            if (rest.length <= 2) return `${code ? `${code} ` : ''}${rest[0]}…`;
+            return `${code ? `${code} ` : ''}${rest.slice(0, 2)}…`;
+        }
+
+        function getStudentPreferenceSummary(student, dept) {
+            const details = getStudentPreferenceDetails(student, dept);
+            const parts = [];
+            if (details.prefSession?.name) parts.push(`預約：${details.prefSession.name}`);
+            if (details.prefPeriodLabel) parts.push(`上下午：${details.prefPeriodLabel}`);
+            return parts.length ? parts : ['未填偏好'];
+        }
+
+        function getStudentConflictSummary(student) {
+            const conflict = String(student?.conflict || '').trim();
+            return conflict || '';
+        }
+
+        function cleanStandardValue(value) {
+            return String(value ?? '')
+                .trim()
+                .normalize('NFKC')
+                .replace(/\s+/g, '')
+                .replace(/[｜|·•/\\().,，。:：;；、]/g, '');
+        }
+
+        function getStudentIdentityKey(student) {
+            const nameKey = cleanStandardValue(student?.name);
+            const birthKey = normalizeBirthDate(student?.birthDate || student?.birthday || student?.dob || '');
+            if (!nameKey || !birthKey) return '';
+            return `${nameKey}|${birthKey}`;
+        }
+
+        function getCrossDeptMatches(student, currentDeptId) {
+            const identityKey = getStudentIdentityKey(student);
+            if (!identityKey) return [];
+
+            const matches = [];
+            departments.forEach(dept => {
+                if (!dept || dept.id === currentDeptId) return;
+                (dept.students || []).forEach(other => {
+                    if (getStudentIdentityKey(other) === identityKey) {
+                        matches.push({ dept, student: other });
+                    }
+                });
+            });
+            return matches;
+        }
+
+        function getCrossDeptNames(student, currentDeptId) {
+            return [...new Set(getCrossDeptMatches(student, currentDeptId).map(match => match.dept?.name).filter(Boolean))];
+        }
+
+        function hasTimeOverlap(startA, endA, startB, endB) {
+            const aS = timeToMins(startA);
+            const aE = timeToMins(endA);
+            const bS = timeToMins(startB);
+            const bE = timeToMins(endB);
+            return Number.isFinite(aS) && Number.isFinite(aE) && Number.isFinite(bS) && Number.isFinite(bE) && (aS < bE && aE > bS);
+        }
+
+        function hasConflictWithPeriod(conflictStr, sessionStartStr, sessionEndStr) {
+            const raw = String(conflictStr || '').trim();
+            if (!raw || !raw.includes('-') || !sessionStartStr || !sessionEndStr) return false;
+            const parts = raw.split('-');
+            const confStart = String(parts[0] || '').trim();
+            const confEnd = String(parts[1] || '').trim();
+            return hasTimeOverlap(confStart, confEnd, sessionStartStr, sessionEndStr);
+        }
+
+        function getScheduledPeriodsForStudent(student) {
+            const periods = [];
+            if (student?.writtenStart && student?.writtenEnd) {
+                periods.push({ type: '筆試', start: student.writtenStart, end: student.writtenEnd });
+            }
+            if (student?.oralStart && student?.oralEnd) {
+                periods.push({ type: '面試', start: student.oralStart, end: student.oralEnd });
+            }
+            return periods;
+        }
+
+        function getCrossDeptScheduledConflicts(student, currentDeptId, writtenStart, writtenEnd, oralStart, oralEnd) {
+            const targetPeriods = [
+                { type: '筆試', start: writtenStart, end: writtenEnd },
+                { type: '面試', start: oralStart, end: oralEnd }
+            ].filter(period => period.start && period.end);
+            if (targetPeriods.length === 0) return [];
+
+            const conflicts = [];
+            const seenConflictKeys = new Set();
+            getCrossDeptMatches(student, currentDeptId).forEach(match => {
+                getScheduledPeriodsForStudent(match.student).forEach(otherPeriod => {
+                    targetPeriods.forEach(targetPeriod => {
+                        if (!hasTimeOverlap(targetPeriod.start, targetPeriod.end, otherPeriod.start, otherPeriod.end)) return;
+                        const conflictKey = [match.dept.id, match.student.id, otherPeriod.type, otherPeriod.start, otherPeriod.end].join('|');
+                        if (seenConflictKeys.has(conflictKey)) return;
+                        seenConflictKeys.add(conflictKey);
+                        conflicts.push({
+                            deptName: match.dept.name,
+                            otherType: otherPeriod.type,
+                            start: otherPeriod.start,
+                            end: otherPeriod.end,
+                            targetType: targetPeriod.type
+                        });
+                    });
+                });
+            });
+            return conflicts;
+        }
+
+        function getStudentCollisionSummary(student, dept) {
+            const crossDeptNames = getCrossDeptNames(student, dept?.id);
+            const crossConflicts = getCrossDeptScheduledConflicts(student, dept?.id, student?.writtenStart, student?.writtenEnd, student?.oralStart, student?.oralEnd);
+            const selfConflictHits = [];
+            if (student?.conflict) {
+                if (student.writtenStart && student.writtenEnd && hasConflictWithPeriod(student.conflict, student.writtenStart, student.writtenEnd)) {
+                    selfConflictHits.push(`筆試 ${student.writtenStart} ~ ${student.writtenEnd}`);
+                }
+                if (student.oralStart && student.oralEnd && hasConflictWithPeriod(student.conflict, student.oralStart, student.oralEnd)) {
+                    selfConflictHits.push(`面試 ${student.oralStart} ~ ${student.oralEnd}`);
+                }
+            }
+            return {
+                crossDeptNames,
+                crossConflicts,
+                selfConflictHits,
+                hasCollision: crossDeptNames.length > 0 || crossConflicts.length > 0 || selfConflictHits.length > 0
+            };
+        }
+
+        function buildCollisionSummary(dept) {
+            const items = [];
+            const seen = new Set();
+            (dept?.students || []).forEach(student => {
+                const details = getStudentCollisionSummary(student, dept);
+                if (!details.hasCollision) return;
+                const key = `${student.id}|${details.crossDeptNames.join(',')}|${details.crossConflicts.map(item => `${item.deptName}:${item.start}-${item.end}`).join(',')}|${details.selfConflictHits.join(',')}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                items.push({
+                    student,
+                    ...details
+                });
+            });
+            return {
+                count: items.length,
+                items,
+                signature: items.map(item => `${item.student.id}|${item.crossDeptNames.join(',')}|${item.crossConflicts.length}|${item.selfConflictHits.join(',')}`).join('||')
+            };
+        }
+
+        function playUiTone(kind = 'success') {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!onsiteAudioContext) onsiteAudioContext = new AudioContextClass();
+                const ctx = onsiteAudioContext;
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                const configMap = {
+                    success: { notes: [660, 880], duration: 0.09, gap: 0.05, volume: 0.04, type: 'sine' },
+                    warning: { notes: [520], duration: 0.14, gap: 0, volume: 0.045, type: 'triangle' },
+                    error: { notes: [220, 180], duration: 0.16, gap: 0.06, volume: 0.05, type: 'square' },
+                    info: { notes: [440], duration: 0.1, gap: 0, volume: 0.035, type: 'sine' }
+                };
+                const cfg = configMap[kind] || configMap.success;
+                const startAt = ctx.currentTime + 0.03;
+                cfg.notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = cfg.type;
+                    osc.frequency.setValueAtTime(freq, startAt + idx * (cfg.duration + cfg.gap));
+                    gain.gain.setValueAtTime(0.0001, startAt + idx * (cfg.duration + cfg.gap));
+                    gain.gain.exponentialRampToValueAtTime(cfg.volume, startAt + idx * (cfg.duration + cfg.gap) + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + idx * (cfg.duration + cfg.gap) + cfg.duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(startAt + idx * (cfg.duration + cfg.gap));
+                    osc.stop(startAt + idx * (cfg.duration + cfg.gap) + cfg.duration + 0.02);
+                });
+            } catch (error) {}
+        }
+
+        function playQuickScanTone(kind = 'success') {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!onsiteAudioContext) onsiteAudioContext = new AudioContextClass();
+                const ctx = onsiteAudioContext;
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                const configMap = {
+                    success: { notes: [784, 988, 1175], duration: 0.075, gap: 0.038, volume: 0.06, type: 'sine' },
+                    error: { notes: [220, 164], duration: 0.16, gap: 0.06, volume: 0.065, type: 'square' }
+                };
+                const cfg = configMap[kind] || configMap.success;
+                const startAt = ctx.currentTime + 0.02;
+                cfg.notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const offset = idx * (cfg.duration + cfg.gap);
+                    osc.type = cfg.type;
+                    osc.frequency.setValueAtTime(freq, startAt + offset);
+                    gain.gain.setValueAtTime(0.0001, startAt + offset);
+                    gain.gain.exponentialRampToValueAtTime(cfg.volume, startAt + offset + 0.014);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + offset + cfg.duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(startAt + offset);
+                    osc.stop(startAt + offset + cfg.duration + 0.02);
+                });
+            } catch (error) {}
+        }
+
+        function triggerQuickScanFeedback(kind = 'success') {
+            const modal = document.getElementById('onsite-scan-modal');
+            const shell = document.getElementById('onsite-scan-shell');
+            if (!modal || !shell) return;
+            const classes = ['scan-feedback-success', 'scan-feedback-error'];
+            modal.classList.remove(...classes);
+            shell.classList.remove(...classes);
+            if (onsiteState.scanFeedbackTimer) clearTimeout(onsiteState.scanFeedbackTimer);
+            void shell.offsetWidth;
+            modal.classList.add(`scan-feedback-${kind}`);
+            shell.classList.add(`scan-feedback-${kind}`);
+            if (kind === 'error' && navigator.vibrate) {
+                try { navigator.vibrate([90, 50, 140]); } catch (error) {}
+            }
+            playQuickScanTone(kind);
+            onsiteState.scanFeedbackTimer = setTimeout(() => {
+                modal.classList.remove(...classes);
+                shell.classList.remove(...classes);
+                onsiteState.scanFeedbackTimer = null;
+            }, kind === 'error' ? 1100 : 850);
+        }
+
+        function getVisibleStudentIds(filteredGroups) {
+            return filteredGroups.flatMap(group => group.students.map(student => String(student.id)));
+        }
+
+        function toggleStudentSelection(studentId) {
+            const id = String(studentId || '').trim();
+            if (!id) return;
+            if (selectedStudentIds.has(id)) selectedStudentIds.delete(id);
+            else selectedStudentIds.add(id);
+            renderGroups();
+        }
+
+        function clearSelection() {
+            selectedStudentIds.clear();
+            renderGroups();
+        }
+
+        function selectVisibleStudents(studentIds) {
+            (Array.isArray(studentIds) ? studentIds : []).forEach(id => selectedStudentIds.add(String(id)));
+            renderGroups();
+        }
+
+        function getSelectedStudents(dept) {
+            return (dept?.students || []).filter(student => selectedStudentIds.has(String(student.id)));
+        }
+
+        function batchApplySelected(action) {
+            const dept = departments.find(item => item.id === activeDeptId);
+            if (!dept) return;
+            const students = getSelectedStudents(dept);
+            if (!students.length) {
+                showToast('請先選取至少一位考生。', 'info');
+                playUiTone('info');
+                return;
+            }
+            const now = nowIso();
+            students.forEach(student => {
+                normalizeStudentOnsiteFields(student);
+                if (action === 'checkin') {
+                    student.onsiteCheckedInAt = student.onsiteCheckedInAt || now;
+                    student.onsiteAbsentAt = '';
+                } else if (action === 'written') {
+                    student.onsiteCheckedInAt = student.onsiteCheckedInAt || now;
+                    student.onsiteWrittenDoneAt = now;
+                    student.onsiteAbsentAt = '';
+                } else if (action === 'oral') {
+                    student.onsiteCheckedInAt = student.onsiteCheckedInAt || now;
+                    student.onsiteOralDoneAt = now;
+                    student.onsiteAbsentAt = '';
+                } else if (action === 'absent') {
+                    student.onsiteAbsentAt = now;
+                    student.onsiteCheckedInAt = '';
+                    student.onsiteWrittenDoneAt = '';
+                    student.onsiteOralDoneAt = '';
+                } else if (action === 'clear') {
+                    student.onsiteCheckedInAt = '';
+                    student.onsiteWrittenDoneAt = '';
+                    student.onsiteOralDoneAt = '';
+                    student.onsiteAbsentAt = '';
+                }
+            });
+            renderGroups();
+            scheduleSave();
+            const toneMap = { checkin: 'success', written: 'success', oral: 'success', absent: 'warning', clear: 'info' };
+            playUiTone(toneMap[action] || 'success');
+            const labelMap = { checkin: '報到', written: '筆試完成', oral: '面試完成', absent: '缺考', clear: '清空現場狀態' };
+            showToast(`已批次${labelMap[action] || '更新'} ${students.length} 位考生。`, action === 'absent' ? 'info' : 'success');
+        }
+
+        function renderBatchToolbar(dept, filteredGroups) {
+            const box = document.getElementById('onsite-batch-toolbar');
+            const count = selectedStudentIds.size;
+            if (!count) {
+                box.classList.add('hidden');
+                box.innerHTML = '';
+                return;
+            }
+            const visibleIds = getVisibleStudentIds(filteredGroups);
+            box.className = 'batch-toolbar rounded-3xl p-4 sm:p-5';
+            box.innerHTML = `
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">批次操作</div>
+                        <div class="mt-1 text-sm font-black text-slate-800">已選取 ${count} 位考生</div>
+                        <div class="mt-1 text-xs text-slate-500">可先全選目前畫面，再一次套用報到、筆試、面試或缺考狀態。</div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50" onclick='selectVisibleStudents(${JSON.stringify(visibleIds)})'>
+                            全選畫面
+                        </button>
+                        <button class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50" onclick="clearSelection()">
+                            清除選取
+                        </button>
+                        <button class="rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-black text-sky-700 hover:bg-sky-100" onclick="batchApplySelected('checkin')">批次報到</button>
+                        <button class="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100" onclick="batchApplySelected('written')">批次筆試</button>
+                        <button class="rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 hover:bg-violet-100" onclick="batchApplySelected('oral')">批次面試</button>
+                        <button class="rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100" onclick="batchApplySelected('absent')">批次缺考</button>
+                        <button class="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-100" onclick="batchApplySelected('clear')">清空現場狀態</button>
+                    </div>
+                </div>
+            `;
+            box.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function renderCollisionWarning(dept) {
+            const box = document.getElementById('onsite-collision-warning');
+            const summary = buildCollisionSummary(dept);
+            const collisionKey = `${dept?.id || ''}|${summary.signature || ''}`;
+            if (summary.count > 0 && onsiteState.collisionAlertKey !== collisionKey) {
+                onsiteState.collisionAlertKey = collisionKey;
+                playUiTone('warning');
+            }
+            if (!summary.count) {
+                onsiteState.collisionAlertKey = '';
+                box.classList.add('hidden');
+                box.innerHTML = '';
+                return summary;
+            }
+            box.className = 'collision-card rounded-3xl p-4 sm:p-5';
+            box.innerHTML = `
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="h-11 w-11 rounded-2xl bg-white/90 text-amber-700 flex items-center justify-center shadow-sm">
+                            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-black text-amber-900">撞期警示：${summary.count} 位考生有跨系或時間重疊</div>
+                            <div class="mt-1 text-xs text-amber-800">請先確認有跨系的學生，再排批次操作時盡量避開已經有其他科系時段的考生。</div>
+                        </div>
+                    </div>
+                    <div class="inline-flex items-center gap-2 rounded-full collision-chip px-3 py-1 text-[11px] font-black text-amber-800">
+                        <i data-lucide="alarm-clock" class="w-3.5 h-3.5"></i>
+                        已檢出 ${summary.count} 筆警示
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    ${summary.items.slice(0, 8).map(item => {
+                        const names = item.crossDeptNames.length ? item.crossDeptNames.join('、') : '外部撞期';
+                        const conflictText = item.crossConflicts.length
+                            ? item.crossConflicts.map(conflict => `${conflict.deptName} ${conflict.otherType} ${conflict.start}-${conflict.end}`).join('、')
+                            : item.selfConflictHits.join('、');
+                        return `<span class="inline-flex items-start gap-2 rounded-2xl border border-amber-200 bg-white/90 px-3 py-2 text-xs text-amber-900 shadow-sm">
+                            <span class="font-black">${item.student.name || '未命名'} (${item.student.id || '無序號'})</span>
+                            <span class="text-amber-700">｜${names}${conflictText ? `｜${conflictText}` : ''}</span>
+                        </span>`;
+                    }).join('')}
+                    ${summary.items.length > 8 ? `<span class="inline-flex items-center rounded-2xl border border-amber-200 bg-white/90 px-3 py-2 text-xs font-black text-amber-700 shadow-sm">還有 ${summary.items.length - 8} 筆…</span>` : ''}
+                </div>
+            `;
+            box.classList.remove('hidden');
+            lucide.createIcons();
+            return summary;
+        }
+
+        function renderCollisionBadges(details) {
+            if (!details?.hasCollision) return '';
+            const tags = [];
+            if (details.crossDeptNames?.length) {
+                tags.push(`<span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700">跨系：${details.crossDeptNames.join('、')}</span>`);
+            }
+            if (details.crossConflicts?.length) {
+                tags.push(`<span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-700">撞期：${details.crossConflicts.map(conflict => conflict.deptName).filter(Boolean).join('、')}</span>`);
+            }
+            if (details.selfConflictHits?.length) {
+                tags.push(`<span class="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-black text-orange-700">自訂撞期</span>`);
+            }
+            return tags.length ? `<div class="mt-2 flex flex-wrap gap-1.5">${tags.join('')}</div>` : '';
+        }
+
+        function cleanQuickLookupQuery(value) {
+            return cleanStandardValue(value).toLowerCase();
+        }
+
+        function getStudentLookupText(student, dept) {
+            const parts = [
+                student?.id || '',
+                student?.name || '',
+                normalizeBirthDate(student?.birthDate || ''),
+                student?.school || '',
+                dept?.name || '',
+                student?.pref || '',
+                student?.prefPeriod || student?.prefHalfDay || student?.preferredPeriod || '',
+                student?.assignedSessionId || '',
+                student?.assignedOralGroupIdx !== null && student?.assignedOralGroupIdx !== undefined ? String(student.assignedOralGroupIdx + 1) : '',
+                student?.assignedWrittenRoomIdx !== null && student?.assignedWrittenRoomIdx !== undefined ? String(student.assignedWrittenRoomIdx + 1) : '',
+                student?.assignedOralRoomIdx !== null && student?.assignedOralRoomIdx !== undefined ? String(student.assignedOralRoomIdx + 1) : ''
+            ];
+            return cleanQuickLookupQuery(parts.join(' '));
+        }
+
+        function getQuickLookupMatches(query) {
+            const normalized = cleanQuickLookupQuery(query);
+            if (!normalized) return [];
+
+            const matches = [];
+            departments.forEach(dept => {
+                (dept.students || []).forEach(student => {
+                    const lookupText = getStudentLookupText(student, dept);
+                    const idText = cleanQuickLookupQuery(student?.id || '');
+                    const nameText = cleanQuickLookupQuery(student?.name || '');
+                    const schoolText = cleanQuickLookupQuery(student?.school || '');
+                    const birthText = cleanQuickLookupQuery(normalizeBirthDate(student?.birthDate || ''));
+                    let score = Number.POSITIVE_INFINITY;
+
+                    if (idText && idText === normalized) score = 0;
+                    else if (nameText && nameText === normalized) score = 1;
+                    else if (idText && idText.includes(normalized)) score = 2;
+                    else if (nameText && nameText.includes(normalized)) score = 3;
+                    else if (birthText && birthText.includes(normalized)) score = 4;
+                    else if (schoolText && schoolText.includes(normalized)) score = 5;
+                    else if (lookupText.includes(normalized)) score = 6;
+                    else return;
+
+                    matches.push({ dept, student, score });
+                });
+            });
+
+            return matches.sort((a, b) => {
+                if (a.score !== b.score) return a.score - b.score;
+                if (a.dept.id === activeDeptId && b.dept.id !== activeDeptId) return -1;
+                if (b.dept.id === activeDeptId && a.dept.id !== activeDeptId) return 1;
+                if (a.dept.name !== b.dept.name) return String(a.dept.name || '').localeCompare(String(b.dept.name || ''), 'zh-Hant');
+                return String(a.student.name || '').localeCompare(String(b.student.name || ''), 'zh-Hant');
+            });
+        }
+
+        function renderQuickScanResults(matches, query) {
+            const box = document.getElementById('onsite-scan-results');
+            if (!box) return;
+            if (!query) {
+                box.innerHTML = `
+                    <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                        請先輸入報名序號、姓名、學校或直接掃描條碼。
+                    </div>
+                `;
+                return;
+            }
+            if (!matches.length) {
+                box.innerHTML = `
+                    <div class="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">
+                        找不到符合 <span class="font-black">${query}</span> 的考生。
+                    </div>
+                `;
+                return;
+            }
+            box.innerHTML = matches.slice(0, 8).map(match => {
+                const isCurrent = match.dept.id === activeDeptId;
+                const label = [
+                    match.dept.name,
+                    match.student.name || '未命名',
+                    maskRegistrationId(match.student.id)
+                ].join(' ・ ');
+                return `
+                    <button class="scan-result-card w-full rounded-3xl border ${isCurrent ? 'border-indigo-200 bg-indigo-50/80' : 'border-slate-200 bg-white'} px-4 py-3 text-left" data-dept-id="${match.dept.id}" data-student-id="${match.student.id}" onclick="openQuickLookupStudent('${match.dept.id}', '${match.student.id}')">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-sm font-black text-slate-900">${label}</div>
+                                <div class="mt-1 text-xs text-slate-500">${getOnsiteStatus(match.student).label} ・ ${match.student.assignedSessionId ? '已排定' : '未排定'}</div>
+                            </div>
+                            <div class="inline-flex items-center rounded-full ${isCurrent ? 'border border-indigo-100 bg-indigo-100 text-indigo-700' : 'border border-slate-200 bg-slate-50 text-slate-500'} px-3 py-1 text-[11px] font-black">
+                                ${isCurrent ? '目前科系' : '切換科系'}
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function syncQuickScanStatus(message, tone = 'ready') {
+            const el = document.getElementById('onsite-scan-status');
+            if (!el) return;
+            const palette = {
+                ready: 'border-white/10 bg-white/8 text-slate-100',
+                info: 'border-sky-200 bg-sky-50 text-sky-900',
+                success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+                warning: 'border-amber-200 bg-amber-50 text-amber-900',
+                error: 'border-rose-200 bg-rose-50 text-rose-900'
+            };
+            el.className = `mt-3 rounded-2xl border px-4 py-3 text-sm ${palette[tone] || palette.ready}`;
+            el.textContent = message;
+        }
+
+        function setQuickScanInputValue(value) {
+            const input = document.getElementById('onsite-scan-input');
+            if (input) input.value = value || '';
+        }
+
+        function clearQuickScanResults() {
+            onsiteState.focusStudentId = '';
+            setQuickScanInputValue('');
+            onsiteQuery = '';
+            const searchInput = document.getElementById('onsite-search-input');
+            if (searchInput) searchInput.value = '';
+            const filterSelect = document.getElementById('onsite-filter-select');
+            onsiteFilter = 'all';
+            if (filterSelect) filterSelect.value = 'all';
+            renderGroups();
+            renderQuickScanResults([], '');
+            syncQuickScanStatus('已清除快速輸入結果，可以重新掃描。', 'ready');
+        }
+
+        function scrollToFocusedStudent() {
+            const studentId = String(onsiteState.focusStudentId || '').trim();
+            if (!studentId) return;
+            const safeId = studentId.replace(/"/g, '\\"');
+            const target = document.querySelector(`[data-student-id="${safeId}"]`);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            target.classList.add('scan-focus');
+            if (onsiteState.focusStudentTimer) clearTimeout(onsiteState.focusStudentTimer);
+            onsiteState.focusStudentTimer = setTimeout(() => {
+                target.classList.remove('scan-focus');
+            }, 2200);
+        }
+
+        function focusStudentInCurrentView(studentId, queryValue = '') {
+            const targetId = String(studentId || '').trim();
+            if (!targetId) return;
+            selectedStudentIds.clear();
+            onsiteState.focusStudentId = targetId;
+            onsiteFilter = 'all';
+            const filterSelect = document.getElementById('onsite-filter-select');
+            if (filterSelect) filterSelect.value = 'all';
+            onsiteQuery = cleanQuickLookupQuery(queryValue || targetId);
+            const searchInput = document.getElementById('onsite-search-input');
+            if (searchInput) searchInput.value = queryValue || targetId;
+            renderGroups();
+            requestAnimationFrame(() => scrollToFocusedStudent());
+        }
+
+        function openStudentFromQuickLookup(deptId, studentId, queryValue = '') {
+            const dept = departments.find(item => String(item.id) === String(deptId));
+            const student = dept?.students?.find(item => String(item.id) === String(studentId));
+            if (!dept || !student) {
+                triggerQuickScanFeedback('error');
+                showToast('找不到對應考生，請重新掃描或輸入。', 'error');
+                return;
+            }
+            activeDeptId = dept.id;
+            renderDepartmentSelect();
+            focusStudentInCurrentView(student.id, queryValue || student.id || student.name || '');
+            closeQuickScanModal(false);
+            const deptSelect = document.getElementById('onsite-dept-select');
+            if (deptSelect) deptSelect.value = dept.id;
+            triggerQuickScanFeedback('success');
+            showToast(`已定位到 ${student.name || '考生'}。`, 'success');
+        }
+
+        async function ensureQuickScanLibrary() {
+            if (window.Html5Qrcode) return true;
+            if (onsiteState.scanLibraryPromise) return onsiteState.scanLibraryPromise;
+            onsiteState.scanLibraryPromise = new Promise((resolve, reject) => {
+                const existing = document.querySelector(`script[data-quick-scan-lib="1"]`);
+                if (existing && window.Html5Qrcode) {
+                    resolve(true);
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = ONSITE_QUICK_SCAN_SCRIPT_URL;
+                script.async = true;
+                script.dataset.quickScanLib = '1';
+                script.onload = () => resolve(true);
+                script.onerror = () => reject(new Error('掃描模組載入失敗，請確認網路連線。'));
+                document.head.appendChild(script);
+            }).finally(() => {
+                onsiteState.scanLibraryPromise = null;
+            });
+            return onsiteState.scanLibraryPromise;
+        }
+
+        function stopQuickScanCamera() {
+            const scanner = onsiteState.scanScanner;
+            onsiteState.scanScanner = null;
+            if (!scanner) return Promise.resolve();
+            const finalize = () => {
+                const reader = document.getElementById('onsite-scan-reader');
+                if (reader) reader.innerHTML = '';
+            };
+            try {
+                const stopResult = scanner.stop ? scanner.stop() : Promise.resolve();
+                return Promise.resolve(stopResult)
+                    .catch(() => {})
+                    .then(() => {
+                        if (scanner.clear) return Promise.resolve(scanner.clear()).catch(() => {});
+                    })
+                    .then(() => {
+                        finalize();
+                    });
+            } catch (error) {
+                finalize();
+                return Promise.resolve();
+            }
+        }
+
+        async function startQuickScanCamera() {
+            const readerId = 'onsite-scan-reader';
+            const readerEl = document.getElementById(readerId);
+            if (!readerEl) return;
+            if (!window.Html5Qrcode) {
+                try {
+                    syncQuickScanStatus('正在載入掃描模組…', 'info');
+                    await ensureQuickScanLibrary();
+                } catch (error) {
+                    triggerQuickScanFeedback('error');
+                    syncQuickScanStatus(error.message || '掃描模組載入失敗，請改用快速輸入。', 'error');
+                    showToast(error.message || '掃描模組載入失敗。', 'error');
+                    return;
+                }
+            }
+            if (!window.Html5Qrcode) {
+                triggerQuickScanFeedback('error');
+                syncQuickScanStatus('目前瀏覽器不支援相機掃描，請直接使用右側快速輸入。', 'warning');
+                return;
+            }
+            await stopQuickScanCamera();
+            const scanner = new Html5Qrcode(readerId);
+            onsiteState.scanScanner = scanner;
+            const config = { fps: 10, qrbox: { width: 260, height: 260 }, disableFlip: false };
+            syncQuickScanStatus('相機已啟動，請把條碼或 QR Code 放進框內。', 'success');
+            try {
+                await scanner.start(
+                    { facingMode: 'environment' },
+                    config,
+                    (decodedText) => {
+                        const value = String(decodedText || '').trim();
+                        if (!value) return;
+                        setQuickScanInputValue(value);
+                        handleQuickLookup(value, 'camera');
+                    },
+                    () => {}
+                );
+            } catch (error) {
+                onsiteState.scanScanner = null;
+                triggerQuickScanFeedback('error');
+                syncQuickScanStatus(`相機啟動失敗：${error.message || error}。請直接改用快速輸入。`, 'error');
+                showToast(`相機啟動失敗：${error.message || error}`, 'error');
+            }
+        }
+
+        function renderQuickLookupState(matches, query) {
+            renderQuickScanResults(matches, query);
+            if (!query) {
+                syncQuickScanStatus('請先輸入內容，或按下啟動相機掃描。', 'ready');
+                return;
+            }
+            if (!matches.length) {
+                syncQuickScanStatus(`找不到符合「${query}」的考生。`, 'error');
+                return;
+            }
+            if (matches.length === 1) {
+                const match = matches[0];
+                syncQuickScanStatus(`已找到 ${match.student.name || '考生'}，正在定位。`, 'success');
+            } else {
+                syncQuickScanStatus(`找到 ${matches.length} 筆候選資料，請從右側挑選。`, 'info');
+            }
+        }
+
+        function handleQuickLookup(value, source = 'manual') {
+            const query = String(value || '').trim();
+            if (!query) {
+                renderQuickLookupState([], '');
+                return;
+            }
+            onsiteState.focusStudentId = '';
+            const matches = getQuickLookupMatches(query);
+            renderQuickLookupState(matches, query);
+            if (!matches.length) {
+                triggerQuickScanFeedback('error');
+            }
+            if (matches.length === 1) {
+                const match = matches[0];
+                openStudentFromQuickLookup(match.dept.id, match.student.id, query);
+                if (source === 'camera') {
+                    stopQuickScanCamera();
+                }
+                return;
+            }
+            if (source === 'camera' && matches.length > 1) {
+                stopQuickScanCamera();
+            }
+        }
+
+        function openQuickScanModal() {
+            const modal = document.getElementById('onsite-scan-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            onsiteState.scanModalOpen = true;
+            const input = document.getElementById('onsite-scan-input');
+            if (input) {
+                setTimeout(() => input.focus(), 50);
+            }
+            const currentValue = input?.value || '';
+            renderQuickLookupState(getQuickLookupMatches(currentValue), currentValue);
+            startQuickScanCamera();
+        }
+
+        async function closeQuickScanModal(updateStatus = true) {
+            const modal = document.getElementById('onsite-scan-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            onsiteState.scanModalOpen = false;
+            await stopQuickScanCamera();
+            if (updateStatus) syncQuickScanStatus('掃描模式已關閉。', 'ready');
+        }
+
+        window.openQuickLookupStudent = function(deptId, studentId) {
+            const queryValue = document.getElementById('onsite-scan-input')?.value || studentId;
+            openStudentFromQuickLookup(deptId, studentId, queryValue);
+        };
+
+        function setOnsiteDisplayMode(mode) {
+            onsiteState.displayMode = mode === 'roster' ? 'roster' : 'cards';
+            localStorage.setItem(ONSITE_DISPLAY_MODE_KEY, onsiteState.displayMode);
+            updateViewModeButtons();
+            renderGroups();
+        }
+
+        function updateViewModeButtons() {
+            const cardsBtn = document.getElementById('onsite-view-cards-btn');
+            const rosterBtn = document.getElementById('onsite-view-roster-btn');
+            if (!cardsBtn || !rosterBtn) return;
+            cardsBtn.classList.toggle('is-active', onsiteState.displayMode === 'cards');
+            rosterBtn.classList.toggle('is-active', onsiteState.displayMode === 'roster');
+        }
+
+        function buildSecureDepartmentSettings(dept) {
+            return {
+                id: dept.id,
+                name: dept.name,
+                sub: dept.sub || '',
+                icon: dept.icon || 'cpu',
+                writtenRooms: deepCloneData(dept.writtenRooms || []),
+                oralRooms: deepCloneData(dept.oralRooms || []),
+                sessions: deepCloneData(dept.sessions || []),
+                cfgWrittenDuration: parseInt(dept.cfgWrittenDuration) || 30,
+                cfgOralDuration: parseInt(dept.cfgOralDuration) || 20,
+                cfgReportLeadMinutes: parseInt(dept.cfgReportLeadMinutes) >= 0 ? parseInt(dept.cfgReportLeadMinutes) : 10,
+                cfgOralTeamsPerLadder: parseInt(dept.cfgOralTeamsPerLadder) || 2,
+                cfgOralTeamGroupCount: parseInt(dept.cfgOralTeamGroupCount) || 2,
+                cfgTeamCapacity: parseInt(dept.cfgTeamCapacity) || 30,
+                cfgOralGroupCapacity: parseInt(dept.cfgOralGroupCapacity) || 5,
+                cfgOralTailMergeLimit: parseInt(dept.cfgOralTailMergeLimit) || 0,
+                cfgSchedulerStrategy: dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY,
+                cfgSchoolGrouping: dept.cfgSchoolGrouping || 'none',
+                storageMode: REMOTE_SECURE_STORAGE_MODE
+            };
+        }
+
+        function createStableStudentToken(deptId, student) {
+            const seed = `${deptId || ''}|${student?.id || ''}|${student?.name || ''}|${normalizeBirthDate(student?.birthDate || '')}`;
+            let hash = 2166136261;
+            for (let i = 0; i < seed.length; i++) {
+                hash ^= seed.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return `stu_${(hash >>> 0).toString(16).padStart(8, '0')}`;
+        }
+
+        async function buildSecureStudentRow(dept, student) {
+            const encryptedPayload = await encryptJsonWithPassphrase(student, onsiteState.passphrase);
+            const prefDetails = getStudentPreferenceDetails(student, dept);
+            return {
+                studentToken: createStableStudentToken(dept.id, student),
+                studentMask: maskStudentName(student.name),
+                birthMask: maskBirthDate(student.birthDate),
+                schoolMask: maskSchoolName(student.school),
+                preferredSessionName: student.pref ? (dept.sessions.find(session => session.id === student.pref)?.name || '') : '',
+                preferredPeriodName: prefDetails.prefPeriodLabel || '',
+                assignedSessionName: student.assignedSessionId ? (dept.sessions.find(session => session.id === student.assignedSessionId)?.name || '') : '',
+                writtenRoomName: student.assignedWrittenRoomIdx !== null && student.assignedWrittenRoomIdx !== undefined ? (dept.writtenRooms[student.assignedWrittenRoomIdx] || '') : '',
+                oralRoomName: student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? (dept.oralRooms[student.assignedOralRoomIdx] || '') : '',
+                oralGroupLabel: getAssignedGroupLabelForExport(dept, student),
+                writtenTime: student.writtenStart && student.writtenEnd ? `${student.writtenStart} ~ ${student.writtenEnd}` : '',
+                oralTime: student.oralStart && student.oralEnd ? `${student.oralStart} ~ ${student.oralEnd}` : '',
+                conflictMask: maskConflictText(student.conflict),
+                encryptedPayload: JSON.stringify(encryptedPayload),
+                updatedAtIso: new Date().toISOString()
+            };
+        }
+
+        async function buildSecureDepartmentPayload(dept) {
+            const students = [];
+            for (const student of dept.students || []) {
+                students.push(await buildSecureStudentRow(dept, student));
+            }
+            return { settings: buildSecureDepartmentSettings(dept), students };
+        }
+
+        async function buildSecureSyncDepartmentsPayload() {
+            const payload = [];
+            for (const dept of departments) payload.push(await buildSecureDepartmentPayload(dept));
+            return payload;
+        }
+
+        async function hydrateRemoteDepartments(remoteDepartments, passphrase) {
+            const hydrated = [];
+            for (const deptPayload of (remoteDepartments || [])) {
+                const settings = deptPayload?.settings || {};
+                const rawStudents = Array.isArray(deptPayload?.students) ? deptPayload.students : [];
+                const students = [];
+                for (const row of rawStudents) {
+                    const encryptedBundle = parseSecureEncryptedBundle(row);
+                    const decryptedStudent = await decryptJsonWithPassphrase(encryptedBundle, passphrase);
+                    students.push(decryptedStudent);
+                }
+                hydrated.push({
+                    ...buildSecureDepartmentSettings(settings),
+                    students
+                });
+            }
+            return hydrated;
+        }
+
+        function sendRemoteBridgeRequest(action, data = {}) {
+            if (!onsiteState.webAppUrl) return Promise.reject(new Error('尚未設定雲端網址。'));
+            return new Promise((resolve, reject) => {
+                const requestId = `bridge_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                const iframe = document.createElement('iframe');
+                iframe.name = requestId;
+                iframe.className = 'hidden';
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = onsiteState.webAppUrl;
+                form.target = requestId;
+                form.className = 'hidden';
+
+                const payload = {
+                    action,
+                    requestId,
+                    clientOrigin: window.location.origin && window.location.origin !== 'null' ? window.location.origin : '*',
+                    ...data
+                };
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'payload';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+
+                let settled = false;
+                const cleanup = () => {
+                    window.removeEventListener('message', handleMessage);
+                    form.remove();
+                    iframe.remove();
+                };
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    cleanup();
+                    reject(new Error('雲端同步逾時，請確認 Web App 網址可用。'));
+                }, 25000);
+
+                const handleMessage = (event) => {
+                    const bridgeData = event.data;
+                    if (!bridgeData || bridgeData.__schedulerBridge !== true || bridgeData.requestId !== requestId) return;
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cleanup();
+                    if (bridgeData.payload?.ok) resolve(bridgeData.payload.result || {});
+                    else reject(new Error(bridgeData.payload?.error || '雲端同步失敗'));
+                };
+
+                window.addEventListener('message', handleMessage);
+                document.body.appendChild(iframe);
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        function getMainAppUrl() {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('page') === 'onsite') {
+                url.searchParams.delete('page');
+                return url.toString();
+            }
+            if (/\/onsite\.html$/i.test(url.pathname)) {
+                url.pathname = url.pathname.replace(/\/onsite\.html$/i, '/index.html');
+            }
+            return url.toString();
+        }
+
+        function getOnsiteStatus(student) {
+            if (student.onsiteAbsentAt) return { key: 'absent', label: '缺考', className: 'status-absent' };
+            if (student.onsiteWrittenDoneAt && student.onsiteOralDoneAt) return { key: 'completed', label: '全部完成', className: 'status-completed' };
+            if (student.onsiteWrittenDoneAt || student.onsiteOralDoneAt) return { key: 'in_progress', label: '進行中', className: 'status-progress' };
+            if (student.onsiteCheckedInAt) return { key: 'checked_in', label: '已報到', className: 'status-checked' };
+            if (!student.assignedSessionId) return { key: 'unscheduled', label: '未排定', className: 'status-pending' };
+            return { key: 'pending', label: '待報到', className: 'status-pending' };
+        }
+
+        function getNextStepLabel(student, group) {
+            if (student.onsiteAbsentAt) return '已標記缺考';
+            if (!student.onsiteCheckedInAt) return '下一步：報到';
+            const isOralFirst = String(group?.phaseLabel || '').includes('面試先') || String(group?.phaseLabel || '').includes('先面試');
+            if (isOralFirst) {
+                if (!student.onsiteOralDoneAt) return '下一步：面試';
+                if (!student.onsiteWrittenDoneAt) return '下一步：筆試';
+            } else {
+                if (!student.onsiteWrittenDoneAt) return '下一步：筆試';
+                if (!student.onsiteOralDoneAt) return '下一步：面試';
+            }
+            return '今日流程完成';
+        }
+
+        function normalizeStudentOnsiteFields(student) {
+            if (student.onsiteCheckedInAt === undefined) student.onsiteCheckedInAt = '';
+            if (student.onsiteWrittenDoneAt === undefined) student.onsiteWrittenDoneAt = '';
+            if (student.onsiteOralDoneAt === undefined) student.onsiteOralDoneAt = '';
+            if (student.onsiteAbsentAt === undefined) student.onsiteAbsentAt = '';
+            if (student.onsiteNote === undefined) student.onsiteNote = '';
+        }
+
+        function normalizeDepartmentsForOnsite(list) {
+            (list || []).forEach(dept => {
+                if (!Array.isArray(dept.sessions)) dept.sessions = [];
+                if (!Array.isArray(dept.students)) dept.students = [];
+                dept.students.forEach(student => {
+                    student.birthDate = normalizeBirthDate(student.birthDate || student.birthday || student.dob || '');
+                    if (student.school === undefined) student.school = '';
+                    if (student.conflict === undefined) student.conflict = '';
+                    normalizeStudentOnsiteFields(student);
+                });
+            });
+        }
+
+        function getTimelineGroupsForDept(dept) {
+            if (!dept) return [];
+            const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
+            const evenLoadStructure = getEvenLoadOralStructure(dept);
+            const reportLeadMinutes = Number.isFinite(parseInt(dept.cfgReportLeadMinutes)) ? Math.max(0, parseInt(dept.cfgReportLeadMinutes)) : 10;
+            const groups = [];
+
+            (dept.sessions || []).forEach((session, sessionIdx) => {
+                const sessionStudents = (dept.students || []).filter(student => student.assignedSessionId === session.id);
+                const groupMap = {};
+                sessionStudents.forEach(student => {
+                    const groupIdx = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : 0;
+                    const roomIdx = student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : 0;
+                    const key = `${session.id}|${roomIdx}|${groupIdx}`;
+                    if (!groupMap[key]) groupMap[key] = [];
+                    groupMap[key].push(student);
+                });
+
+                Object.keys(groupMap).forEach(key => {
+                    const students = [...groupMap[key]].sort((a, b) => {
+                        const aOrder = a.assignedOrder !== null && a.assignedOrder !== undefined ? a.assignedOrder : 0;
+                        const bOrder = b.assignedOrder !== null && b.assignedOrder !== undefined ? b.assignedOrder : 0;
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hant');
+                    });
+                    const representative = students[0];
+                    if (!representative) return;
+
+                    const groupIdx = representative.assignedOralGroupIdx !== null && representative.assignedOralGroupIdx !== undefined ? representative.assignedOralGroupIdx : 0;
+                    const roomIdx = representative.assignedOralRoomIdx !== null && representative.assignedOralRoomIdx !== undefined ? representative.assignedOralRoomIdx : 0;
+                    const writtenRoomIdx = representative.assignedWrittenRoomIdx !== null && representative.assignedWrittenRoomIdx !== undefined ? representative.assignedWrittenRoomIdx : 0;
+                    const oralRoomName = dept.oralRooms?.[roomIdx] || `面試教室 ${roomIdx + 1}`;
+                    const writtenRoomName = dept.writtenRooms?.[writtenRoomIdx] || `筆試教室 ${writtenRoomIdx + 1}`;
+                    const groupPosition = strategyId === 'even_load' ? getEvenLoadGroupPosition(dept, groupIdx) : null;
+                    const groupLabel = strategyId === 'even_load'
+                        ? `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`
+                        : `第 ${groupIdx + 1} 組`;
+                    const phaseLabel = strategyId === 'even_load'
+                        ? (Math.floor(groupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先')
+                        : (representative.oralStart && representative.writtenStart
+                            ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
+                            : '交錯時段');
+                    const isOralFirst = phaseLabel.includes('面試先') || phaseLabel.includes('先面試');
+                    const steps = isOralFirst
+                        ? [
+                            { kind: 'oral', label: '面試', start: representative.oralStart, end: representative.oralEnd, room: oralRoomName },
+                            { kind: 'written', label: '筆試', start: representative.writtenStart, end: representative.writtenEnd, room: writtenRoomName }
+                        ]
+                        : [
+                            { kind: 'written', label: '筆試', start: representative.writtenStart, end: representative.writtenEnd, room: writtenRoomName },
+                            { kind: 'oral', label: '面試', start: representative.oralStart, end: representative.oralEnd, room: oralRoomName }
+                        ];
+                    const firstStep = steps.find(step => step.start && step.end) || steps[0];
+                    const secondStep = steps[1] || null;
+                    const reportStartMin = firstStep?.start ? Math.max(0, timeToMins(firstStep.start) - reportLeadMinutes) : null;
+                    const transferStartMin = firstStep?.end ? timeToMins(firstStep.end) : null;
+                    const transferEndMin = secondStep?.start ? timeToMins(secondStep.start) : null;
+                    const transferGapMin = transferStartMin !== null && transferEndMin !== null ? Math.max(0, transferEndMin - transferStartMin) : null;
+                    const timelineItems = [];
+                    if (firstStep?.start && reportStartMin !== null) {
+                        timelineItems.push({
+                            kind: 'report',
+                            label: '報到',
+                            start: minsToTimeStr(reportStartMin),
+                            end: firstStep.start,
+                            room: `報到後前往 ${firstStep.room}`,
+                            meta: `建議提早 ${reportLeadMinutes} 分鐘集合`
+                        });
+                    }
+                    timelineItems.push(...steps);
+                    if (firstStep && secondStep) {
+                        timelineItems.push({
+                            kind: 'transfer',
+                            label: '換場',
+                            start: firstStep.end || '',
+                            end: secondStep.start || '',
+                            room: `${firstStep.room} → ${secondStep.room}`,
+                            meta: transferGapMin !== null ? (transferGapMin > 0 ? `${transferGapMin} 分鐘` : '同場銜接') : ''
+                        });
+                    }
+                    timelineItems.sort((a, b) => {
+                        const aStart = a.start ? timeToMins(a.start) : Number.MAX_SAFE_INTEGER;
+                        const bStart = b.start ? timeToMins(b.start) : Number.MAX_SAFE_INTEGER;
+                        return aStart - bStart;
+                    });
+
+                    groups.push({
+                        session,
+                        sessionIdx,
+                        groupIdx,
+                        roomIdx,
+                        groupLabel,
+                        phaseLabel,
+                        writtenRoomName,
+                        oralRoomName,
+                        timelineItems,
+                        students,
+                        count: students.length,
+                        firstTime: firstStep?.start || session.startTime || ''
+                    });
+                });
+            });
+
+            groups.sort((a, b) => {
+                const aStart = a.firstTime ? timeToMins(a.firstTime) : Number.MAX_SAFE_INTEGER;
+                const bStart = b.firstTime ? timeToMins(b.firstTime) : Number.MAX_SAFE_INTEGER;
+                if (aStart !== bStart) return aStart - bStart;
+                if (a.sessionIdx !== b.sessionIdx) return a.sessionIdx - b.sessionIdx;
+                if (a.groupIdx !== b.groupIdx) return a.groupIdx - b.groupIdx;
+                return a.roomIdx - b.roomIdx;
+            });
+            return groups;
+        }
+
+        function setSaveStatus(text, tone = 'ready') {
+            const el = document.getElementById('onsite-save-status');
+            if (!el) return;
+            const classes = {
+                ready: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+                saving: 'border-amber-100 bg-amber-50 text-amber-700',
+                error: 'border-rose-100 bg-rose-50 text-rose-700'
+            };
+            el.className = `rounded-2xl border px-4 py-2 text-sm font-bold ${classes[tone] || classes.ready}`;
+            el.textContent = text;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-xl transition ${
+                type === 'error' ? 'bg-rose-600' : type === 'info' ? 'bg-sky-600' : 'bg-emerald-600'
+            }`;
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'x-circle' : type === 'info' ? 'info' : 'check-circle-2'}" class="w-4 h-4"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        function cachePlatformStateLocally() {
+            if (onsiteState.mode === 'remote_secure') {
+                localStorage.removeItem(PLATFORM_STORAGE_KEY);
+                return;
+            }
+            localStorage.setItem(PLATFORM_STORAGE_KEY, JSON.stringify(departments));
+        }
+
+        function getOnsiteFingerprint() {
+            return JSON.stringify(departments);
+        }
+
+        function scheduleSave() {
+            cachePlatformStateLocally();
+            if (onsiteState.mode !== 'remote_secure' || !onsiteState.passphrase) {
+                setSaveStatus('已儲存到本機', 'ready');
+                return;
+            }
+            setSaveStatus('正在同步雲端…', 'saving');
+            if (onsiteState.saveTimer) clearTimeout(onsiteState.saveTimer);
+            onsiteState.saveTimer = setTimeout(() => {
+                onsiteState.saveTimer = null;
+                flushCloudSave(false);
+            }, 500);
+        }
+
+        async function flushCloudSave(force = false) {
+            if (onsiteState.mode !== 'remote_secure' || !onsiteState.passphrase) return;
+            const fingerprint = getOnsiteFingerprint();
+            if (!force && fingerprint === onsiteState.lastSavedFingerprint) {
+                setSaveStatus('雲端資料已同步', 'ready');
+                return;
+            }
+            if (onsiteState.saveInFlight) {
+                onsiteState.pendingSave = true;
+                return;
+            }
+            onsiteState.saveInFlight = true;
+            try {
+                const payload = await buildSecureSyncDepartmentsPayload();
+                await sendRemoteBridgeRequest('save_secure_workspaces', {
+                    passphrase: onsiteState.passphrase,
+                    departments: payload
+                });
+                onsiteState.lastSavedFingerprint = fingerprint;
+                onsiteState.saveInFlight = false;
+                setSaveStatus('雲端資料已同步', 'ready');
+                if (onsiteState.pendingSave) {
+                    onsiteState.pendingSave = false;
+                    flushCloudSave(true);
+                }
+            } catch (error) {
+                onsiteState.saveInFlight = false;
+                onsiteState.pendingSave = false;
+                console.error(error);
+                setSaveStatus(`雲端同步失敗：${error.message || error}`, 'error');
+                showToast(`雲端同步失敗：${error.message || error}`, 'error');
+            }
+        }
+
+        function buildSummaryCards(dept) {
+            const students = dept?.students || [];
+            const summary = {
+                total: students.length,
+                pending: 0,
+                checked_in: 0,
+                in_progress: 0,
+                completed: 0,
+                absent: 0,
+                unscheduled: 0
+            };
+            students.forEach(student => {
+                const status = getOnsiteStatus(student).key;
+                if (summary[status] !== undefined) summary[status] += 1;
+            });
+            return summary;
+        }
+
+        function renderSummary(dept) {
+            const summaryEl = document.getElementById('onsite-summary');
+            const summary = buildSummaryCards(dept);
+            summaryEl.innerHTML = `
+                ${renderSummaryCard('總考生', summary.total, 'slate', 'users')}
+                ${renderSummaryCard('待報到', summary.pending, 'amber', 'clock-3')}
+                ${renderSummaryCard('已報到', summary.checked_in, 'sky', 'badge-check')}
+                ${renderSummaryCard('進行中', summary.in_progress, 'violet', 'workflow')}
+                ${renderSummaryCard('已完成', summary.completed, 'emerald', 'flag')}
+                ${renderSummaryCard('缺考 / 未排', summary.absent + summary.unscheduled, 'rose', 'triangle-alert')}
+            `;
+            summaryEl.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function renderSummaryCard(label, value, tone, icon) {
+            const toneMap = {
+                slate: 'bg-white text-slate-800 border-slate-200',
+                amber: 'bg-amber-50 text-amber-800 border-amber-100',
+                sky: 'bg-sky-50 text-sky-800 border-sky-100',
+                violet: 'bg-violet-50 text-violet-800 border-violet-100',
+                emerald: 'bg-emerald-50 text-emerald-800 border-emerald-100',
+                rose: 'bg-rose-50 text-rose-800 border-rose-100'
+            };
+            return `
+                <div class="surface rounded-3xl p-4 border ${toneMap[tone] || toneMap.slate}">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-black uppercase tracking-wide opacity-70">${label}</div>
+                            <div class="mt-1 text-2xl font-black">${value}</div>
+                        </div>
+                        <div class="h-11 w-11 rounded-2xl bg-white/80 flex items-center justify-center shadow-sm">
+                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDepartmentSelect() {
+            const select = document.getElementById('onsite-dept-select');
+            select.innerHTML = departments.map(dept => `
+                <option value="${dept.id}" ${dept.id === activeDeptId ? 'selected' : ''}>${dept.name}</option>
+            `).join('');
+        }
+
+        function renderWarning(dept) {
+            const box = document.getElementById('onsite-warning');
+            const unscheduled = (dept?.students || []).filter(student => !student.assignedSessionId);
+            if (!unscheduled.length) {
+                box.classList.add('hidden');
+                box.innerHTML = '';
+                return;
+            }
+            box.className = 'surface rounded-3xl p-4 border border-amber-200 bg-amber-50/80';
+            box.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="h-10 w-10 rounded-2xl bg-white/80 text-amber-700 flex items-center justify-center shadow-sm">
+                        <i data-lucide="triangle-alert" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-black text-amber-900">尚有 ${unscheduled.length} 位考生未排定，現場模式不會出現在任何梯次卡片裡。</div>
+                        <div class="mt-1 text-xs text-amber-800">${unscheduled.slice(0, 6).map(student => `${student.name || '未命名'} (${student.id || '無序號'})`).join('、')}${unscheduled.length > 6 ? '…' : ''}</div>
+                    </div>
+                </div>
+            `;
+            box.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function getFilteredGroups(dept) {
+            return getTimelineGroupsForDept(dept)
+                .map(group => {
+                    const filteredStudents = group.students.filter(student => {
+                        const status = getOnsiteStatus(student).key;
+                        const statusMatch = onsiteFilter === 'all'
+                            ? true
+                            : onsiteFilter === 'unscheduled'
+                                ? !student.assignedSessionId
+                                : status === onsiteFilter;
+                        const haystack = [
+                            student.name || '',
+                            student.id || '',
+                            student.school || '',
+                            group.groupLabel,
+                            group.session.name
+                        ].join(' ').toLowerCase();
+                        const queryMatch = !onsiteQuery || haystack.includes(onsiteQuery);
+                        return statusMatch && queryMatch;
+                    });
+                    return { ...group, students: filteredStudents };
+                })
+                .filter(group => group.students.length > 0 || (onsiteFilter === 'all' && !onsiteQuery));
+        }
+
+        function renderRosterView(dept, filteredGroups) {
+            const container = document.getElementById('onsite-group-container');
+            const rows = filteredGroups.flatMap(group => (
+                group.students.map(student => ({ group, student }))
+            ));
+            if (!rows.length) {
+                container.innerHTML = `
+                    <div class="surface rounded-3xl p-10 text-center text-slate-400 text-sm">
+                        目前沒有符合條件的現場名單。
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <section class="surface rounded-[28px] overflow-hidden">
+                    <div class="border-b border-slate-100 px-5 py-4">
+                        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                            <div>
+                                <div class="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700">
+                                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                                    隱私遮罩模式
+                                </div>
+                                <h3 class="mt-2 text-xl font-black">${dept.name} 報到清單</h3>
+                                <p class="mt-1 text-sm text-slate-500">保留現場動作與排程欄位，並把姓名、生日、報名序號做部分遮罩。</p>
+                            </div>
+                            <div class="text-xs text-slate-400">共 ${rows.length} 筆現場名單</div>
+                        </div>
+                    </div>
+                    <div class="onsite-table-wrap">
+                        <table class="onsite-table w-full">
+                            <thead>
+                                <tr class="bg-slate-50/95 text-left text-xs font-black tracking-wide text-slate-500">
+                                    <th class="px-3 py-3 w-[56px]">選取</th>
+                                    <th class="px-4 py-3">姓名</th>
+                                    <th class="px-4 py-3">出生年月日</th>
+                                    <th class="px-4 py-3">報名序號</th>
+                                    <th class="px-4 py-3">分配時段</th>
+                                    <th class="px-4 py-3">筆試教室 &amp; 時間</th>
+                                    <th class="px-4 py-3">面試教室 &amp; 梯隊組</th>
+                                    <th class="px-3 py-3 w-[148px]">現場狀態</th>
+                                    <th class="px-3 py-3 w-[188px]">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(({ group, student }) => {
+                                    const status = getOnsiteStatus(student);
+                                    const collision = getStudentCollisionSummary(student, dept);
+                                    const isSelected = selectedStudentIds.has(String(student.id));
+                                    const isFocused = String(student.id) === String(onsiteState.focusStudentId || '');
+                                    return `
+                                        <tr data-student-id="${student.id}" class="bg-white text-sm text-slate-700 ${isSelected ? 'bg-indigo-50/50' : ''} ${isFocused ? 'bg-rose-50/70' : ''}">
+                                            <td class="px-3 py-4 align-top">
+                                                <button class="batch-toggle inline-flex h-9 w-9 items-center justify-center rounded-full border ${isSelected ? 'is-selected' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}" onclick="toggleStudentSelection('${student.id}')" title="${isSelected ? '取消選取' : '選取'}">
+                                                    <i data-lucide="${isSelected ? 'check-square' : 'square'}" class="w-4 h-4"></i>
+                                                </button>
+                                            </td>
+                                            <td class="px-4 py-4">
+                                                <div class="font-black text-slate-900 whitespace-nowrap">${maskDisplayName(student.name)}</div>
+                                                ${renderCollisionBadges(collision)}
+                                            </td>
+                                            <td class="px-4 py-4 font-semibold text-slate-500 mask-dot whitespace-nowrap">${maskBirthDate(student.birthDate)}</td>
+                                            <td class="px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">${maskRegistrationId(student.id)}</td>
+                                            <td class="px-4 py-4">
+                                                <div class="font-black text-slate-900 whitespace-nowrap">${group.session.name}</div>
+                                                <div class="mt-1 text-xs text-slate-400">${group.phaseLabel}</div>
+                                            </td>
+                                            <td class="px-4 py-4">
+                                                <div class="font-black text-slate-900">${group.writtenRoomName}</div>
+                                                <div class="mt-1 text-xs text-slate-500">${student.writtenStart && student.writtenEnd ? `${student.writtenStart} ~ ${student.writtenEnd}` : '未排定'}</div>
+                                            </td>
+                                            <td class="px-4 py-4">
+                                                <div class="font-black text-indigo-700">${group.oralRoomName}</div>
+                                                <div class="mt-1 text-xs font-black text-slate-900">${group.groupLabel}</div>
+                                                <div class="mt-1 text-xs text-slate-500">${student.oralStart && student.oralEnd ? `${student.oralStart} ~ ${student.oralEnd}` : '未排定'}</div>
+                                            </td>
+                                            <td class="px-3 py-4">
+                                                <div class="onsite-status-stack">
+                                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black ${status.className}">${status.label}</span>
+                                                    <div class="mt-2 text-xs text-slate-500">${getNextStepLabel(student, group)}</div>
+                                                    <div class="mt-2 space-y-1 text-[10px] text-slate-400">
+                                                        <div>報到 ${student.onsiteCheckedInAt ? formatTimestamp(student.onsiteCheckedInAt) : '未報到'}</div>
+                                                        <div>筆試 ${student.onsiteWrittenDoneAt ? formatTimestamp(student.onsiteWrittenDoneAt) : '未完成'}</div>
+                                                        <div>面試 ${student.onsiteOralDoneAt ? formatTimestamp(student.onsiteOralDoneAt) : '未完成'}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-3 py-4">
+                                                <div class="onsite-action-grid grid grid-cols-1 gap-2">
+                                                    <button class="action-btn rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-black text-sky-700 hover:bg-sky-100" onclick="toggleCheckIn('${student.id}')">${student.onsiteCheckedInAt ? '取消報到' : '報到'}</button>
+                                                    <div class="grid grid-cols-2 gap-2">
+                                                        <button class="action-btn rounded-2xl border border-emerald-100 bg-emerald-50 px-2 py-2 text-[11px] font-black text-emerald-700 hover:bg-emerald-100" onclick="toggleWrittenDone('${student.id}')">${student.onsiteWrittenDoneAt ? '取消筆試' : '筆試完成'}</button>
+                                                        <button class="action-btn rounded-2xl border border-violet-100 bg-violet-50 px-2 py-2 text-[11px] font-black text-violet-700 hover:bg-violet-100" onclick="toggleOralDone('${student.id}')">${student.onsiteOralDoneAt ? '取消面試' : '面試完成'}</button>
+                                                    </div>
+                                                    <button class="action-btn rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100" onclick="toggleAbsent('${student.id}')">${student.onsiteAbsentAt ? '取消缺考' : '標記缺考'}</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+            lucide.createIcons();
+            requestAnimationFrame(() => scrollToFocusedStudent());
+        }
+
+        function renderGroups() {
+            const dept = departments.find(item => item.id === activeDeptId);
+            const container = document.getElementById('onsite-group-container');
+            const toolbar = document.getElementById('onsite-toolbar');
+            if (!dept) {
+                selectedStudentIds.clear();
+                document.getElementById('onsite-warning').classList.add('hidden');
+                document.getElementById('onsite-warning').innerHTML = '';
+                document.getElementById('onsite-collision-warning').classList.add('hidden');
+                document.getElementById('onsite-collision-warning').innerHTML = '';
+                document.getElementById('onsite-batch-toolbar').classList.add('hidden');
+                document.getElementById('onsite-batch-toolbar').innerHTML = '';
+                toolbar.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="surface rounded-3xl p-10 text-center text-slate-400 text-sm">
+                        目前沒有可使用的科系工作區。
+                    </div>
+                `;
+                document.getElementById('onsite-summary').classList.add('hidden');
+                return;
+            }
+
+            toolbar.classList.remove('hidden');
+            renderSummary(dept);
+            renderWarning(dept);
+            renderCollisionWarning(dept);
+            updateViewModeButtons();
+
+            const filteredGroups = getFilteredGroups(dept);
+            renderBatchToolbar(dept, filteredGroups);
+
+            if (!filteredGroups.length) {
+                container.innerHTML = `
+                    <div class="surface rounded-3xl p-10 text-center text-slate-400 text-sm">
+                        目前沒有符合條件的現場名單。
+                    </div>
+                `;
+                return;
+            }
+
+            if (onsiteState.displayMode === 'roster') {
+                renderRosterView(dept, filteredGroups);
+                return;
+            }
+
+            container.innerHTML = filteredGroups.map(group => {
+                const timelineHtml = group.timelineItems.map(item => `
+                    <div class="timeline-chip rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div class="text-[11px] font-black text-slate-500">${item.label}</div>
+                        <div class="mt-1 text-sm font-black text-slate-900">${item.start || ''}${item.end ? ` ~ ${item.end}` : ''}</div>
+                        <div class="mt-1 text-[11px] text-slate-500">${item.room || ''}</div>
+                        ${item.meta ? `<div class="mt-1 text-[10px] text-slate-400">${item.meta}</div>` : ''}
+                    </div>
+                `).join('');
+
+                const studentHtml = group.students.map(student => {
+                    const status = getOnsiteStatus(student);
+                    const collision = getStudentCollisionSummary(student, dept);
+                    const isSelected = selectedStudentIds.has(String(student.id));
+                    const isFocused = String(student.id) === String(onsiteState.focusStudentId || '');
+                    const collisionTone = collision.crossConflicts.length > 0
+                        ? 'border-rose-200 bg-rose-50/40'
+                        : (collision.crossDeptNames.length > 0 || collision.selfConflictHits.length > 0
+                            ? 'border-amber-200 bg-amber-50/40'
+                            : 'border-slate-200 bg-white');
+                    return `
+                        <div data-student-id="${student.id}" class="student-card relative rounded-3xl border p-4 ${collisionTone} ${status.key === 'checked_in' ? 'pulse-live' : ''} ${isSelected ? 'ring-2 ring-indigo-300' : ''} ${isFocused ? 'scan-focus' : ''}">
+                            <button class="batch-toggle absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border ${isSelected ? 'is-selected' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}" onclick="toggleStudentSelection('${student.id}')" title="${isSelected ? '取消選取' : '選取'}">
+                                <i data-lucide="${isSelected ? 'check-square' : 'square'}" class="w-4 h-4"></i>
+                            </button>
+                            <div class="flex items-start justify-between gap-3 pr-10">
+                                <div class="min-w-0">
+                                    <div class="text-base font-black">${student.name || '未命名'}</div>
+                                    <div class="mt-1 text-sm text-slate-500">${student.id || '未填報名序號'}</div>
+                                    ${student.school ? `<div class="mt-1 text-xs text-slate-400">${student.school}</div>` : ''}
+                                    ${renderCollisionBadges(collision)}
+                                </div>
+                                <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black ${status.className}">${status.label}</span>
+                            </div>
+                            <div class="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+                                <div class="font-black text-slate-700">${getNextStepLabel(student, group)}</div>
+                                <div class="mt-1">報到：${student.onsiteCheckedInAt ? formatTimestamp(student.onsiteCheckedInAt) : '未報到'}</div>
+                                <div>筆試：${student.onsiteWrittenDoneAt ? formatTimestamp(student.onsiteWrittenDoneAt) : '未完成'}</div>
+                                <div>面試：${student.onsiteOralDoneAt ? formatTimestamp(student.onsiteOralDoneAt) : '未完成'}</div>
+                            </div>
+                            <div class="mt-3 grid grid-cols-2 gap-2">
+                                <button class="action-btn rounded-2xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-black text-sky-700 hover:bg-sky-100" onclick="toggleCheckIn('${student.id}')">${student.onsiteCheckedInAt ? '取消報到' : '報到'}</button>
+                                <button class="action-btn rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100" onclick="toggleWrittenDone('${student.id}')">${student.onsiteWrittenDoneAt ? '取消筆試' : '筆試完成'}</button>
+                                <button class="action-btn rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 hover:bg-violet-100" onclick="toggleOralDone('${student.id}')">${student.onsiteOralDoneAt ? '取消面試' : '面試完成'}</button>
+                                <button class="action-btn rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100" onclick="toggleAbsent('${student.id}')">${student.onsiteAbsentAt ? '取消缺考' : '標記缺考'}</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <section class="surface rounded-[28px] overflow-hidden">
+                        <div class="border-b border-slate-100 px-5 py-4">
+                            <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                                <div>
+                                    <div class="text-xs font-black tracking-wide text-slate-400 uppercase">${group.session.name}</div>
+                                    <h3 class="mt-1 text-xl font-black">${group.groupLabel}</h3>
+                                    <div class="mt-1 text-sm text-slate-500">${group.writtenRoomName} ｜ ${group.oralRoomName}</div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">${group.phaseLabel}</span>
+                                    <span class="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">${group.count} 人</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-4 px-5 py-5">
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="text-xs font-black uppercase tracking-wide text-slate-400">當組時間軸</div>
+                                <div class="mt-3 space-y-2">${timelineHtml}</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="text-xs font-black uppercase tracking-wide text-slate-400">本組學生</div>
+                                    <div class="text-[11px] text-slate-400">直接點按鈕即可更新現場狀態</div>
+                                </div>
+                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
+                                    ${studentHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }).join('');
+            lucide.createIcons();
+            requestAnimationFrame(() => scrollToFocusedStudent());
+        }
+
+        function formatTimestamp(iso) {
+            if (!iso) return '';
+            try {
+                const date = new Date(iso);
+                return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function mutateStudent(studentId, updater, options = {}) {
+            const dept = departments.find(item => item.id === activeDeptId);
+            if (!dept) return;
+            const student = (dept.students || []).find(item => String(item.id) === String(studentId));
+            if (!student) return;
+            normalizeStudentOnsiteFields(student);
+            updater(student);
+            renderGroups();
+            scheduleSave();
+            if (options.sound !== false) playUiTone(options.tone || 'success');
+        }
+
+        function nowIso() {
+            return new Date().toISOString();
+        }
+
+        window.toggleCheckIn = function(studentId) {
+            mutateStudent(studentId, student => {
+                if (student.onsiteCheckedInAt) {
+                    student.onsiteCheckedInAt = '';
+                    student.onsiteWrittenDoneAt = '';
+                    student.onsiteOralDoneAt = '';
+                } else {
+                    student.onsiteCheckedInAt = nowIso();
+                    student.onsiteAbsentAt = '';
+                }
+            }, { tone: 'success' });
+        };
+
+        window.toggleWrittenDone = function(studentId) {
+            mutateStudent(studentId, student => {
+                if (student.onsiteWrittenDoneAt) {
+                    student.onsiteWrittenDoneAt = '';
+                } else {
+                    student.onsiteCheckedInAt = student.onsiteCheckedInAt || nowIso();
+                    student.onsiteWrittenDoneAt = nowIso();
+                    student.onsiteAbsentAt = '';
+                }
+            }, { tone: 'success' });
+        };
+
+        window.toggleOralDone = function(studentId) {
+            mutateStudent(studentId, student => {
+                if (student.onsiteOralDoneAt) {
+                    student.onsiteOralDoneAt = '';
+                } else {
+                    student.onsiteCheckedInAt = student.onsiteCheckedInAt || nowIso();
+                    student.onsiteOralDoneAt = nowIso();
+                    student.onsiteAbsentAt = '';
+                }
+            }, { tone: 'success' });
+        };
+
+        window.toggleAbsent = function(studentId) {
+            mutateStudent(studentId, student => {
+                if (student.onsiteAbsentAt) {
+                    student.onsiteAbsentAt = '';
+                } else {
+                    student.onsiteAbsentAt = nowIso();
+                    student.onsiteCheckedInAt = '';
+                    student.onsiteWrittenDoneAt = '';
+                    student.onsiteOralDoneAt = '';
+                }
+            }, { tone: 'warning' });
+        };
+
+        async function loadLocalDepartments() {
+            const saved = localStorage.getItem(PLATFORM_STORAGE_KEY);
+            if (!saved) return [];
+            try {
+                const parsed = JSON.parse(saved);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        async function loadRemoteSecureDepartments(passphrase) {
+            onsiteState.passphrase = String(passphrase || '').trim();
+            writeRemoteSyncPassphrase(onsiteState.passphrase);
+            const result = await sendRemoteBridgeRequest('load_secure_departments', { passphrase: onsiteState.passphrase });
+            const loaded = await hydrateRemoteDepartments(Array.isArray(result.departments) ? result.departments : [], onsiteState.passphrase);
+            normalizeDepartmentsForOnsite(loaded);
+            departments = loaded;
+            onsiteState.mode = 'remote_secure';
+            onsiteState.secureLocked = false;
+            onsiteState.lastSavedFingerprint = getOnsiteFingerprint();
+            return loaded;
+        }
+
+        function updatePageUrlDept() {
+            const url = new URL(window.location.href);
+            if (/script\.google/.test(window.location.host) || url.searchParams.get('page') === 'onsite') {
+                url.searchParams.set('page', 'onsite');
+            }
+            if (activeDeptId) url.searchParams.set('dept', activeDeptId);
+            const dept = departments.find(item => item.id === activeDeptId);
+            if (dept?.name) url.searchParams.set('deptName', dept.name);
+            history.replaceState({}, '', url.toString());
+        }
+
+        function renderAll() {
+            if ((!activeDeptId || !departments.some(dept => dept.id === activeDeptId)) && initialDeptQueryName) {
+                const matchedByName = departments.find(dept => String(dept.name || '').trim() === String(initialDeptQueryName || '').trim());
+                if (matchedByName) activeDeptId = matchedByName.id;
+            }
+            if (!activeDeptId && departments[0]) activeDeptId = departments[0].id;
+            if (activeDeptId && !departments.some(dept => dept.id === activeDeptId)) activeDeptId = departments[0]?.id || '';
+            renderDepartmentSelect();
+            renderGroups();
+            updatePageUrlDept();
+        }
+
+        async function initializeOnsiteApp() {
+            setLoadingOverlay(true, '請稍候，系統正在整理今天的報到內容。');
+            const config = loadRemoteSyncConfig();
+            const remembered = readRemoteSyncPassphrase() || readRememberedRemoteSyncPassphrase();
+            const unlockPanel = document.getElementById('onsite-unlock-panel');
+            const urlInput = document.getElementById('unlock-webapp-url');
+            const passInput = document.getElementById('unlock-passphrase');
+
+            if (config?.webAppUrl) {
+                onsiteState.mode = 'remote_secure';
+                onsiteState.webAppUrl = config.webAppUrl;
+                onsiteState.secureLocked = true;
+                urlInput.value = config.webAppUrl;
+                if (remembered) passInput.value = remembered;
+                if (remembered) {
+                    try {
+                        setLoadingOverlay(true, '正在載入雲端現場資料…');
+                        setSaveStatus('正在載入雲端資料…', 'saving');
+                        await loadRemoteSecureDepartments(remembered);
+                        unlockPanel.classList.add('hidden');
+                        renderAll();
+                        setSaveStatus('雲端資料已同步', 'ready');
+                        setLoadingOverlay(false);
+                        showToast('已載入雲端現場資料。', 'success');
+                        return;
+                    } catch (error) {
+                        console.error(error);
+                        setSaveStatus('雲端解鎖失敗，請重新輸入。', 'error');
+                    }
+                }
+                unlockPanel.classList.remove('hidden');
+                setLoadingOverlay(false);
+                return;
+            }
+
+            const local = await loadLocalDepartments();
+            normalizeDepartmentsForOnsite(local);
+            departments = local;
+            onsiteState.mode = 'local';
+            renderAll();
+            setSaveStatus('目前使用本機資料', 'ready');
+            setLoadingOverlay(false);
+        }
+
+        async function unlockOnsiteRemote() {
+            const url = normalizeWebAppUrl(document.getElementById('unlock-webapp-url').value || '');
+            const passphrase = String(document.getElementById('unlock-passphrase').value || '').trim();
+            if (!url || !passphrase) {
+                showToast('請先填入雲端網址與保護密碼。', 'error');
+                return;
+            }
+            onsiteState.webAppUrl = url;
+            onsiteState.secureLocked = false;
+            setLoadingOverlay(true, '正在解鎖雲端資料…');
+            setSaveStatus('正在解鎖雲端資料…', 'saving');
+            try {
+                await loadRemoteSecureDepartments(passphrase);
+                document.getElementById('onsite-unlock-panel').classList.add('hidden');
+                renderAll();
+                setSaveStatus('雲端資料已同步', 'ready');
+                setLoadingOverlay(false);
+                playUiTone('success');
+                showToast('現場模式已解鎖。', 'success');
+            } catch (error) {
+                console.error(error);
+                setSaveStatus(`解鎖失敗：${error.message || error}`, 'error');
+                setLoadingOverlay(false);
+                playUiTone('error');
+                showToast(`解鎖失敗：${error.message || error}`, 'error');
+            }
+        }
+
+        function getRefreshMessage() {
+            return onsiteState.mode === 'remote_secure' ? '已重新抓取最新雲端資料。' : '已重新整理本機資料。';
+        }
+
+        async function refreshCurrentData() {
+            setLoadingOverlay(true, onsiteState.mode === 'remote_secure' ? '正在重新抓取雲端資料…' : '正在整理本機資料…');
+            setSaveStatus('正在重新整理資料…', 'saving');
+            try {
+                if (onsiteState.mode === 'remote_secure' && onsiteState.webAppUrl && onsiteState.passphrase) {
+                    await loadRemoteSecureDepartments(onsiteState.passphrase);
+                } else {
+                    const local = await loadLocalDepartments();
+                    normalizeDepartmentsForOnsite(local);
+                    departments = local;
+                }
+                renderAll();
+                setSaveStatus(onsiteState.mode === 'remote_secure' ? '雲端資料已同步' : '目前使用本機資料', 'ready');
+                setLoadingOverlay(false);
+                playUiTone('success');
+                showToast(getRefreshMessage(), 'success');
+            } catch (error) {
+                console.error(error);
+                setSaveStatus(`重新整理失敗：${error.message || error}`, 'error');
+                setLoadingOverlay(false);
+                playUiTone('error');
+                showToast(`重新整理失敗：${error.message || error}`, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('back-to-main-btn').addEventListener('click', () => {
+                window.location.href = getMainAppUrl();
+            });
+            document.getElementById('unlock-onsite-btn').addEventListener('click', unlockOnsiteRemote);
+            document.getElementById('onsite-refresh-btn').addEventListener('click', refreshCurrentData);
+            document.getElementById('onsite-scan-btn').addEventListener('click', openQuickScanModal);
+            document.getElementById('onsite-scan-close-btn').addEventListener('click', () => closeQuickScanModal());
+            document.getElementById('onsite-scan-start-btn').addEventListener('click', startQuickScanCamera);
+            document.getElementById('onsite-scan-stop-btn').addEventListener('click', () => {
+                stopQuickScanCamera();
+                syncQuickScanStatus('相機已停止，仍可輸入快速查找。', 'ready');
+            });
+            document.getElementById('onsite-scan-clear-btn').addEventListener('click', clearQuickScanResults);
+            document.getElementById('onsite-scan-input').addEventListener('input', (event) => {
+                const value = String(event.target.value || '');
+                onsiteState.focusStudentId = '';
+                renderQuickLookupState(getQuickLookupMatches(value), value.trim());
+            });
+            document.getElementById('onsite-scan-input').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleQuickLookup(event.target.value, 'manual');
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeQuickScanModal();
+                }
+            });
+            document.getElementById('onsite-scan-modal').addEventListener('click', (event) => {
+                if (event.target && event.target.id === 'onsite-scan-modal') closeQuickScanModal();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && onsiteState.scanModalOpen) {
+                    closeQuickScanModal();
+                }
+            });
+            document.getElementById('onsite-dept-select').addEventListener('change', (event) => {
+                activeDeptId = event.target.value;
+                selectedStudentIds.clear();
+                onsiteState.focusStudentId = '';
+                renderAll();
+            });
+            document.getElementById('onsite-filter-select').addEventListener('change', (event) => {
+                onsiteFilter = event.target.value;
+                onsiteState.focusStudentId = '';
+                renderGroups();
+            });
+            document.getElementById('onsite-search-input').addEventListener('input', (event) => {
+                onsiteQuery = String(event.target.value || '').trim().toLowerCase();
+                onsiteState.focusStudentId = '';
+                renderGroups();
+            });
+            document.getElementById('onsite-view-cards-btn').addEventListener('click', () => setOnsiteDisplayMode('cards'));
+            document.getElementById('onsite-view-roster-btn').addEventListener('click', () => setOnsiteDisplayMode('roster'));
+            await initializeOnsiteApp();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
