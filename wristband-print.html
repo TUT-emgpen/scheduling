@@ -282,11 +282,47 @@
         const ITEMS_PER_PAGE = 7;
         const PRINT_BUTTON_DEFAULT_TEXT = '列印 / 另存 PDF';
         const AUTO_PRINT_REQUESTED = getQueryParam('autoprint') === '1';
+        const QR_READY_TIMEOUT_MS = 5000;
         let activePrintPayload = null;
         let activePrintKey = '';
         let printDialogInFlight = false;
         let printButtonElement = null;
         let closeButtonElement = null;
+        let qrReady = false;
+        let qrReadyResolve = null;
+        let qrReadyPromise = Promise.resolve();
+
+        function resetQrReadyPromise() {
+            qrReady = false;
+            qrReadyPromise = new Promise(resolve => {
+                qrReadyResolve = resolve;
+            });
+        }
+
+        function markQrReady() {
+            if (qrReady) return;
+            qrReady = true;
+            if (typeof qrReadyResolve === 'function') {
+                qrReadyResolve();
+            }
+            qrReadyResolve = null;
+        }
+
+        async function waitForQrReady() {
+            if (qrReady) return true;
+            let timeoutId = null;
+            try {
+                await Promise.race([
+                    qrReadyPromise,
+                    new Promise(resolve => {
+                        timeoutId = setTimeout(() => resolve(false), QR_READY_TIMEOUT_MS);
+                    })
+                ]);
+            } finally {
+                if (timeoutId) clearTimeout(timeoutId);
+            }
+            return qrReady;
+        }
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -329,6 +365,7 @@
         function renderPrint(payload, key) {
             activePrintPayload = payload || null;
             activePrintKey = key || '';
+            resetQrReadyPromise();
             const root = document.getElementById('print-root');
             const title = document.getElementById('toolbar-title');
             const subtitle = document.getElementById('toolbar-sub');
@@ -389,8 +426,8 @@
                 `;
             }).join('');
 
+            buildQRCodes();
             requestAnimationFrame(() => {
-                buildQRCodes();
                 if (window.lucide) lucide.createIcons();
             });
         }
@@ -412,6 +449,7 @@
                 if (document.fonts && document.fonts.ready) {
                     await document.fonts.ready.catch(() => {});
                 }
+                await waitForQrReady();
                 await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 await new Promise(resolve => setTimeout(resolve, 120));
                 window.print();
@@ -437,6 +475,7 @@
                         </section>
                     `;
                 }
+                markQrReady();
                 return;
             }
             cards.forEach(card => {
@@ -453,6 +492,7 @@
                     correctLevel: QRCode.CorrectLevel.M
                 });
             });
+            markQrReady();
         }
 
         function closePrintPage() {
