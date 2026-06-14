@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紙手環列印</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./assets/qrcodejs.min.js"></script>
+    <style>
+        :root {
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #cbd5e1;
+            --accent: #4338ca;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(79, 70, 229, .10), transparent 28%),
+                radial-gradient(circle at top right, rgba(14, 165, 233, .08), transparent 22%),
+                linear-gradient(180deg, #f8fbff 0%, #eef2ff 42%, #e2e8f0 100%);
+        }
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            color: white;
+            background: rgba(15, 23, 42, 0.93);
+            backdrop-filter: blur(18px);
+        }
+        .toolbar-title { font-size: 14px; font-weight: 900; letter-spacing: .02em; }
+        .toolbar-sub { margin-top: 2px; font-size: 11px; opacity: .82; }
+        .toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .toolbar button {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .print-btn { background: #f59e0b; color: #fff; }
+        .close-btn { background: rgba(255,255,255,.14); color: #fff; }
+        .page-shell {
+            max-width: 1040px;
+            margin: 18px auto 40px;
+            padding: 0 14px;
+        }
+        .print-page {
+            break-after: page;
+            page-break-after: always;
+            margin-bottom: 18px;
+            padding: 18px 18px 16px;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
+        }
+        .print-page:last-child {
+            break-after: auto;
+            page-break-after: auto;
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .page-kicker {
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            color: var(--accent);
+        }
+        .page-title {
+            margin: 4px 0 0;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: .08em;
+        }
+        .page-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .page-note {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #475569;
+        }
+        .wristband-list {
+            display: grid;
+            gap: 8px;
+        }
+        .wristband {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+            position: relative;
+            height: 29mm;
+            overflow: hidden;
+            border: 1.5px solid #1f2937;
+            border-radius: 18px;
+            background: #fff;
+        }
+        .wristband-cut {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 9px;
+            color: var(--muted);
+            letter-spacing: .15em;
+        }
+        .wristband-inner {
+            display: grid;
+            grid-template-columns: 22mm 1fr;
+            align-items: center;
+            gap: 10px;
+            height: 100%;
+            padding: 8px 12px;
+        }
+        .wristband-qr {
+            width: 21mm;
+            height: 21mm;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            overflow: hidden;
+            line-height: 0;
+        }
+        .wristband-qr canvas,
+        .wristband-qr img,
+        .wristband-qr table {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .wristband-qr table {
+            border-collapse: collapse;
+        }
+        .wristband-qr td {
+            padding: 0 !important;
+        }
+        .wristband-text {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+        }
+        .wristband-meta {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: .03em;
+            line-height: 1.2;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow-wrap: anywhere;
+        }
+        .wristband-name {
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+        }
+        .wristband-id {
+            font-size: 12px;
+            font-weight: 800;
+            color: #334155;
+            letter-spacing: .04em;
+        }
+        .empty-state {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 11px;
+            font-weight: 900;
+        }
+        .loading {
+            min-height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            color: #334155;
+        }
+        .loading-badge {
+            width: 76px;
+            height: 76px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(238, 242, 255, .95), rgba(255, 255, 255, .95));
+            border: 1px solid rgba(203, 213, 225, .9);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, .08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .loading-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            animation: pulse 1.1s infinite ease-in-out;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: .14s; }
+        .loading-dots span:nth-child(3) { animation-delay: .28s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: translateY(0) scale(.85); opacity: .45; }
+            40% { transform: translateY(-6px) scale(1); opacity: 1; }
+        }
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none; }
+            .page-shell {
+                margin: 0;
+                max-width: none;
+                padding: 0;
+            }
+            .print-page {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+                break-after: page;
+                page-break-after: always;
+            }
+            .print-page:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
+            .page-header { margin-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div>
+            <div class="toolbar-title" id="toolbar-title">紙手環列印</div>
+            <div class="toolbar-sub" id="toolbar-sub">系統會先自動開啟列印；若未跳出，再按列印 / 另存 PDF。</div>
+        </div>
+        <div class="toolbar-actions">
+            <button class="print-btn" id="print-btn">列印 / 另存 PDF</button>
+            <button class="close-btn" id="close-btn">關閉</button>
+        </div>
+    </div>
+
+    <main class="page-shell" id="print-root">
+        <div class="loading">
+            <div class="loading-badge"><i data-lucide="loader-circle" class="w-8 h-8 animate-spin text-indigo-500"></i></div>
+            <div class="text-center">
+                <div class="text-lg font-black text-slate-900">正在準備紙手環列印頁</div>
+                <div class="mt-1 text-sm text-slate-500">請稍候，系統正在載入 QR 與版面資料。</div>
+            </div>
+            <div class="loading-dots"><span></span><span></span><span></span></div>
+        </div>
+    </main>
+
+    <script>
+        const STORAGE_PREFIX = 'onsite_wristband_print_payload_v1:';
+        const ITEMS_PER_PAGE = 7;
+        const PRINT_BUTTON_DEFAULT_TEXT = '列印 / 另存 PDF';
+        const AUTO_PRINT_REQUESTED = getQueryParam('autoprint') === '1';
+        let activePrintPayload = null;
+        let activePrintKey = '';
+        let printDialogInFlight = false;
+        let printButtonElement = null;
+        let closeButtonElement = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getQueryParam(name) {
+            try {
+                return new URLSearchParams(window.location.search).get(name) || '';
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function loadPayload() {
+            const key = getQueryParam('key');
+            if (!key) return null;
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            try {
+                const payload = JSON.parse(raw);
+                return { key, payload };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function splitPages(items) {
+            const pages = [];
+            for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) {
+                pages.push(items.slice(i, i + ITEMS_PER_PAGE));
+            }
+            return pages;
+        }
+
+        function renderPrint(payload, key) {
+            activePrintPayload = payload || null;
+            activePrintKey = key || '';
+            const root = document.getElementById('print-root');
+            const title = document.getElementById('toolbar-title');
+            const subtitle = document.getElementById('toolbar-sub');
+            const items = Array.isArray(payload?.items) ? payload.items : [];
+            const pages = splitPages(items);
+
+            if (title) title.textContent = `${payload?.deptName || '紙手環'} 列印`;
+            if (subtitle) subtitle.textContent = `共 ${items.length} 條｜每頁最多 ${ITEMS_PER_PAGE} 條｜若未自動跳出，可按列印 / 另存 PDF。`;
+
+            if (!items.length) {
+                root.innerHTML = `
+                    <section class="print-page">
+                        <header class="page-header">
+                            <div class="page-kicker">${escapeHtml(payload?.deptName || '紙手環')} 紙手環列印</div>
+                            <h1 class="page-title">目前沒有可輸出的手環資料</h1>
+                            <div class="page-subtitle">請回到現場頁重新選取考生再輸出。</div>
+                        </header>
+                        <div class="flex justify-center">
+                            <div class="empty-state">目前沒有資料</div>
+                        </div>
+                    </section>
+                `;
+                return;
+            }
+
+            root.innerHTML = pages.map((pageItems, pageIndex) => {
+                const pageBands = pageItems.map((item) => {
+                    const metaBits = [
+                        `科系：${item.deptName || ''}`,
+                        `場次：${item.sessionName || '未排定'}`,
+                        item.groupLabel ? `組別：${item.groupLabel}` : '',
+                        item.phaseLabel ? `流程：${item.phaseLabel}` : ''
+                    ].filter(Boolean);
+                    return `
+                        <section class="wristband">
+                            <div class="wristband-cut">裁切線</div>
+                            <div class="wristband-inner">
+                                <div class="wristband-qr" data-qr-text="${escapeHtml(item.qrText || '')}"></div>
+                                <div class="wristband-text">
+                                    <div class="wristband-meta">${escapeHtml(metaBits.join('｜'))}</div>
+                                    <div class="wristband-name">${escapeHtml(item.studentName || '未命名')}</div>
+                                    <div class="wristband-id">報名序號 ${escapeHtml(item.studentId || '')}</div>
+                                </div>
+                            </div>
+                        </section>
+                    `;
+                }).join('');
+                return `
+                    <section class="print-page">
+                        <header class="page-header">
+                            <div class="page-kicker">${escapeHtml(payload?.deptName || '')} 紙手環列印</div>
+                            <h1 class="page-title">每條皆含科系與場次資訊，並固定 A4 直式輸出。</h1>
+                            <div class="page-subtitle">第 ${pageIndex + 1} 頁 / 共 ${pages.length} 頁｜每頁最多 ${ITEMS_PER_PAGE} 條</div>
+                            <div class="page-note">若超過一頁，會自動分頁，避免裁切跨頁。</div>
+                        </header>
+                        <section class="wristband-list">${pageBands}</section>
+                    </section>
+                `;
+            }).join('');
+
+            requestAnimationFrame(() => {
+                buildQRCodes();
+                if (window.lucide) lucide.createIcons();
+            });
+        }
+
+        function setPrintButtonState({ text = PRINT_BUTTON_DEFAULT_TEXT, disabled = false } = {}) {
+            if (!printButtonElement) return;
+            printButtonElement.textContent = text;
+            printButtonElement.disabled = disabled;
+            printButtonElement.style.opacity = disabled ? '.72' : '';
+            printButtonElement.style.cursor = disabled ? 'wait' : 'pointer';
+        }
+
+        async function triggerNativePrint() {
+            if (printDialogInFlight || !activePrintPayload) return;
+            printDialogInFlight = true;
+            setPrintButtonState({ text: '準備列印中…', disabled: true });
+
+            try {
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready.catch(() => {});
+                }
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                await new Promise(resolve => setTimeout(resolve, 120));
+                window.print();
+            } catch (error) {
+                console.error('Print dialog failed:', error);
+                printDialogInFlight = false;
+                setPrintButtonState({ text: PRINT_BUTTON_DEFAULT_TEXT, disabled: false });
+            }
+        }
+
+        function buildQRCodes() {
+            const cards = Array.from(document.querySelectorAll('.wristband'));
+            if (!window.QRCode) {
+                const root = document.getElementById('print-root');
+                if (root) {
+                    root.innerHTML = `
+                        <section class="print-page">
+                            <header class="page-header">
+                                <div class="page-kicker">紙手環列印</div>
+                                <h1 class="page-title">QR 模組載入失敗</h1>
+                                <div class="page-subtitle">請檢查 assets/qrcodejs.min.js 是否可讀取。</div>
+                            </header>
+                        </section>
+                    `;
+                }
+                return;
+            }
+            cards.forEach(card => {
+                const host = card.querySelector('.wristband-qr');
+                const text = card.getAttribute('data-qr-text') || '';
+                if (!host || !text) return;
+                host.innerHTML = '';
+                new QRCode(host, {
+                    text,
+                    width: 164,
+                    height: 164,
+                    colorDark: '#111827',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            });
+        }
+
+        function closePrintPage() {
+            if (window.opener && !window.opener.closed) {
+                window.close();
+            } else if (history.length > 1) {
+                history.back();
+            }
+        }
+
+        window.addEventListener('beforeprint', () => {
+            document.body.classList.add('is-printing');
+        });
+
+        window.addEventListener('afterprint', () => {
+            document.body.classList.remove('is-printing');
+            printDialogInFlight = false;
+            setPrintButtonState({ text: PRINT_BUTTON_DEFAULT_TEXT, disabled: false });
+            if (activePrintPayload) {
+                renderPrint(activePrintPayload, activePrintKey);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loaded = loadPayload();
+            if (!loaded) {
+                const root = document.getElementById('print-root');
+                if (root) {
+                    root.innerHTML = `
+                        <section class="print-page">
+                            <header class="page-header">
+                                <div class="page-kicker">紙手環列印</div>
+                                <h1 class="page-title">找不到輸出資料</h1>
+                                <div class="page-subtitle">請先在現場頁按「輸出手環」。</div>
+                            </header>
+                        </section>
+                    `;
+                }
+                return;
+            }
+            renderPrint(loaded.payload, loaded.key);
+            printButtonElement = document.getElementById('print-btn');
+            closeButtonElement = document.getElementById('close-btn');
+            if (printButtonElement) {
+                printButtonElement.addEventListener('click', triggerNativePrint);
+                setPrintButtonState({ text: PRINT_BUTTON_DEFAULT_TEXT, disabled: false });
+            }
+            if (closeButtonElement) {
+                closeButtonElement.addEventListener('click', closePrintPage);
+            }
+            if (AUTO_PRINT_REQUESTED) {
+                setTimeout(() => {
+                    triggerNativePrint();
+                }, 260);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
         :root {
             --bg: #edf3fb;
@@ -441,7 +440,9 @@
         const DEFAULT_SCHEDULER_STRATEGY = 'preference_wave';
         const ONSITE_DISPLAY_MODE_KEY = 'onsite_display_mode_v1';
         const ONSITE_QUICK_SCAN_SCRIPT_URL = 'https://unpkg.com/html5-qrcode';
-        const ONSITE_WRISTBAND_QR_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        const ONSITE_WRISTBAND_QR_SCRIPT_PATH = './assets/qrcodejs.min.js';
+        const ONSITE_WRISTBAND_PRINT_PAGE_PATH = './wristband-print.html';
+        const ONSITE_WRISTBAND_PRINT_STORAGE_PREFIX = 'onsite_wristband_print_payload_v1:';
 
         let departments = [];
         const initialDeptQueryId = new URLSearchParams(window.location.search).get('dept') || '';
@@ -468,7 +469,6 @@
             focusStudentId: '',
             focusStudentTimer: null,
             scanFeedbackTimer: null,
-            wristbandQrLibraryPromise: null
         };
         const selectedStudentIds = new Set();
         let onsiteAudioContext = null;
@@ -791,44 +791,39 @@
             return (dept.students || []).slice();
         }
 
-        async function ensureWristbandQrLibrary() {
-            if (window.QRCode?.toDataURL) return true;
-            if (onsiteState.wristbandQrLibraryPromise) return onsiteState.wristbandQrLibraryPromise;
-            onsiteState.wristbandQrLibraryPromise = new Promise((resolve, reject) => {
-                const existing = document.querySelector('script[data-wristband-qr-lib="1"]');
-                if (existing && window.QRCode?.toDataURL) {
-                    resolve(true);
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = ONSITE_WRISTBAND_QR_SCRIPT_URL;
-                script.async = true;
-                script.dataset.wristbandQrLib = '1';
-                script.onload = () => resolve(true);
-                script.onerror = () => reject(new Error('手環 QR 模組載入失敗，請確認網路連線。'));
-                document.head.appendChild(script);
-            }).finally(() => {
-                onsiteState.wristbandQrLibraryPromise = null;
-            });
-            return onsiteState.wristbandQrLibraryPromise;
+        function buildWristbandPrintItem(student, dept, group = null) {
+            const qrText = String(student.id || student.name || '').trim();
+            const sessionName = group?.session?.name
+                || (student.assignedSessionId ? (dept.sessions.find(session => session.id === student.assignedSessionId)?.name || '') : '');
+            const groupLabel = group?.groupLabel || getAssignedGroupLabelForExport(dept, student);
+            const phaseLabel = group?.phaseLabel || '';
+            return {
+                qrText,
+                studentName: String(student.name || '未命名'),
+                studentId: String(student.id || ''),
+                deptName: String(dept?.name || ''),
+                sessionName: String(sessionName || '未排定'),
+                groupLabel: String(groupLabel || ''),
+                phaseLabel: String(phaseLabel || '')
+            };
         }
 
-        function buildWristbandRowHtml(student, qrDataUrl, dept) {
-            return `
-                <section class="wristband">
-                    <div class="wristband-cut">裁切線</div>
-                    <div class="wristband-inner">
-                        <div class="wristband-qr">
-                            <img src="${qrDataUrl}" alt="QR code">
-                        </div>
-                        <div class="wristband-text">
-                            <div class="wristband-dept">${escapeHtml(dept?.name || '')}</div>
-                            <div class="wristband-name">${escapeHtml(student.name || '未命名')}</div>
-                            <div class="wristband-id">報名序號 ${escapeHtml(student.id || '')}</div>
-                        </div>
-                    </div>
-                </section>
-            `;
+        function buildWristbandPrintPayload(dept, students, groupByStudentId) {
+            const items = students.map(student => {
+                const group = groupByStudentId.get(String(student.id || '')) || null;
+                return buildWristbandPrintItem(student, dept, group);
+            });
+            return {
+                deptName: String(dept?.name || ''),
+                generatedAt: new Date().toISOString(),
+                items
+            };
+        }
+
+        function storeWristbandPrintPayload(payload) {
+            const key = `${ONSITE_WRISTBAND_PRINT_STORAGE_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            localStorage.setItem(key, JSON.stringify(payload));
+            return key;
         }
 
         async function exportWristbandPrint() {
@@ -845,258 +840,27 @@
                 return;
             }
 
-            const previewWindow = window.open('about:blank', '_blank', 'width=1180,height=920');
+            const timelineGroups = getTimelineGroupsForDept(dept);
+            const groupByStudentId = new Map();
+            timelineGroups.forEach(group => {
+                (group.students || []).forEach(student => {
+                    groupByStudentId.set(String(student.id || ''), group);
+                });
+            });
+            const payload = buildWristbandPrintPayload(dept, students, groupByStudentId);
+            const printKey = storeWristbandPrintPayload(payload);
+            const printUrl = new URL(ONSITE_WRISTBAND_PRINT_PAGE_PATH, window.location.href);
+            printUrl.searchParams.set('key', printKey);
+            printUrl.searchParams.set('autoprint', '1');
+            const previewWindow = window.open(printUrl.toString(), '_blank', 'width=1180,height=920');
             if (!previewWindow || previewWindow.closed) {
                 showToast('瀏覽器擋下新視窗，請先允許彈出視窗再試一次。', 'error');
                 playUiTone('error');
                 return;
             }
-
-            previewWindow.document.open();
-            previewWindow.document.write(`
-                <!DOCTYPE html>
-                <html lang="zh-Hant">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>${escapeHtml(dept.name)} 手環輸出</title>
-                    <style>
-                        :root {
-                            color-scheme: light;
-                            --ink: #0f172a;
-                            --muted: #64748b;
-                            --line: #cbd5e1;
-                            --accent: #4338ca;
-                        }
-                        * { box-sizing: border-box; }
-                        body {
-                            margin: 0;
-                            background: #eef2ff;
-                            color: var(--ink);
-                            font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
-                        }
-                        .toolbar {
-                            position: sticky;
-                            top: 0;
-                            z-index: 10;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            gap: 12px;
-                            padding: 14px 22px;
-                            background: rgba(15, 23, 42, 0.92);
-                            color: white;
-                        }
-                        .toolbar-title {
-                            font-size: 14px;
-                            font-weight: 800;
-                        }
-                        .toolbar-sub {
-                            margin-top: 2px;
-                            font-size: 11px;
-                            opacity: .8;
-                        }
-                        .toolbar-actions {
-                            display: flex;
-                            gap: 10px;
-                            flex-wrap: wrap;
-                            justify-content: flex-end;
-                        }
-                        .toolbar button {
-                            border: none;
-                            border-radius: 999px;
-                            padding: 10px 16px;
-                            font-size: 12px;
-                            font-weight: 800;
-                            cursor: pointer;
-                        }
-                        .print-btn { background: #f59e0b; color: white; }
-                        .close-btn { background: rgba(255,255,255,.14); color: white; }
-                        .page {
-                            max-width: 1040px;
-                            margin: 22px auto 36px;
-                            padding: 24px;
-                            background: white;
-                            box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 18px;
-                        }
-                        .header h1 {
-                            margin: 0;
-                            font-size: 28px;
-                            letter-spacing: .08em;
-                            font-weight: 900;
-                        }
-                        .header p {
-                            margin: 8px 0 0;
-                            color: var(--muted);
-                            font-size: 12px;
-                        }
-                        .wristband-list {
-                            display: grid;
-                            gap: 10px;
-                        }
-                        .wristband {
-                            break-inside: avoid-page;
-                            page-break-inside: avoid;
-                            position: relative;
-                            border: 1.5px solid #1f2937;
-                            border-radius: 18px;
-                            min-height: 30mm;
-                            overflow: hidden;
-                            background: #fff;
-                        }
-                        .wristband-cut {
-                            position: absolute;
-                            top: 6px;
-                            right: 10px;
-                            font-size: 9px;
-                            color: var(--muted);
-                            letter-spacing: .15em;
-                        }
-                        .wristband-inner {
-                            display: flex;
-                            align-items: center;
-                            gap: 14px;
-                            min-height: 30mm;
-                            padding: 10px 14px;
-                        }
-                        .wristband-qr {
-                            flex: 0 0 24mm;
-                            width: 24mm;
-                            height: 24mm;
-                            border: 1px solid var(--line);
-                            border-radius: 12px;
-                            padding: 3px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            background: #fff;
-                        }
-                        .wristband-qr img {
-                            width: 100%;
-                            height: 100%;
-                            object-fit: contain;
-                            display: block;
-                        }
-                        .wristband-text {
-                            min-width: 0;
-                            flex: 1;
-                            display: flex;
-                            flex-direction: column;
-                            gap: 4px;
-                        }
-                        .wristband-dept {
-                            font-size: 10px;
-                            font-weight: 800;
-                            color: var(--accent);
-                            letter-spacing: .08em;
-                        }
-                        .wristband-name {
-                            font-size: 18px;
-                            font-weight: 900;
-                            line-height: 1.15;
-                            overflow-wrap: anywhere;
-                        }
-                        .wristband-id {
-                            font-size: 13px;
-                            font-weight: 800;
-                            color: #334155;
-                            letter-spacing: .04em;
-                        }
-                        .count-badge {
-                            display: inline-flex;
-                            align-items: center;
-                            justify-content: center;
-                            border-radius: 999px;
-                            padding: 6px 12px;
-                            background: #eef2ff;
-                            color: #4338ca;
-                            font-size: 11px;
-                            font-weight: 900;
-                        }
-                        @page {
-                            size: A4 portrait;
-                            margin: 10mm;
-                        }
-                        @media print {
-                            body { background: white; }
-                            .toolbar { display: none; }
-                            .page {
-                                margin: 0;
-                                max-width: none;
-                                padding: 0;
-                                box-shadow: none;
-                            }
-                            .wristband-list {
-                                gap: 8px;
-                            }
-                            .wristband {
-                                border-width: 1.2px;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="toolbar">
-                        <div>
-                            <div class="toolbar-title">${escapeHtml(dept.name)} 手環輸出</div>
-                            <div class="toolbar-sub">每條手環包含 QR Code、學生姓名與報名序號，適合現場裁切配戴。</div>
-                        </div>
-                        <div class="toolbar-actions">
-                            <button class="print-btn" onclick="window.print()">列印 / 另存 PDF</button>
-                            <button class="close-btn" onclick="window.close()">關閉</button>
-                        </div>
-                    </div>
-                    <main class="page">
-                        <header class="header">
-                            <h1>${escapeHtml(dept.name)} 紙手環輸出</h1>
-                            <p>共 ${students.length} 條｜可直接列印後裁切使用</p>
-                        </header>
-                        <section class="wristband-list" id="wristband-list">
-                            <div class="count-badge">QR Code 產生中…</div>
-                        </section>
-                    </main>
-                </body>
-                </html>
-            `);
-            previewWindow.document.close();
-
-            try {
-                await ensureWristbandQrLibrary();
-            } catch (error) {
-                if (previewWindow && !previewWindow.closed) previewWindow.close();
-                showToast(error.message || '手環 QR 模組載入失敗。', 'error');
-                playUiTone('error');
-                return;
-            }
-
-            try {
-                const qrItems = await Promise.all(students.map(async student => {
-                    const qrPayload = String(student.id || '').trim();
-                    const qrDataUrl = await QRCode.toDataURL(qrPayload || student.name || '', {
-                        errorCorrectionLevel: 'M',
-                        margin: 1,
-                        width: 240,
-                        color: {
-                            dark: '#111827',
-                            light: '#ffffff'
-                        }
-                    });
-                    return { student, qrDataUrl };
-                }));
-                const rowsHtml = qrItems.map(item => buildWristbandRowHtml(item.student, item.qrDataUrl, dept)).join('');
-                previewWindow.document.getElementById('wristband-list').innerHTML = rowsHtml || '<div class="count-badge">目前沒有可輸出的手環資料</div>';
-                previewWindow.focus();
-                showToast(`已開啟 ${students.length} 條手環輸出，可直接列印。`, 'success');
-                playUiTone('success');
-            } catch (error) {
-                if (previewWindow && !previewWindow.closed) previewWindow.document.body.innerHTML = `<div style="padding:24px;font-family:sans-serif;color:#b91c1c;">手環輸出失敗：${escapeHtml(error.message || error)}</div>`;
-                showToast(`手環輸出失敗：${error.message || error}`, 'error');
-                playUiTone('error');
-            }
+            previewWindow.focus();
+            showToast(`已開啟 ${students.length} 條手環輸出，可直接列印。`, 'success');
+            playUiTone('success');
         }
 
         function getCrossDeptMatches(student, currentDeptId) {
@@ -2708,46 +2472,51 @@
 
         async function initializeOnsiteApp() {
             setLoadingOverlay(true, '請稍候，系統正在整理今天的報到內容。');
-            const config = loadRemoteSyncConfig();
-            const remembered = readRemoteSyncPassphrase() || readRememberedRemoteSyncPassphrase();
-            const unlockPanel = document.getElementById('onsite-unlock-panel');
-            const urlInput = document.getElementById('unlock-webapp-url');
-            const passInput = document.getElementById('unlock-passphrase');
+            try {
+                const config = loadRemoteSyncConfig();
+                const remembered = readRemoteSyncPassphrase() || readRememberedRemoteSyncPassphrase();
+                const unlockPanel = document.getElementById('onsite-unlock-panel');
+                const urlInput = document.getElementById('unlock-webapp-url');
+                const passInput = document.getElementById('unlock-passphrase');
 
-            if (config?.webAppUrl) {
-                onsiteState.mode = 'remote_secure';
-                onsiteState.webAppUrl = config.webAppUrl;
-                onsiteState.secureLocked = true;
-                urlInput.value = config.webAppUrl;
-                if (remembered) passInput.value = remembered;
-                if (remembered) {
-                    try {
-                        setLoadingOverlay(true, '正在載入雲端現場資料…');
-                        setSaveStatus('正在載入雲端資料…', 'saving');
-                        await loadRemoteSecureDepartments(remembered);
-                        unlockPanel.classList.add('hidden');
-                        renderAll();
-                        setSaveStatus('雲端資料已同步', 'ready');
-                        setLoadingOverlay(false);
-                        showToast('已載入雲端現場資料。', 'success');
-                        return;
-                    } catch (error) {
-                        console.error(error);
-                        setSaveStatus('雲端解鎖失敗，請重新輸入。', 'error');
+                if (config?.webAppUrl) {
+                    onsiteState.mode = 'remote_secure';
+                    onsiteState.webAppUrl = config.webAppUrl;
+                    onsiteState.secureLocked = true;
+                    urlInput.value = config.webAppUrl;
+                    if (remembered) passInput.value = remembered;
+                    if (remembered) {
+                        try {
+                            setLoadingOverlay(true, '正在載入雲端現場資料…');
+                            setSaveStatus('正在載入雲端資料…', 'saving');
+                            await loadRemoteSecureDepartments(remembered);
+                            unlockPanel.classList.add('hidden');
+                            renderAll();
+                            setSaveStatus('雲端資料已同步', 'ready');
+                            showToast('已載入雲端現場資料。', 'success');
+                            return;
+                        } catch (error) {
+                            console.error(error);
+                            setSaveStatus('雲端解鎖失敗，請重新輸入。', 'error');
+                        }
                     }
+                    unlockPanel.classList.remove('hidden');
+                    return;
                 }
-                unlockPanel.classList.remove('hidden');
-                setLoadingOverlay(false);
-                return;
-            }
 
-            const local = await loadLocalDepartments();
-            normalizeDepartmentsForOnsite(local);
-            departments = local;
-            onsiteState.mode = 'local';
-            renderAll();
-            setSaveStatus('目前使用本機資料', 'ready');
-            setLoadingOverlay(false);
+                const local = await loadLocalDepartments();
+                normalizeDepartmentsForOnsite(local);
+                departments = local;
+                onsiteState.mode = 'local';
+                renderAll();
+                setSaveStatus('目前使用本機資料', 'ready');
+            } catch (error) {
+                console.error(error);
+                setSaveStatus(`初始化失敗：${error.message || error}`, 'error');
+                showToast(`初始化失敗：${error.message || error}`, 'error');
+            } finally {
+                setLoadingOverlay(false);
+            }
         }
 
         async function unlockOnsiteRemote() {
