@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./assets/qrcode-generator.js"></script>
     <script src="./assets/qrcodejs.min.js"></script>
     <style>
         :root {
@@ -140,7 +141,8 @@
         }
         .wristband-qr canvas,
         .wristband-qr img,
-        .wristband-qr table {
+        .wristband-qr table,
+        .wristband-qr svg {
             width: 100% !important;
             height: 100% !important;
         }
@@ -149,6 +151,9 @@
         }
         .wristband-qr td {
             padding: 0 !important;
+        }
+        .wristband-qr svg {
+            display: block;
         }
         .wristband-text {
             min-width: 0;
@@ -362,6 +367,47 @@
             return pages;
         }
 
+        function renderQrMarkup(host, text) {
+            const value = String(text || '').trim();
+            if (!host || !value) return false;
+            const qrFactory = typeof qrcode === 'function' ? qrcode : (typeof window.qrcode === 'function' ? window.qrcode : null);
+
+            if (qrFactory) {
+                try {
+                    const qr = qrFactory(0, 'M');
+                    qr.addData(value);
+                    qr.make();
+                    host.innerHTML = qr.createSvgTag(4, 0);
+                    const svg = host.querySelector('svg');
+                    if (svg) {
+                        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                    }
+                    return true;
+                } catch (error) {
+                    console.warn('SVG QR render failed, falling back to QRCode.', error);
+                }
+            }
+
+            if (window.QRCode) {
+                try {
+                    host.innerHTML = '';
+                    new QRCode(host, {
+                        text: value,
+                        width: 164,
+                        height: 164,
+                        colorDark: '#111827',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                    return true;
+                } catch (error) {
+                    console.warn('QRCode fallback render failed.', error);
+                }
+            }
+
+            return false;
+        }
+
         function renderPrint(payload, key) {
             activePrintPayload = payload || null;
             activePrintKey = key || '';
@@ -462,7 +508,8 @@
 
         function buildQRCodes() {
             const cards = Array.from(document.querySelectorAll('.wristband'));
-            if (!window.QRCode) {
+            const qrFactory = typeof qrcode === 'function' ? qrcode : (typeof window.qrcode === 'function' ? window.qrcode : null);
+            if (!qrFactory && !window.QRCode) {
                 const root = document.getElementById('print-root');
                 if (root) {
                     root.innerHTML = `
@@ -478,21 +525,17 @@
                 markQrReady();
                 return;
             }
+            let renderedCount = 0;
             cards.forEach(card => {
                 const host = card.querySelector('.wristband-qr');
                 const text = card.getAttribute('data-qr-text') || '';
                 if (!host || !text) return;
                 host.innerHTML = '';
-                new QRCode(host, {
-                    text,
-                    width: 164,
-                    height: 164,
-                    colorDark: '#111827',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
-                });
+                if (renderQrMarkup(host, text)) renderedCount += 1;
             });
-            markQrReady();
+            if (renderedCount > 0) {
+                markQrReady();
+            }
         }
 
         function closePrintPage() {

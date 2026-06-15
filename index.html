@@ -1100,6 +1100,9 @@
         .scheduler-guide-shell[data-theme="even_load"] {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.09), rgba(255, 255, 255, 0.98) 56%, rgba(20, 184, 166, 0.04));
         }
+        .scheduler-guide-shell[data-theme="written_first_group_oral"] {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.10), rgba(255, 255, 255, 0.98) 56%, rgba(59, 130, 246, 0.04));
+        }
         .scheduler-guide-shell[data-theme="conflict_first"] {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(255, 255, 255, 0.98) 56%, rgba(249, 115, 22, 0.04));
         }
@@ -1112,6 +1115,11 @@
         .scheduler-guide-shell[data-theme="even_load"] .scheduler-guide-live-dot {
             color: #059669;
             box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.35);
+        }
+        .scheduler-guide-shell[data-theme="written_first_group_oral"] .scheduler-guide-badge,
+        .scheduler-guide-shell[data-theme="written_first_group_oral"] .scheduler-guide-live-dot {
+            color: #0284c7;
+            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.35);
         }
         .scheduler-guide-shell[data-theme="conflict_first"] .scheduler-guide-badge,
         .scheduler-guide-shell[data-theme="conflict_first"] .scheduler-guide-live-dot {
@@ -1148,6 +1156,7 @@
         }
         .scheduler-guide-card[data-accent="indigo"] { color: #4f46e5; --scheduler-accent: #4f46e5; }
         .scheduler-guide-card[data-accent="emerald"] { color: #059669; --scheduler-accent: #059669; }
+        .scheduler-guide-card[data-accent="sky"] { color: #0284c7; --scheduler-accent: #0284c7; }
         .scheduler-guide-card[data-accent="amber"] { color: #d97706; --scheduler-accent: #d97706; }
         .scheduler-guide-badge {
             display: inline-flex;
@@ -2334,6 +2343,7 @@
                     <select id="scheduler-options-strategy-select" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="preference_wave">志願優先・均衡分波流水線</option>
                         <option value="even_load">均分人流・雙梯輪換模式</option>
+                        <option value="written_first_group_oral">筆試先・逐組面試模式</option>
                         <option value="conflict_first">跨系避撞・風險優先模式</option>
                     </select>
                 </div>
@@ -2656,6 +2666,24 @@
                         { icon: 'badge-check', title: '先保留學生意願', desc: '有填時段的考生先放回原本選的梯次。' },
                         { icon: 'move-horizontal', title: '未填者再平均補位', desc: '剩下名額用時段數平均補滿，尾數 1-2 人會併進前一組。' },
                         { icon: 'arrow-left-right', title: '雙梯前後輪換', desc: '一梯先面試，另一梯先筆試，之後互換。' }
+                    ]
+                }
+            },
+            written_first_group_oral: {
+                id: 'written_first_group_oral',
+                name: '筆試先・逐組面試模式',
+                shortName: '筆試先分組',
+                badge: '筆試先',
+                description: '每個時段固定只會有一個梯次，並依「一梯幾隊 × 一隊幾組 × 一組幾人」計算梯次人數；先完成筆試後，再依組別順序一組一組接續面試，不採平均分配。',
+                helpText: '適合希望所有學生先完成筆試，再依設定好的梯次容量與組別順序逐一進入面試的現場。',
+                theme: 'sky',
+                guide: {
+                    badge: '筆試先',
+                    note: '每個時段固定只會對應一個梯次，且梯次總人數依設定的一梯幾隊、一隊幾組、一組幾人計算；先完成筆試，再依組別順序一組一組接續面試。',
+                    steps: [
+                        { icon: 'file-text', title: '先完成筆試', desc: '同一時段的考生先一起進入筆試。' },
+                        { icon: 'clock-3', title: '筆試後換場', desc: '筆試結束後預留換場與整理時間。' },
+                        { icon: 'mic', title: '依組別逐一面試', desc: '再按組別順序，一組一組接著面試。' }
                     ]
                 }
             },
@@ -3034,11 +3062,8 @@
         function getAssignedGroupLabelForExport(dept, student) {
             if (student?.assignedOralGroupIdx === null || student?.assignedOralGroupIdx === undefined) return '';
             const strategyId = getSchedulerStrategyForDept(dept).id;
-            if (strategyId === 'even_load') {
-                const groupPosition = getEvenLoadGroupPosition(dept, student.assignedOralGroupIdx);
-                return `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`;
-            }
-            return `第 ${parseInt(student.assignedOralGroupIdx, 10) + 1} 組`;
+            return getGroupLabelTextByStrategy(dept, strategyId, student.assignedSessionId, student.assignedOralGroupIdx)
+                .replace(/｜/g, '・');
         }
 
         function buildSecureDepartmentSettings(dept) {
@@ -4285,6 +4310,7 @@
             const themes = {
                 preference_wave: 'indigo',
                 even_load: 'emerald',
+                written_first_group_oral: 'sky',
                 conflict_first: 'amber'
             };
             return themes[strategyId] || 'indigo';
@@ -6006,6 +6032,76 @@
             };
         }
 
+        function getSessionOrderNumber(dept, sessionId) {
+            const sessions = Array.isArray(dept?.sessions) ? dept.sessions : [];
+            const idx = sessions.findIndex(session => session.id === sessionId);
+            return idx >= 0 ? idx + 1 : 1;
+        }
+
+        function getWrittenFirstGroupPosition(dept, sessionId, groupIdx) {
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            const ladderNumber = getSessionOrderNumber(dept, sessionId);
+            return {
+                ladderNumber,
+                groupNumber: safeGroupIdx + 1
+            };
+        }
+
+        function getGroupLabelTextByStrategy(dept, strategyId, sessionId, groupIdx) {
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            if (strategyId === 'even_load') {
+                const groupPosition = getEvenLoadGroupPosition(dept, safeGroupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`;
+            }
+            if (strategyId === 'written_first_group_oral') {
+                const groupPosition = getWrittenFirstGroupPosition(dept, sessionId, safeGroupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.groupNumber} 組`;
+            }
+            return `第 ${safeGroupIdx + 1} 組`;
+        }
+
+        function getGroupLabelMarkupByStrategy(dept, strategyId, sessionId, groupIdx) {
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            if (strategyId === 'even_load') {
+                const groupPosition = getEvenLoadGroupPosition(dept, safeGroupIdx);
+                return `
+                    <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-indigo-700 shadow-sm">
+                            <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">梯</span>
+                            <span class="text-sm font-black leading-none">${groupPosition.ladderNumber}</span>
+                        </span>
+                        <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-700 shadow-sm">
+                            <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">隊</span>
+                            <span class="text-sm font-black leading-none">${groupPosition.teamNumber}</span>
+                        </span>
+                        <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-emerald-700 shadow-sm">
+                            <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">組</span>
+                            <span class="text-sm font-black leading-none">${groupPosition.groupInTeam}</span>
+                        </span>
+                    </div>`;
+            }
+            if (strategyId === 'written_first_group_oral') {
+                const groupPosition = getWrittenFirstGroupPosition(dept, sessionId, safeGroupIdx);
+                return `
+                    <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-700 shadow-sm">
+                            <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">梯</span>
+                            <span class="text-sm font-black leading-none">${groupPosition.ladderNumber}</span>
+                        </span>
+                        <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-indigo-700 shadow-sm">
+                            <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">組</span>
+                            <span class="text-sm font-black leading-none">${groupPosition.groupNumber}</span>
+                        </span>
+                    </div>`;
+            }
+            return `
+                <div class="mt-1">
+                    <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">
+                        第 ${safeGroupIdx + 1} 組
+                    </span>
+                </div>`;
+        }
+
         function getGroupTimingPlan(dept, sessionStartMin, groupIdx, strategyId, roomGroupCounts = []) {
             const writtenMins = parseInt(dept.cfgWrittenDuration) || 30;
             const oralMins = parseInt(dept.cfgOralDuration) || 20;
@@ -6013,6 +6109,31 @@
             const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
             const effectiveStartMin = sessionStartMin + reportPostBufferMinutes;
             const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+
+            if (strategyId === 'written_first_group_oral') {
+                const writtenStartMin = effectiveStartMin;
+                const writtenEndMin = writtenStartMin + writtenMins;
+                const oralStartMin = writtenEndMin + oralTransitionBuffer + (safeGroupIdx * oralMins);
+                const oralEndMin = oralStartMin + oralMins;
+
+                return {
+                    writtenStart: minsToTimeStr(writtenStartMin),
+                    writtenEnd: minsToTimeStr(writtenEndMin),
+                    oralStart: minsToTimeStr(oralStartMin),
+                    oralEnd: minsToTimeStr(oralEndMin),
+                    ladderIndex: 0,
+                    cycleIndex: 0,
+                    ladderSlot: 0,
+                    groupSlot: safeGroupIdx,
+                    teamIndex: 0,
+                    groupInTeam: safeGroupIdx + 1,
+                    groupsPerTeam: 1,
+                    teamsPerLadder: 1,
+                    groupsPerLadder: 1,
+                    isOralFirst: false,
+                    phaseLabel: '筆試先'
+                };
+            }
 
             if (strategyId === 'even_load') {
                 const { groupsPerTeam, teamsPerLadder, groupsPerLadder } = getEvenLoadOralStructure(dept);
@@ -6189,6 +6310,32 @@
             });
 
             return pool[0]?.id || sessions[0]?.id || null;
+        }
+
+        function getWrittenFirstLadderCapacity(dept) {
+            const teamsPerLadder = Math.max(1, parseInt(dept?.cfgOralTeamsPerLadder, 10) || 1);
+            const groupsPerTeam = Math.max(1, parseInt(dept?.cfgOralTeamGroupCount, 10) || 1);
+            const groupCapacity = Math.max(1, parseInt(dept?.cfgOralGroupCapacity, 10) || 1);
+            return teamsPerLadder * groupsPerTeam * groupCapacity;
+        }
+
+        function pickSequentialSessionId(sessionAssignments, sessions, capacityPerSession, student = null) {
+            const ordered = sessions.map((session, idx) => ({
+                id: session.id,
+                idx,
+                current: sessionAssignments[session.id].length
+            }));
+
+            let pool = ordered.filter(item => item.current < capacityPerSession);
+            const preferredPeriod = getStudentPreferencePeriod(student);
+            if (preferredPeriod) {
+                const preferredPool = pool.filter(item => sessionMatchesPreferencePeriod(sessions[item.idx], preferredPeriod));
+                if (preferredPool.length > 0) {
+                    pool = preferredPool;
+                }
+            }
+
+            return pool[0]?.id || ordered[0]?.id || sessions[0]?.id || null;
         }
 
         function getSchedulerStrategyForDept(dept) {
@@ -6434,8 +6581,12 @@
                 });
 
                 const teamLimit = parseInt(dept.cfgTeamCapacity) || 30; // Greedy capacity
-                const capacityPerSession = numWritten * teamLimit;
-                const sessionTargets = buildBalancedSessionTargets(dept.students.length, dept.sessions, capacityPerSession);
+                const capacityPerSession = strategyId === 'written_first_group_oral'
+                    ? getWrittenFirstLadderCapacity(dept)
+                    : (numWritten * teamLimit);
+                const sessionTargets = strategyId === 'written_first_group_oral'
+                    ? null
+                    : buildBalancedSessionTargets(dept.students.length, dept.sessions, capacityPerSession);
 
                 // 2. Separate students by specific session preferences
                 let exactPrefStudents = sortStudentsByStrategy(
@@ -6466,7 +6617,7 @@
                 });
 
                 // First pass: Assign students with valid preferences.
-                // For even_load, student preference always wins over the average target;
+                // Preferences always get first claim on their matching session;
                 // only actual room/session capacity can force an overflow fallback.
                 const overflowPrefStudents = [];
                 exactPrefStudents.forEach(student => {
@@ -6475,12 +6626,13 @@
                     if (sessionAssignments[prefId].length < preferredLimit) {
                         sessionAssignments[prefId].push(student);
                     } else {
-                        // Only true capacity overflow should fall back to the balanced pool.
+                        // Only true capacity overflow should fall back to the later-stage pool.
                         overflowPrefStudents.push(student);
                     }
                 });
 
-                // Second pass: Balance overflowed preferred students, then morning/afternoon-only preferences, then true no-preference students.
+                // Second pass: distribute overflowed preferred students and the remaining pool.
+                // The written-first mode follows the configured ladder capacity in session order.
                 const balancingPool = [
                     ...sortStudentsByStrategy(overflowPrefStudents, dept, strategyId),
                     ...sortStudentsByStrategy(morningPrefStudents, dept, strategyId),
@@ -6488,7 +6640,9 @@
                     ...sortStudentsByStrategy(noPref, dept, strategyId)
                 ];
                 balancingPool.forEach(student => {
-                    const targetSessionId = pickBalancedSessionId(sessionAssignments, sessionTargets, dept.sessions, capacityPerSession, student);
+                    const targetSessionId = strategyId === 'written_first_group_oral'
+                        ? pickSequentialSessionId(sessionAssignments, dept.sessions, capacityPerSession, student)
+                        : pickBalancedSessionId(sessionAssignments, sessionTargets, dept.sessions, capacityPerSession, student);
                     if (targetSessionId) {
                         sessionAssignments[targetSessionId].push(student);
                     }
@@ -6700,7 +6854,9 @@
                             const isOralFirstLadder = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0;
                             return `第 ${ladderIndex} 梯（${isOralFirstLadder ? '面試先' : '筆試先'}）`;
                         })()
-                        : (item.isOralFirst ? '面試後回筆試' : '先筆試'),
+                        : (strategyId === 'written_first_group_oral'
+                            ? `第 ${getSessionOrderNumber(dept, item.sampleStudent?.assignedSessionId)} 梯（筆試先）`
+                            : (item.isOralFirst ? '面試後回筆試' : '先筆試')),
                     countText: `${item.students.length} 人`,
                     order: idx
                 }));
@@ -6716,7 +6872,14 @@
                             const phaseLabel = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先';
                             return `第 ${ladderIndex} 梯・第 ${teamIndex} 隊・第 ${groupInTeam} 組（${phaseLabel}）`;
                         })()
-                        : `面試第 ${idx + 1} 輪`,
+                        : (strategyId === 'written_first_group_oral'
+                            ? (() => {
+                                const sample = item.sampleStudent || null;
+                                const ladderNumber = getSessionOrderNumber(dept, sample?.assignedSessionId);
+                                const groupNumber = Math.max(0, parseInt(sample?.assignedOralGroupIdx, 10) || 0) + 1;
+                                return `第 ${ladderNumber} 梯｜第 ${groupNumber} 組`;
+                            })()
+                            : `面試第 ${idx + 1} 輪`),
                     countText: `${item.groupKeys.size} 組 / ${item.students} 人`,
                     order: idx
                 }));
@@ -6887,19 +7050,21 @@
                         const grpWrittenStart = representative ? representative.writtenStart : '';
                         const grpWrittenEnd = representative ? representative.writtenEnd : '';
                     const repGroupIdx = representative?.assignedOralGroupIdx ?? 0;
-                        const ladderIndex = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder);
-                        const ladderNumber = ladderIndex + 1;
-                        const groupSlotInLadder = repGroupIdx % evenLoadStructure.groupsPerLadder;
-                        const teamNumber = Math.floor(groupSlotInLadder / evenLoadStructure.groupsPerTeam) + 1;
-                        const groupSlot = (groupSlotInLadder % evenLoadStructure.groupsPerTeam) + 1;
-                        const isOralFirstGroup = strategyId === 'even_load'
-                            ? (ladderIndex % 2 === 0)
-                            : (representative && representative.oralStart && representative.writtenStart
-                                ? timeToMins(representative.oralStart) < timeToMins(representative.writtenStart)
-                                : false);
+                    const ladderIndex = Math.floor(repGroupIdx / evenLoadStructure.groupsPerLadder);
+                    const ladderNumber = ladderIndex + 1;
+                    const groupSlotInLadder = repGroupIdx % evenLoadStructure.groupsPerLadder;
+                    const teamNumber = Math.floor(groupSlotInLadder / evenLoadStructure.groupsPerTeam) + 1;
+                    const groupSlot = (groupSlotInLadder % evenLoadStructure.groupsPerTeam) + 1;
+                    const isOralFirstGroup = strategyId === 'even_load'
+                        ? (ladderIndex % 2 === 0)
+                        : (representative && representative.oralStart && representative.writtenStart
+                            ? timeToMins(representative.oralStart) < timeToMins(representative.writtenStart)
+                            : false);
                         const grpTitle = strategyId === 'even_load'
                             ? `第 ${ladderNumber} 梯｜第 ${teamNumber} 隊｜第 ${groupSlot} 組`
-                            : `第 ${parseInt(gKey) + 1} 組`;
+                            : (strategyId === 'written_first_group_oral'
+                                ? `第 ${getSessionOrderNumber(dept, representative?.assignedSessionId)} 梯｜第 ${parseInt(gKey, 10) + 1} 組`
+                                : `第 ${parseInt(gKey, 10) + 1} 組`);
                         const grpPhaseLabel = strategyId === 'even_load'
                             ? `${isOralFirstGroup ? '面試先' : '筆試先'}`
                             : (representative && representative.oralStart && representative.writtenStart
@@ -7113,11 +7278,7 @@
             }
             const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
             const groupIdx = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined ? student.assignedOralGroupIdx : 0;
-            if (strategyId === 'even_load') {
-                const groupPosition = getEvenLoadGroupPosition(dept, groupIdx);
-                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`;
-            }
-            return `第 ${groupIdx + 1} 組`;
+            return getGroupLabelTextByStrategy(dept, strategyId, student.assignedSessionId, groupIdx);
         }
 
         function buildTimelineSearchRecord(dept, student, sessionOrderMap) {
@@ -7258,13 +7419,9 @@
             });
         }
 
-        function getManualMoveGroupLabel(dept, groupIdx) {
+        function getManualMoveGroupLabel(dept, groupIdx, sessionId = null) {
             const strategyId = getSchedulerStrategyForDept(dept).id;
-            if (strategyId === 'even_load') {
-                const groupPosition = getEvenLoadGroupPosition(dept, groupIdx);
-                return `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`;
-            }
-            return `第 ${parseInt(groupIdx, 10) + 1} 組`;
+            return getGroupLabelTextByStrategy(dept, strategyId, sessionId, groupIdx).replace(/｜/g, '・');
         }
 
         function formatManualMovePlacementLabel(dept, sessionId, writtenIdx, oralIdx, groupIdx) {
@@ -7272,7 +7429,7 @@
             const writtenRoom = dept.writtenRooms?.[writtenIdx] || '未指定筆試室';
             const oralRoom = dept.oralRooms?.[oralIdx] || '未指定面試室';
             const sessionLabel = session ? `${session.name} (${session.startTime})` : '未指定時段';
-            const groupLabel = getManualMoveGroupLabel(dept, groupIdx);
+            const groupLabel = getManualMoveGroupLabel(dept, groupIdx, sessionId);
             return `${sessionLabel}｜${writtenRoom}｜${oralRoom}｜${groupLabel}`;
         }
 
@@ -7387,7 +7544,7 @@
                 pendingManualMoveChoice.target.oralIdx,
                 pendingManualMoveChoice.target.groupIdx
             );
-            const originalGroupLabel = getManualMoveGroupLabel(dept, pendingManualMoveChoice.original.groupIdx);
+            const originalGroupLabel = getManualMoveGroupLabel(dept, pendingManualMoveChoice.original.groupIdx, pendingManualMoveChoice.original.sessionId);
             const studentBirth = normalizeBirthDate(student?.birthDate || '') || '未填';
             const studentSchool = student?.school || '未填';
 
@@ -7420,7 +7577,7 @@
                     selectedCandidate.assignedOralRoomIdx,
                     selectedCandidate.assignedOralGroupIdx
                 );
-                const candidateGroupLabel = getManualMoveGroupLabel(dept, selectedCandidate.assignedOralGroupIdx);
+                const candidateGroupLabel = getManualMoveGroupLabel(dept, selectedCandidate.assignedOralGroupIdx, selectedCandidate.assignedSessionId);
                 rightEl.innerHTML = buildManualMovePreviewCardHtml({
                     tone: 'rose',
                     label: '互換對象',
@@ -7818,38 +7975,16 @@
                     const writtenRoomIdx = representative.assignedWrittenRoomIdx !== null && representative.assignedWrittenRoomIdx !== undefined ? representative.assignedWrittenRoomIdx : 0;
                     const oralRoomName = dept.oralRooms[roomIdx] || `面試教室 ${roomIdx + 1}`;
                     const writtenRoomName = dept.writtenRooms[writtenRoomIdx] || `筆試教室 ${writtenRoomIdx + 1}`;
-                    const groupPosition = strategyId === 'even_load' ? getEvenLoadGroupPosition(dept, groupIdx) : null;
-                    const groupLabel = strategyId === 'even_load'
-                        ? `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`
-                        : `第 ${groupIdx + 1} 組`;
-                    const groupLabelMarkup = strategyId === 'even_load' && groupPosition
-                        ? `
-                            <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-indigo-700 shadow-sm">
-                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">梯</span>
-                                    <span class="text-sm font-black leading-none">${groupPosition.ladderNumber}</span>
-                                </span>
-                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-700 shadow-sm">
-                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">隊</span>
-                                    <span class="text-sm font-black leading-none">${groupPosition.teamNumber}</span>
-                                </span>
-                                <span class="inline-flex min-w-[56px] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-emerald-700 shadow-sm">
-                                    <span class="text-[9px] font-black uppercase tracking-[0.18em] opacity-70">組</span>
-                                    <span class="text-sm font-black leading-none">${groupPosition.groupInTeam}</span>
-                                </span>
-                            </div>`
-                        : `
-                            <div class="mt-1">
-                                <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-700 shadow-sm">
-                                    第 ${groupIdx + 1} 組
-                                </span>
-                            </div>`;
+                    const groupLabel = getGroupLabelTextByStrategy(dept, strategyId, session.id, groupIdx);
+                    const groupLabelMarkup = getGroupLabelMarkupByStrategy(dept, strategyId, session.id, groupIdx);
                     const groupCardId = `timeline-group-${makeSafeDomId(session.id)}-${roomIdx}-${groupIdx}`;
                     const phaseLabel = strategyId === 'even_load'
                         ? (Math.floor(groupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先')
-                        : (representative.oralStart && representative.writtenStart
-                            ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
-                            : '交錯時段');
+                        : (strategyId === 'written_first_group_oral'
+                            ? '筆試先'
+                            : (representative.oralStart && representative.writtenStart
+                                ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
+                                : '交錯時段'));
                     const isOralFirst = phaseLabel.includes('面試先') || phaseLabel.includes('先面試');
                     const steps = isOralFirst
                         ? [
@@ -8632,12 +8767,7 @@
                 if (s.assignedSessionId) {
                     const roomName = dept.oralRooms[s.assignedOralRoomIdx] || `教室-${s.assignedOralRoomIdx+1}`;
                     const grpName = s.assignedOralGroupIdx !== null
-                        ? (strategyId === 'even_load'
-                            ? (() => {
-                                const groupPosition = getEvenLoadGroupPosition(dept, s.assignedOralGroupIdx);
-                                return `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`;
-                            })()
-                            : `第 ${s.assignedOralGroupIdx + 1} 組`)
+                        ? getGroupLabelTextByStrategy(dept, strategyId, s.assignedSessionId, s.assignedOralGroupIdx).replace(/｜/g, '・')
                         : '未分組';
                     oralCell = `<div class="font-bold text-indigo-700">${roomName} (${grpName})</div><div class="text-[10px] text-indigo-500">${s.oralStart}-${s.oralEnd}</div>`;
                 }
@@ -8798,11 +8928,8 @@
                                                            s.assignedOralGroupIdx === grpIdx).length;
                 const oralGroupCapacity = parseInt(dept.cfgOralGroupCapacity) || 5;
                 const oralGroupSoftLimit = oralGroupCapacity + getOralTailMergeLimit(dept);
-                const groupPosition = getEvenLoadGroupPosition(dept, grpIdx);
                 if (grpCount >= oralGroupSoftLimit) {
-                    const groupLabel = strategyId === 'even_load'
-                        ? `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`
-                        : `第 ${grpIdx + 1} 組`;
+                    const groupLabel = getGroupLabelTextByStrategy(dept, strategyId, sId, grpIdx).replace(/｜/g, '・');
                     errors.push(`<b>組別名額提醒：</b>該梯次面試室的「${groupLabel}」目前已排了 <b>${grpCount}</b> 位考生；若你是要直接插入，系統仍會接受並重新計算時序。`);
                 }
 
@@ -9033,10 +9160,7 @@
                     .map(conflict => `${conflict.deptName}${conflict.otherType}${conflict.start}-${conflict.end}`)
                     .join('、') || '無';
                 const assignedGroupText = student.assignedOralGroupIdx !== null && student.assignedOralGroupIdx !== undefined
-                    ? (() => {
-                        const pos = getEvenLoadGroupPosition(dept, student.assignedOralGroupIdx);
-                        return `第${pos.ladderNumber}梯・第${pos.teamNumber}隊・第${pos.groupInTeam}組`;
-                    })()
+                    ? getGroupLabelTextByStrategy(dept, strategyId, student.assignedSessionId, student.assignedOralGroupIdx).replace(/｜/g, '・')
                     : '未分配';
                 const reportTime = student.assignedSessionId
                     ? (() => {
@@ -9098,10 +9222,7 @@
                 const writtenRoom = s.assignedWrittenRoomIdx !== null ? (dept.writtenRooms[s.assignedWrittenRoomIdx] || '') : '';
                 const oralRoom = s.assignedOralRoomIdx !== null ? (dept.oralRooms[s.assignedOralRoomIdx] || '') : '';
                 const grpText = s.assignedOralGroupIdx !== null
-                    ? (() => {
-                        const groupPosition = getEvenLoadGroupPosition(dept, s.assignedOralGroupIdx);
-                        return `第 ${groupPosition.ladderNumber} 梯・第 ${groupPosition.teamNumber} 隊・第 ${groupPosition.groupInTeam} 組`;
-                    })()
+                    ? getGroupLabelTextByStrategy(dept, strategyId, s.assignedSessionId, s.assignedOralGroupIdx).replace(/｜/g, '・')
                     : '未分配';
                 const birthDate = normalizeBirthDate(s.birthDate || '');
                 const crossDeptNames = [...new Set(getCrossDeptMatches(s, dept.id).map(match => match.dept.name))].join('、') || '無';

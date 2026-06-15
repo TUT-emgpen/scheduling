@@ -627,13 +627,38 @@
             return { ladderIndex, ladderNumber, groupSlotInLadder, teamNumber, groupInTeam, ladderPhase, groupsPerTeam, groupsPerLadder };
         }
 
+        function getSessionOrderNumber(dept, sessionId) {
+            const sessions = Array.isArray(dept?.sessions) ? dept.sessions : [];
+            const idx = sessions.findIndex(session => session.id === sessionId);
+            return idx >= 0 ? idx + 1 : 1;
+        }
+
+        function getWrittenFirstGroupPosition(dept, sessionId, groupIdx) {
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            const ladderNumber = getSessionOrderNumber(dept, sessionId);
+            return {
+                ladderNumber,
+                groupNumber: safeGroupIdx + 1
+            };
+        }
+
+        function getGroupLabelTextByStrategy(dept, strategyId, sessionId, groupIdx) {
+            const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
+            if (strategyId === 'even_load') {
+                const groupPosition = getEvenLoadGroupPosition(dept, safeGroupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`;
+            }
+            if (strategyId === 'written_first_group_oral') {
+                const groupPosition = getWrittenFirstGroupPosition(dept, sessionId, safeGroupIdx);
+                return `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.groupNumber} 組`;
+            }
+            return `第 ${safeGroupIdx + 1} 組`;
+        }
+
         function getAssignedGroupLabelForExport(dept, student) {
             if (student?.assignedOralGroupIdx === null || student?.assignedOralGroupIdx === undefined) return '';
-            if ((dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY) === 'even_load') {
-                const pos = getEvenLoadGroupPosition(dept, student.assignedOralGroupIdx);
-                return `第 ${pos.ladderNumber} 梯・第 ${pos.teamNumber} 隊・第 ${pos.groupInTeam} 組`;
-            }
-            return `第 ${parseInt(student.assignedOralGroupIdx, 10) + 1} 組`;
+            return getGroupLabelTextByStrategy(dept, dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY, student.assignedSessionId, student.assignedOralGroupIdx)
+                .replace(/｜/g, '・');
         }
 
         function utf8ToBase64(text) {
@@ -1828,15 +1853,14 @@
                     const writtenRoomIdx = representative.assignedWrittenRoomIdx !== null && representative.assignedWrittenRoomIdx !== undefined ? representative.assignedWrittenRoomIdx : 0;
                     const oralRoomName = dept.oralRooms?.[roomIdx] || `面試教室 ${roomIdx + 1}`;
                     const writtenRoomName = dept.writtenRooms?.[writtenRoomIdx] || `筆試教室 ${writtenRoomIdx + 1}`;
-                    const groupPosition = strategyId === 'even_load' ? getEvenLoadGroupPosition(dept, groupIdx) : null;
-                    const groupLabel = strategyId === 'even_load'
-                        ? `第 ${groupPosition.ladderNumber} 梯｜第 ${groupPosition.teamNumber} 隊｜第 ${groupPosition.groupInTeam} 組`
-                        : `第 ${groupIdx + 1} 組`;
+                    const groupLabel = getGroupLabelTextByStrategy(dept, strategyId, session.id, groupIdx);
                     const phaseLabel = strategyId === 'even_load'
                         ? (Math.floor(groupIdx / evenLoadStructure.groupsPerLadder) % 2 === 0 ? '面試先' : '筆試先')
-                        : (representative.oralStart && representative.writtenStart
-                            ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
-                            : '交錯時段');
+                        : (strategyId === 'written_first_group_oral'
+                            ? '筆試先'
+                            : (representative.oralStart && representative.writtenStart
+                                ? (timeToMins(representative.oralStart) < timeToMins(representative.writtenStart) ? '先面試後筆試' : '先筆試後面試')
+                                : '交錯時段'));
                     const isOralFirst = phaseLabel.includes('面試先') || phaseLabel.includes('先面試');
                     const steps = isOralFirst
                         ? [
