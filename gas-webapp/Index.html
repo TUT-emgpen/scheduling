@@ -9097,10 +9097,6 @@
         function exportScheduleWorkbook() {
             const dept = departments.find(d => d.id === activeDeptId);
             if (!dept) return;
-            if (typeof XLSX === 'undefined') {
-                showToast('Excel 函式庫尚未載入，請重新整理後再試一次。', 'error');
-                return;
-            }
 
             const groups = getTimelineGroupsForDept(dept);
             if (!groups.length) {
@@ -9108,9 +9104,10 @@
                 return;
             }
 
+            const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
             const aoa = [
-                ['實作梯次', '報到時間', '筆試 / 實作', '', '面試', '', '', '報名序號', '人數'],
-                ['', '', '時間', '地點', '組別', '時間', '地點', '', '']
+                ['實作梯次', '報到時間', '筆試 / 實作', '', '面試', '', '', '報名序號', '姓名', '人數'],
+                ['', '', '時間', '地點', '組別', '時間', '地點', '', '', '']
             ];
             const merges = [
                 XLSX.utils.decode_range('A1:A2'),
@@ -9118,14 +9115,14 @@
                 XLSX.utils.decode_range('C1:D1'),
                 XLSX.utils.decode_range('E1:G1'),
                 XLSX.utils.decode_range('H1:H2'),
-                XLSX.utils.decode_range('I1:I2')
+                XLSX.utils.decode_range('I1:I2'),
+                XLSX.utils.decode_range('J1:J2')
             ];
 
             groups.forEach(group => {
                 const reportItem = group.timelineItems.find(item => item.kind === 'report') || null;
                 const writtenItem = group.timelineItems.find(item => item.kind === 'written') || null;
                 const oralItem = group.timelineItems.find(item => item.kind === 'oral') || null;
-                const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
                 const groupPosition = strategyId === 'even_load'
                     ? getEvenLoadGroupPosition(dept, group.groupIdx)
                     : null;
@@ -9149,6 +9146,10 @@
                     .map(student => String(student.id || '').trim())
                     .filter(Boolean)
                     .join('、\n');
+                const studentNames = group.students
+                    .map(student => String(student.name || '').trim())
+                    .filter(Boolean)
+                    .join('、\n');
 
                 aoa.push([
                     ladderLabel,
@@ -9159,6 +9160,7 @@
                     oralTime,
                     group.oralRoomName || '',
                     registrationIds,
+                    studentNames,
                     group.count
                 ]);
             });
@@ -9174,6 +9176,7 @@
                 { wch: 14 },
                 { wch: 18 },
                 { wch: 44 },
+                { wch: 28 },
                 { wch: 8 }
             ];
             worksheet['!rows'] = [
@@ -9193,7 +9196,7 @@
                     worksheet[cellRef].s = {
                         alignment: {
                             vertical: 'center',
-                            horizontal: row <= 1 ? 'center' : (col === 7 ? 'left' : 'center'),
+                            horizontal: row <= 1 ? 'center' : (col >= 7 && col <= 8 ? 'left' : 'center'),
                             wrapText: true
                         },
                         font: {
@@ -9264,19 +9267,71 @@
             const safeDeptName = String(dept.name || '排程').replace(/[\\/:*?"<>|]+/g, '_');
             const dateTag = new Date().toISOString().slice(0, 10);
             try {
-                const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([workbookData], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                });
+                if (typeof XLSX !== 'undefined' && XLSX?.write) {
+                    const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([workbookData], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${safeDeptName}_當天排程_${dateTag}.xlsx`;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                    showToast("已下載 Excel 排程檔，可直接交給書記整理或列印。", "success");
+                    return;
+                }
+
+                const htmlTable = (title, headerRows, bodyRows) => {
+                    const renderCell = (cell, tag = 'td') => {
+                        const escaped = escapeHtml(String(cell ?? '')).replace(/\n/g, '<br>');
+                        return `<${tag} style="border:1px solid #9ca3af;padding:6px 8px;vertical-align:top;">${escaped}</${tag}>`;
+                    };
+                    const renderRow = (row, tag = 'td') => `<tr>${row.map(cell => renderCell(cell, tag)).join('')}</tr>`;
+                    return `
+                        <h2 style="margin:24px 0 12px;font-size:18px;font-weight:700;">${escapeHtml(title)}</h2>
+                        <table style="border-collapse:collapse;width:100%;font-family:Arial,'Microsoft JhengHei',sans-serif;font-size:12px;">
+                            <thead>
+                                ${headerRows.map(row => renderRow(row, 'th')).join('')}
+                            </thead>
+                            <tbody>
+                                ${bodyRows.map(row => renderRow(row)).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                };
+
+                const html = `<!doctype html>
+                    <html lang="zh-Hant">
+                    <head>
+                        <meta charset="utf-8">
+                        <title>${escapeHtml(`${safeDeptName}_當天排程_${dateTag}`)}</title>
+                        <style>
+                            body { margin: 24px; font-family: Arial, 'Microsoft JhengHei', sans-serif; color: #111827; }
+                            h1 { font-size: 22px; margin: 0 0 12px; }
+                            .note { color: #6b7280; font-size: 12px; margin-bottom: 18px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${escapeHtml(`${safeDeptName} 當天排程`)}</h1>
+                        <div class="note">若你的電腦尚未載入 SheetJS，系統會下載 Excel 相容檔，Excel 仍可直接開啟。</div>
+                        ${htmlTable('當天排程總表', aoa.slice(0, 2), aoa.slice(2))}
+                        ${htmlTable('考生排程明細', detailRows.slice(0, 1), detailRows.slice(1))}
+                    </body>
+                    </html>`;
+
+                const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `${safeDeptName}_當天排程_${dateTag}.xlsx`;
+                link.download = `${safeDeptName}_當天排程_${dateTag}.xls`;
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 2000);
-                showToast("已下載 Excel 排程檔，可直接交給書記整理或列印。", "success");
+                showToast("已下載 Excel 相容檔，可直接用 Excel 開啟。", "success");
             } catch (error) {
                 console.error('exportScheduleWorkbook failed', error);
                 showToast('Excel 匯出失敗，請稍後再試一次。', 'error');
