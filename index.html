@@ -1703,10 +1703,10 @@
                                     <input type="number" id="cfg-report-post-buffer-minutes" min="10" max="20" class="setup-soft-input" value="10">
                                 </div>
                                 <div class="setup-subcard">
-                                    <label class="setup-field-label" title="勾選後，時序小卡會顯示『走路換場』步驟；取消勾選則隱藏，但排程時間仍會保留。">顯示走路換場</label>
+                                    <label class="setup-field-label" title="勾選後，時序小卡會顯示『走路換場』步驟，並保留換場緩衝；取消勾選則直接筆試接面試，不另留走動時間。">顯示走路換場</label>
                                     <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm">
                                         <input type="checkbox" id="cfg-show-transfer-step" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked>
-                                        <span>在時序小卡中顯示走路換場</span>
+                                        <span>在時序小卡中顯示走路換場，並保留換場緩衝</span>
                                     </label>
                                 </div>
                                 <div class="setup-subcard">
@@ -1987,11 +1987,11 @@
                                 <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                 <span>輸出當天流程表</span>
                             </button>
-                            <button id="export-schedule-xlsx" class="flex items-center space-x-1 px-3 py-1.5 border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition">
+                            <button id="export-schedule-xlsx" type="button" class="flex items-center space-x-1 px-3 py-1.5 border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition">
                                 <i data-lucide="sheet" class="w-3.5 h-3.5"></i>
                                 <span>下載 Excel 檔</span>
                             </button>
-                            <button id="export-excel-tsv" class="flex items-center space-x-1 px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
+                            <button id="export-excel-tsv" type="button" class="flex items-center space-x-1 px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
                                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
                                 <span>複製至 Excel 貼上</span>
                             </button>
@@ -2681,12 +2681,12 @@
                 name: '筆試先・逐組面試模式',
                 shortName: '筆試先分組',
                 badge: '筆試先',
-                description: '每個時段固定只會有一個梯次，並依「一梯幾隊 × 一隊幾組 × 一組幾人」計算梯次人數；先完成筆試後，再依組別順序一組一組接續面試，不採平均分配。',
-                helpText: '適合希望所有學生先完成筆試，再依設定好的梯次容量與組別順序逐一進入面試的現場。',
+                description: '每個時段固定只會有一個梯次，並依「一梯幾隊 × 一隊幾組 × 一組幾人」計算梯次人數；先完成筆試後，再依組別順序進入面試，若有多間面試教室可同時並行使用，不採平均分配。',
+                helpText: '適合希望所有學生先完成筆試，再依設定好的梯次容量與組別順序進入面試的現場；若有兩間以上面試教室，系統會同時並行排入。',
                 theme: 'sky',
                 guide: {
                     badge: '筆試先',
-                    note: '每個時段固定只會對應一個梯次，且梯次總人數依設定的一梯幾隊、一隊幾組、一組幾人計算；先完成筆試，再依組別順序一組一組接續面試。',
+                    note: '每個時段固定只會對應一個梯次，且梯次總人數依設定的一梯幾隊、一隊幾組、一組幾人計算；先完成筆試，再依組別順序進入面試，若有多間面試教室會同時並行。',
                     steps: [
                         { icon: 'file-text', title: '先完成筆試', desc: '同一時段的考生先一起進入筆試。' },
                         { icon: 'clock-3', title: '筆試後換場', desc: '筆試結束後預留換場與整理時間。' },
@@ -6080,6 +6080,26 @@
             };
         }
 
+        function getGroupSpanLabelFromKeys(groupKeys) {
+            const groupNumbers = Array.from(groupKeys || [])
+                .map(key => {
+                    const parts = String(key).split('-');
+                    return parseInt(parts[1], 10);
+                })
+                .filter(num => Number.isFinite(num))
+                .sort((a, b) => a - b);
+
+            if (groupNumbers.length === 0) return '未分組';
+            if (groupNumbers.length === 1) return `第 ${groupNumbers[0] + 1} 組`;
+
+            const isConsecutive = groupNumbers.every((num, idx) => idx === 0 || num === groupNumbers[idx - 1] + 1);
+            if (isConsecutive) {
+                return `第 ${groupNumbers[0] + 1}-${groupNumbers[groupNumbers.length - 1] + 1} 組`;
+            }
+
+            return groupNumbers.map(num => `第 ${num + 1} 組`).join('、');
+        }
+
         function getGroupLabelTextByStrategy(dept, strategyId, sessionId, groupIdx) {
             const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
             if (strategyId === 'even_load') {
@@ -6138,15 +6158,17 @@
         function getGroupTimingPlan(dept, sessionStartMin, groupIdx, strategyId, roomGroupCounts = []) {
             const writtenMins = parseInt(dept.cfgWrittenDuration) || 30;
             const oralMins = parseInt(dept.cfgOralDuration) || 20;
-            const oralTransitionBuffer = 10;
+            const oralTransitionBuffer = getShowTransferStep(dept) ? 10 : 0;
             const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
             const effectiveStartMin = sessionStartMin + reportPostBufferMinutes;
             const safeGroupIdx = Math.max(0, parseInt(groupIdx, 10) || 0);
 
             if (strategyId === 'written_first_group_oral') {
+                const oralRoomCount = Math.max(1, Array.isArray(roomGroupCounts) ? roomGroupCounts.length : 1);
+                const oralWaveIdx = Math.floor(safeGroupIdx / oralRoomCount);
                 const writtenStartMin = effectiveStartMin;
                 const writtenEndMin = writtenStartMin + writtenMins;
-                const oralStartMin = writtenEndMin + oralTransitionBuffer + (safeGroupIdx * oralMins);
+                const oralStartMin = writtenEndMin + oralTransitionBuffer + (oralWaveIdx * oralMins);
                 const oralEndMin = oralStartMin + oralMins;
 
                 return {
@@ -6909,8 +6931,8 @@
                             ? (() => {
                                 const sample = item.sampleStudent || null;
                                 const ladderNumber = getSessionOrderNumber(dept, sample?.assignedSessionId);
-                                const groupNumber = Math.max(0, parseInt(sample?.assignedOralGroupIdx, 10) || 0) + 1;
-                                return `第 ${ladderNumber} 梯｜第 ${groupNumber} 組`;
+                                const groupSpanLabel = getGroupSpanLabelFromKeys(item.groupKeys);
+                                return `第 ${ladderNumber} 梯｜${groupSpanLabel}`;
                             })()
                             : `面試第 ${idx + 1} 輪`),
                     countText: `${item.groupKeys.size} 組 / ${item.students} 人`,
@@ -7980,6 +8002,7 @@
             const evenLoadStructure = getEvenLoadOralStructure(dept);
             const reportLeadMinutes = getReportLeadMinutes(dept);
             const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
+            const showTransferStep = getShowTransferStep(dept);
             const groups = [];
 
             (dept.sessions || []).forEach((session, sessionIdx) => {
@@ -9074,6 +9097,10 @@
         function exportScheduleWorkbook() {
             const dept = departments.find(d => d.id === activeDeptId);
             if (!dept) return;
+            if (typeof XLSX === 'undefined') {
+                showToast('Excel 函式庫尚未載入，請重新整理後再試一次。', 'error');
+                return;
+            }
 
             const groups = getTimelineGroupsForDept(dept);
             if (!groups.length) {
@@ -9233,8 +9260,24 @@
 
             const safeDeptName = String(dept.name || '排程').replace(/[\\/:*?"<>|]+/g, '_');
             const dateTag = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(workbook, `${safeDeptName}_當天排程_${dateTag}.xlsx`);
-            showToast("已下載 Excel 排程檔，可直接交給書記整理或列印。", "success");
+            try {
+                const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([workbookData], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${safeDeptName}_當天排程_${dateTag}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+                showToast("已下載 Excel 排程檔，可直接交給書記整理或列印。", "success");
+            } catch (error) {
+                console.error('exportScheduleWorkbook failed', error);
+                showToast('Excel 匯出失敗，請稍後再試一次。', 'error');
+            }
         }
 
         function exportToExcelTsvClipboard() {
@@ -9244,10 +9287,11 @@
                 return;
             }
 
-	            let tsv = "姓名\t出生年月日\t就讀學校\t報名序號\t跨系同人報名\t跨系時間重疊\t登記偏好\t上下午偏好\t分配甄試時段\t筆試教室\t筆試時間\t面試教室\t面試組別\t面試時間\t跨系撞期時間\r\n";
+            const strategyId = dept.cfgSchedulerStrategy || DEFAULT_SCHEDULER_STRATEGY;
+            let tsv = "姓名\t出生年月日\t就讀學校\t報名序號\t跨系同人報名\t跨系時間重疊\t登記偏好\t上下午偏好\t分配甄試時段\t筆試教室\t筆試時間\t面試教室\t面試組別\t面試時間\t跨系撞期時間\r\n";
             dept.students.forEach(s => {
-            const assignedS = dept.sessions.find(ses => ses.id === s.assignedSessionId);
-            const batchText = assignedS ? assignedS.name : '未分配';
+                const assignedS = dept.sessions.find(ses => ses.id === s.assignedSessionId);
+                const batchText = assignedS ? assignedS.name : '未分配';
                 
                 const prefDetails = getStudentPreferenceDetails(s, dept);
                 const prefText = prefDetails.prefSession ? prefDetails.prefSession.name : '無';
@@ -9264,26 +9308,36 @@
                     .map(conflict => `${conflict.deptName}${conflict.otherType}${conflict.start}-${conflict.end}`)
                     .join('、') || '無';
 
-	                tsv += `${s.name}\t${birthDate}\t${s.school || ''}\t${s.id}\t${crossDeptNames}\t${crossConflictText}\t${prefText}\t${prefPeriodText}\t${batchText}\t${writtenRoom}\t${s.writtenStart || ''}~${s.writtenEnd || ''}\t${oralRoom}\t${grpText}\t${s.oralStart || ''}~${s.oralEnd || ''}\t${s.conflict || '無'}\r\n`;
+                tsv += `${s.name}\t${birthDate}\t${s.school || ''}\t${s.id}\t${crossDeptNames}\t${crossConflictText}\t${prefText}\t${prefPeriodText}\t${batchText}\t${writtenRoom}\t${s.writtenStart || ''}~${s.writtenEnd || ''}\t${oralRoom}\t${grpText}\t${s.oralStart || ''}~${s.oralEnd || ''}\t${s.conflict || '無'}\r\n`;
             });
 
-            // Use robust fallback for iframe sandboxes
-            const area = document.createElement('textarea');
-            area.value = tsv;
-            document.body.appendChild(area);
-            area.select();
-
             try {
-                const status = document.execCommand('copy');
-                if (status) {
-                    showToast("📋 成功將 Excel 專用團體流水線總表複製至剪貼簿！可在 Excel 內直接 Ctrl+V 貼上！", "success");
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(tsv).then(() => {
+                        showToast("📋 已複製成 Excel 可直接貼上的格式。", "success");
+                    }).catch(() => {
+                        throw new Error('clipboard-write failed');
+                    });
                 } else {
-                    showToast("複製失敗，請手動選取表格複製。", "error");
+                    const area = document.createElement('textarea');
+                    area.value = tsv;
+                    area.setAttribute('readonly', 'true');
+                    area.style.position = 'fixed';
+                    area.style.left = '-9999px';
+                    document.body.appendChild(area);
+                    area.select();
+                    const status = document.execCommand('copy');
+                    document.body.removeChild(area);
+                    if (status) {
+                        showToast("📋 已複製成 Excel 可直接貼上的格式。", "success");
+                    } else {
+                        showToast("複製失敗，請手動選取表格複製。", "error");
+                    }
                 }
             } catch(e) {
+                console.error('exportToExcelTsvClipboard failed', e);
                 showToast("瀏覽器權限限制，無法進行複製。", "error");
             }
-            document.body.removeChild(area);
         }
 
         // Beautiful Toast triggers
