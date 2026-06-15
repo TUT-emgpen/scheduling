@@ -1703,6 +1703,13 @@
                                     <input type="number" id="cfg-report-post-buffer-minutes" min="10" max="20" class="setup-soft-input" value="10">
                                 </div>
                                 <div class="setup-subcard">
+                                    <label class="setup-field-label" title="勾選後，時序小卡會顯示『走路換場』步驟；取消勾選則隱藏，但排程時間仍會保留。">顯示走路換場</label>
+                                    <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm">
+                                        <input type="checkbox" id="cfg-show-transfer-step" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked>
+                                        <span>在時序小卡中顯示走路換場</span>
+                                    </label>
+                                </div>
+                                <div class="setup-subcard">
                                     <label class="setup-field-label" title="一梯內有幾隊；預設 2 隊，可依系所需求改成 3 隊或更多。">一梯有幾隊 (隊)</label>
                                     <input type="number" id="cfg-oral-teams-per-ladder" min="1" max="10" class="setup-soft-input" value="2">
                                 </div>
@@ -2733,6 +2740,7 @@
                 cfgOralDuration: 20, 
                 cfgReportLeadMinutes: 10,
                 cfgReportPostBufferMinutes: 10,
+                cfgShowTransferStep: true,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
@@ -2759,6 +2767,7 @@
                 cfgOralDuration: 20, 
                 cfgReportLeadMinutes: 10,
                 cfgReportPostBufferMinutes: 10,
+                cfgShowTransferStep: true,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, 
@@ -2784,6 +2793,7 @@
                 cfgOralDuration: 15,
                 cfgReportLeadMinutes: 10,
                 cfgReportPostBufferMinutes: 10,
+                cfgShowTransferStep: true,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 40,
@@ -4031,6 +4041,10 @@
                     dept.cfgReportPostBufferMinutes = 10;
                     changed = true;
                 }
+                if (dept.cfgShowTransferStep === undefined) {
+                    dept.cfgShowTransferStep = true;
+                    changed = true;
+                }
                 if (dept.cfgOralTailMergeLimit === undefined) {
                     dept.cfgOralTailMergeLimit = 0;
                     changed = true;
@@ -4196,6 +4210,10 @@
                 dept.cfgReportPostBufferMinutes = 10;
                 needsSave = true;
             }
+            if (dept.cfgShowTransferStep === undefined) {
+                dept.cfgShowTransferStep = true;
+                needsSave = true;
+            }
             if (dept.cfgOralTeamsPerLadder === undefined) {
                 dept.cfgOralTeamsPerLadder = 2;
                 needsSave = true;
@@ -4242,6 +4260,10 @@
             document.getElementById('cfg-oral-duration').value = dept.cfgOralDuration || 20;
             document.getElementById('cfg-report-lead-minutes').value = dept.cfgReportLeadMinutes ?? 10;
             document.getElementById('cfg-report-post-buffer-minutes').value = dept.cfgReportPostBufferMinutes ?? 10;
+            const showTransferStepCheckbox = document.getElementById('cfg-show-transfer-step');
+            if (showTransferStepCheckbox) {
+                showTransferStepCheckbox.checked = getShowTransferStep(dept);
+            }
             document.getElementById('cfg-oral-teams-per-ladder').value = dept.cfgOralTeamsPerLadder || 2;
             document.getElementById('cfg-oral-team-group-count').value = dept.cfgOralTeamGroupCount || 2;
             document.getElementById('cfg-team-capacity').value = dept.cfgTeamCapacity || 30;
@@ -5440,6 +5462,8 @@
             dept.cfgReportPostBufferMinutes = Number.isFinite(reportPostBufferMinutes)
                 ? Math.min(20, Math.max(10, reportPostBufferMinutes))
                 : 10;
+            const showTransferStepCheckbox = document.getElementById('cfg-show-transfer-step');
+            dept.cfgShowTransferStep = showTransferStepCheckbox ? showTransferStepCheckbox.checked : true;
             dept.cfgOralTeamsPerLadder = parseInt(document.getElementById('cfg-oral-teams-per-ladder').value) || 2;
             dept.cfgOralTeamGroupCount = parseInt(document.getElementById('cfg-oral-team-group-count').value) || 2;
             dept.cfgTeamCapacity = parseInt(document.getElementById('cfg-team-capacity').value) || 30;
@@ -5890,6 +5914,7 @@
                 cfgOralDuration: 20,
                 cfgReportLeadMinutes: 10,
                 cfgReportPostBufferMinutes: 10,
+                cfgShowTransferStep: true,
                 cfgOralTeamsPerLadder: 2,
                 cfgOralTeamGroupCount: 2,
                 cfgTeamCapacity: 30, // Big written capacity limit!
@@ -5979,6 +6004,14 @@
             const parsed = parseInt(dept?.cfgReportPostBufferMinutes, 10);
             if (!Number.isFinite(parsed)) return 10;
             return Math.min(20, Math.max(10, parsed));
+        }
+
+        function getShowTransferStep(dept) {
+            if (dept?.cfgShowTransferStep === undefined || dept?.cfgShowTransferStep === null) return true;
+            if (typeof dept.cfgShowTransferStep === 'string') {
+                return !['false', '0', 'no', 'off'].includes(dept.cfgShowTransferStep.toLowerCase());
+            }
+            return Boolean(dept.cfgShowTransferStep);
         }
 
         function getOralTailMergeLabel(dept) {
@@ -7293,6 +7326,7 @@
             const roomIdx = scheduled && student.assignedOralRoomIdx !== null && student.assignedOralRoomIdx !== undefined ? student.assignedOralRoomIdx : Number.MAX_SAFE_INTEGER;
             const reportLeadMinutes = getReportLeadMinutes(dept);
             const reportPostBufferMinutes = getReportPostBufferMinutes(dept);
+            const showTransferStep = getShowTransferStep(dept);
             const oralStep = student.oralStart && student.oralEnd ? { label: '面試', start: student.oralStart, end: student.oralEnd } : null;
             const writtenStep = student.writtenStart && student.writtenEnd ? { label: '筆試', start: student.writtenStart, end: student.writtenEnd } : null;
             const sortedSteps = [oralStep, writtenStep].filter(Boolean).sort((a, b) => timeToMins(a.start) - timeToMins(b.start));
@@ -8028,7 +8062,7 @@
                             meta: `報到截止後預留 ${stagingGapMin} 分鐘`
                         }
                         : null;
-                    const transferItem = firstStep && secondStep
+                    const transferItem = showTransferStep && firstStep && secondStep
                         ? {
                             kind: 'transfer',
                             label: '走路換場',
